@@ -1,0 +1,13 @@
+sed -i "s/1 => '192.168.8.53',/1 => '192.168.8.53',\n    2 => 'aphome201',/" /var/www/html/config/config.php
+
+
+nginx
+
+openssl req -x509 -nodes -days 825 \
+  -newkey rsa:2048 \
+  -keyout aphome201.local.key \
+  -out aphome201.local.crt \
+  -subj "/C=BR/ST=Home/L=Home/O=ApHome/CN=aphome201.local" \
+  -addext "subjectAltName=DNS:aphome201.local,DNS:*.aphome201.local"
+
+----------------------------------------------------------------

@@ -1,0 +1,37 @@
+netdata
+
+/DATA/AppData/Netdata/config/netdata.conf
+
+[global]
+update every = 1
+
+[db]
+mode = dbengine
+dbengine multihost disk space = 512
+dbengine tier 0 retention size = 1h
+dbengine tier 1 retention size = 24h
+dbengine tier 2 retention size = 7d
+dbengine tier 3 retention size = 30d
+
+[health]
+enabled = yes
+
+[health notifications]
+enabled = yes
+
+
+/DATA/AppData/Netdata/health_alarm_notify.conf
+
+
+/DATA/AppData/Netdata/health.d/cpu_usage.conf
+
+
+alarm: cpu_usage_warning
+on: system.cpu
+lookup: average -2m percentage
+every: 10s
+warn: $this > 75
+crit: $this > 90
+info: Uso elevado de CPU
+to: sysadmin
+

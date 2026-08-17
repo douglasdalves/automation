@@ -1,0 +1,21 @@
+[Unit]
+Description=NotApHome Telegram Bot
+After=network-online.target homelab-mcp.service
+Wants=network-online.target
+Requires=homelab-mcp.service
+
+[Service]
+Type=simple
+User=dalves
+
+WorkingDirectory=/home/dalves/automation/homelab-telegram-bot
+
+ExecStart=/home/dalves/automation/homelab-telegram-bot/.venv/bin/python /home/dalves/automation/homelab-telegram-bot/bot.py
+
+Restart=always
+RestartSec=5
+
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
