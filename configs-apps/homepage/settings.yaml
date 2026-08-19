@@ -1,0 +1,25 @@
+---
+title: ApHome201
+theme: dark
+color: slate
+headerStyle: clean
+statusStyle: dot
+useEqualHeights: true
+disableIndexing: true
+
+layout:
+  Administração:
+    style: row
+    columns: 2
+
+  Infraestrutura:
+    style: row
+    columns: 3
+
+  Rede:
+    style: row
+    columns: 2
+
+  Armazenamento:
+    style: row
+    columns: 2

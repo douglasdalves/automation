@@ -28,12 +28,13 @@ send_telegram() {
   return 0
 }
 
-# ===== CONTAINERS =====
-CONTAINERS=(
-  dc-portainer
-  dc-filebrowser
-  dc-sftpgo
-)
+# Carrega a lista centralizada de containers
+if [ -f /usr/local/bin/docker-containers.conf ]; then
+  source /usr/local/bin/docker-containers.conf
+else
+  echo "❌ Erro: /usr/local/bin/docker-containers.conf não encontrado"
+  exit 1
+fi
 
 ERRORS=0
 REPORT="📦 *Relatório de Start Containers*%0A"

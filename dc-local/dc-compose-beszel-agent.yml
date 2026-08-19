@@ -1,0 +1,14 @@
+services:
+  beszel-agent:
+    image: henrygd/beszel-agent
+    container_name: beszel-agent
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./beszel_agent_data:/var/lib/beszel-agent
+    environment:
+      LISTEN: 45876
+      KEY: "${BESZEL_KEY:?BESZEL_KEY is required}"
+      TOKEN: "${BESZEL_TOKEN:?BESZEL_TOKEN is required}"
+      HUB_URL: http://aphome201.local:8090

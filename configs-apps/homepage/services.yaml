@@ -1,0 +1,69 @@
+---
+- Administração:
+    - CasaOS:
+        icon: casaos.svg
+        href: http://aphome201.local
+        description: Gerenciamento do Raspberry Pi
+        server: local
+        container: ""
+
+    - Portainer:
+        icon: portainer.svg
+        href: https://aphome201.local:9443
+        description: Gerenciamento Docker
+        server: local
+        container: dc-portainer
+
+- Infraestrutura:
+    - Dozzle:
+        icon: dozzle.svg
+        href: http://aphome201.local:8888
+        description: Logs dos containers Docker
+        server: local
+        container: dc-dozzle
+
+    - Beszel:
+        icon: beszel.svg
+        href: http://aphome201.local:8090
+        description: Monitoramento do Raspberry Pi
+        server: local
+        container: dc-beszel
+
+    - Nginx Proxy Manager:
+        icon: nginx-proxy-manager.svg
+        href: http://aphome201.local:81
+        description: Reverse Proxy
+        server: local
+        container: dc-nginx-proxy-manager
+        showStats: true
+
+- Rede:
+    - AdGuard Home:
+        icon: adguard-home.svg
+        href: http://aphome201.local:3001
+        description: DNS e bloqueio de anúncios
+        server: local
+        container: dc-adguard-home
+        showStats: true
+
+    - MySpeed:
+        icon: myspeed.svg
+        href: http://aphome201.local:5216
+        description: Monitoramento da velocidade da Internet
+        server: local
+        container: dc-myspeed
+
+- Armazenamento:
+    - File Browser:
+        icon: filebrowser.svg
+        href: http://aphome201.local:10180
+        description: Gerenciamento de arquivos
+        server: local
+        container: dc-filebrowser
+
+    - SFTPGo:
+        icon: sftpgo.svg
+        href: http://aphome201.local:8080
+        description: Transferência e gerenciamento de arquivos
+        server: local
+        container: dc-sftpgo
