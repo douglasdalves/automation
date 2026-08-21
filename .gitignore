@@ -1,3 +1,8 @@
 .env
+__pycache__/
+*.py[cod]
 dc-local/.env
 dc-local/beszel_agent_data
+homelab-mcp/app/services/__pycache__
+homelab-mcp/tests/__pycache__
+homelab-mcp/app/tools/__pycache__

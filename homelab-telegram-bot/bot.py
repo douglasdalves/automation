@@ -1,4 +1,5 @@
 import asyncio
+import html
 import json
 import logging
 import os
@@ -139,6 +140,33 @@ async def status_command(
         )
 
 
+async def deploy_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+    if not is_authorized(update):
+        await update.message.reply_text("⛔ Acesso não autorizado.")
+        return
+
+    await update.message.reply_text("🔄 Atualizando o repositório...")
+
+    try:
+        data = await call_mcp_tool("deploy_homelab")
+        if data.get("success"):
+            message = "✅ <b>Repositório atualizado</b>"
+        else:
+            error = html.escape(str(data.get("error", "Erro desconhecido")))
+            message = f"❌ <b>Falha ao atualizar o repositório</b>\n<code>{error}</code>"
+
+        await update.message.reply_text(message, parse_mode="HTML")
+    except Exception as exc:
+        logger.exception("Erro ao atualizar o repositório")
+        await update.message.reply_text(
+            f"❌ Erro ao atualizar o repositório:\n<code>{html.escape(str(exc))}</code>",
+            parse_mode="HTML",
+        )
+
+
 def main():
     if not TELEGRAM_BOT_TOKEN:
         raise RuntimeError(
@@ -151,6 +179,9 @@ def main():
 
     application.add_handler(
         CommandHandler("status", status_command)
+    )
+    application.add_handler(
+        CommandHandler("deploy", deploy_command)
     )
 
     logger.info("NotApHome iniciado")
