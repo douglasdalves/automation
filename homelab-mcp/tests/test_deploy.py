@@ -18,6 +18,30 @@ def test_deploy_pulls_then_restarts_services(monkeypatch, tmp_path):
     assert result["success"] is True
     assert commands == [
         ["git", "pull", "--ff-only"],
+        ["sudo", "mkdir", "-p", "/etc/app-config-sync"],
+        [
+            "sudo",
+            "cp",
+            str(tmp_path / "configs-apps" / "app-config-sync" / "sync.conf"),
+            "/etc/app-config-sync/sync.conf",
+        ],
+        [
+            "sudo",
+            "cp",
+            str(tmp_path / "configs-apps" / "app-config-sync" / "sync-configs.sh"),
+            "/usr/local/bin/sync-configs.sh",
+        ],
+        ["sudo", "chmod", "+x", "/usr/local/bin/sync-configs.sh"],
+        [
+            "sudo",
+            "cp",
+            str(tmp_path / "configs-apps" / "app-config-sync" / "app-config-sync.service"),
+            str(tmp_path / "configs-apps" / "app-config-sync" / "app-config-sync.path"),
+            "/etc/systemd/system/",
+        ],
+        ["sudo", "systemctl", "daemon-reload"],
+        ["sudo", "systemctl", "enable", "--now", "app-config-sync.path"],
+        ["sudo", "systemctl", "start", "app-config-sync.service"],
         ["sudo", "systemctl", "restart", "homelab-telegram-bot"],
         ["sudo", "systemctl", "restart", "homelab-mcp"],
     ]
@@ -70,6 +94,30 @@ def test_deploy_reports_restart_failure(monkeypatch, tmp_path):
     }
     assert commands == [
         ["git", "pull", "--ff-only"],
+        ["sudo", "mkdir", "-p", "/etc/app-config-sync"],
+        [
+            "sudo",
+            "cp",
+            str(tmp_path / "configs-apps" / "app-config-sync" / "sync.conf"),
+            "/etc/app-config-sync/sync.conf",
+        ],
+        [
+            "sudo",
+            "cp",
+            str(tmp_path / "configs-apps" / "app-config-sync" / "sync-configs.sh"),
+            "/usr/local/bin/sync-configs.sh",
+        ],
+        ["sudo", "chmod", "+x", "/usr/local/bin/sync-configs.sh"],
+        [
+            "sudo",
+            "cp",
+            str(tmp_path / "configs-apps" / "app-config-sync" / "app-config-sync.service"),
+            str(tmp_path / "configs-apps" / "app-config-sync" / "app-config-sync.path"),
+            "/etc/systemd/system/",
+        ],
+        ["sudo", "systemctl", "daemon-reload"],
+        ["sudo", "systemctl", "enable", "--now", "app-config-sync.path"],
+        ["sudo", "systemctl", "start", "app-config-sync.service"],
         ["sudo", "systemctl", "restart", "homelab-telegram-bot"],
         ["sudo", "systemctl", "restart", "homelab-mcp"],
     ]

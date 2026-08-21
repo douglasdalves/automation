@@ -3,6 +3,7 @@ Description=Observa alteracoes nas configuracoes das aplicacoes
 
 [Path]
 PathChanged=/home/dalves/automation/configs-apps/homepage
+PathChanged=/home/dalves/automation/raspberry-scripts/scripts-bin
 Unit=app-config-sync.service
 
 [Install]

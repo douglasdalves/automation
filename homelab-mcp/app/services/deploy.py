@@ -49,6 +49,54 @@ def deploy() -> Dict[str, Any]:
                 "error": _output(pull) or "git pull failed",
             }
 
+        sync_dir = repository_dir / "configs-apps" / "app-config-sync"
+        sync_commands = [
+            ["sudo", "mkdir", "-p", "/etc/app-config-sync"],
+            [
+                "sudo",
+                "cp",
+                str(sync_dir / "sync.conf"),
+                "/etc/app-config-sync/sync.conf",
+            ],
+            [
+                "sudo",
+                "cp",
+                str(sync_dir / "sync-configs.sh"),
+                "/usr/local/bin/sync-configs.sh",
+            ],
+            ["sudo", "chmod", "+x", "/usr/local/bin/sync-configs.sh"],
+            [
+                "sudo",
+                "cp",
+                str(sync_dir / "app-config-sync.service"),
+                str(sync_dir / "app-config-sync.path"),
+                "/etc/systemd/system/",
+            ],
+            ["sudo", "systemctl", "daemon-reload"],
+            ["sudo", "systemctl", "enable", "--now", "app-config-sync.path"],
+            ["sudo", "systemctl", "start", "app-config-sync.service"],
+        ]
+        for command in sync_commands:
+            try:
+                sync_setup = subprocess.run(
+                    command,
+                    cwd=repository_dir,
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    timeout=_COMMAND_TIMEOUT,
+                )
+            except (FileNotFoundError, subprocess.TimeoutExpired) as exc:
+                return {"success": False, "step": "sync_setup", "command": command, "error": str(exc)}
+
+            if sync_setup.returncode != 0:
+                return {
+                    "success": False,
+                    "step": "sync_setup",
+                    "command": command,
+                    "error": _output(sync_setup) or "app-config-sync setup failed",
+                }
+
         services = tuple(
             service.strip()
             for service in os.getenv("DEPLOY_SERVICES", ",".join(_DEFAULT_SERVICES)).split(",")

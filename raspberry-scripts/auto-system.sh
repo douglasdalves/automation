@@ -10,7 +10,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Serviços
-SERVICES=("homelab-mcp" "homelab-telegram-bot")
+SERVICES=("app-config-sync" "homelab-mcp" "homelab-telegram-bot")
 
 # Função para limpar tela e mostrar menu
 show_menu() {

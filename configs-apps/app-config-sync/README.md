@@ -1,6 +1,8 @@
 # App Config Sync
 
-Sincroniza arquivos YAML de configuracao das aplicacoes para os diretorios usados pelos containers.
+Sincroniza arquivos de configuracao e scripts publicos para os diretorios usados pelos servicos.
+
+O `sync.conf` define quais arquivos sao copiados. O `telegram.conf` nao faz parte da sincronizacao: mantenha os tokens somente no servidor.
 
 ## Instalar no Raspberry Pi
 
@@ -38,4 +40,4 @@ sudo systemctl daemon-reload
 sudo systemctl restart app-config-sync.path
 ```
 
-O script sincroniza apenas arquivos `*.yaml` e remove do destino YAMLs que foram apagados da origem. Outros arquivos no destino permanecem intactos.
+O script sincroniza somente os arquivos definidos em `sync.conf`, preservando outros arquivos nos destinos. Arquivos `.sh` recebem permissao executavel e arquivos `.conf` recebem permissao `644`.
