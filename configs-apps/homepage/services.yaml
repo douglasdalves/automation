@@ -35,7 +35,6 @@
         description: Reverse Proxy
         server: local
         container: dc-nginx-proxy-manager
-        showStats: true
 
 - Rede:
     - AdGuard Home:
@@ -44,7 +43,6 @@
         description: DNS e bloqueio de anúncios
         server: local
         container: dc-adguard-home
-        showStats: true
 
     - MySpeed:
         icon: myspeed.svg
