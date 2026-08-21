@@ -1,0 +1,7 @@
+[Unit]
+Description=Sincroniza configuracoes das aplicacoes
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/local/bin/sync-configs.sh /etc/app-config-sync/sync.conf
