@@ -3,11 +3,11 @@ from subprocess import CompletedProcess
 from app.services.deploy import deploy
 
 
-def test_deploy_only_pulls_repository(monkeypatch, tmp_path):
+def test_deploy_pulls_then_restarts_services(monkeypatch, tmp_path):
     commands = []
 
     def fake_run(cmd, **kwargs):
-        commands.append((cmd, kwargs["cwd"]))
+        commands.append(cmd)
         return CompletedProcess(cmd, 0, stdout="updated", stderr="")
 
     monkeypatch.setattr("app.services.deploy.subprocess.run", fake_run)
@@ -16,7 +16,15 @@ def test_deploy_only_pulls_repository(monkeypatch, tmp_path):
     result = deploy()
 
     assert result["success"] is True
-    assert commands == [(["git", "pull", "--ff-only"], tmp_path)]
+    assert commands == [
+        ["git", "pull", "--ff-only"],
+        ["sudo", "systemctl", "restart", "homelab-telegram-bot"],
+        ["sudo", "systemctl", "restart", "homelab-mcp"],
+    ]
+    assert result["restarted_services"] == [
+        "homelab-telegram-bot",
+        "homelab-mcp",
+    ]
 
 
 def test_deploy_reports_pull_failure(monkeypatch, tmp_path):
@@ -37,3 +45,31 @@ def test_deploy_reports_pull_failure(monkeypatch, tmp_path):
         "error": "conflict",
     }
     assert commands == [["git", "pull", "--ff-only"]]
+
+
+def test_deploy_reports_restart_failure(monkeypatch, tmp_path):
+    commands = []
+
+    def fake_run(cmd, **kwargs):
+        commands.append(cmd)
+        if cmd[:2] == ["sudo", "systemctl"] and cmd[-1] == "homelab-mcp":
+            return CompletedProcess(cmd, 1, stdout="", stderr="MCP restart failed")
+        return CompletedProcess(cmd, 0, stdout="updated", stderr="")
+
+    monkeypatch.setattr("app.services.deploy.subprocess.run", fake_run)
+    monkeypatch.setenv("DEPLOY_REPOSITORY_DIR", str(tmp_path))
+
+    result = deploy()
+
+    assert result == {
+        "success": False,
+        "step": "restart_service",
+        "service": "homelab-mcp",
+        "restarted_services": ["homelab-telegram-bot"],
+        "error": "MCP restart failed",
+    }
+    assert commands == [
+        ["git", "pull", "--ff-only"],
+        ["sudo", "systemctl", "restart", "homelab-telegram-bot"],
+        ["sudo", "systemctl", "restart", "homelab-mcp"],
+    ]
