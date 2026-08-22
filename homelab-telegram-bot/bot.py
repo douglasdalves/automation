@@ -177,7 +177,7 @@ async def restart_command(
         await update.message.reply_text("⛔ Acesso não autorizado.")
         return
 
-    services = os.getenv("DEPLOY_SERVICES", "homelab-telegram-bot,homelab-mcp").split(",")
+    services = os.getenv("DEPLOY_SERVICES").split(",")# nao completar com valor default, para forçar a configuração no .env
     keyboard = [
         [InlineKeyboardButton(service.strip(), callback_data=f"restart:{service.strip()}")]
         for service in services
@@ -224,10 +224,93 @@ async def restart_callback(
         )
 
 
+async def restart_docker_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+    if not is_authorized(update):
+        await update.message.reply_text("⛔ Acesso não autorizado.")
+        return
+
+    try:
+        data = await call_mcp_tool("list_docker_containers")
+        if not data.get("success"):
+            error = html.escape(str(data.get("error", "Erro desconhecido")))
+            await update.message.reply_text(
+                f"❌ Erro ao listar containers:\n<code>{error}</code>",
+                parse_mode="HTML",
+            )
+            return
+
+        containers = data.get("containers", [])
+        if not containers:
+            await update.message.reply_text("Nenhum container ativo encontrado.")
+            return
+
+        keyboard = [
+            [
+                InlineKeyboardButton(
+                    container.get("name", container.get("id", "desconhecido")),
+                    callback_data=f"docker-restart:{container.get('id', '')}",
+                )
+            ]
+            for container in containers
+            if container.get("id")
+        ]
+        await update.message.reply_text(
+            "Qual container deseja reiniciar?",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+        )
+    except Exception as exc:
+        logger.exception("Erro ao listar containers Docker")
+        await update.message.reply_text(
+            f"❌ Erro ao listar containers:\n<code>{html.escape(str(exc))}</code>",
+            parse_mode="HTML",
+        )
+
+
+async def restart_docker_callback(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+    query = update.callback_query
+    if not query:
+        return
+
+    if not is_authorized(update):
+        await query.answer("Acesso não autorizado.", show_alert=True)
+        return
+
+    await query.answer()
+    container_id = query.data.removeprefix("docker-restart:")
+    await query.edit_message_text(
+        f"🔄 Reiniciando container <code>{html.escape(container_id)}</code>...",
+        parse_mode="HTML",
+    )
+
+    try:
+        data = await call_mcp_tool(
+            "manage_docker_container",
+            {"container_id": container_id, "action": "restart"},
+        )
+        if data.get("success"):
+            message = f"✅ Container <code>{html.escape(container_id)}</code> reiniciado."
+        else:
+            error = html.escape(str(data.get("error", "Erro desconhecido")))
+            message = f"❌ Falha ao reiniciar o container:\n<code>{error}</code>"
+        await query.edit_message_text(message, parse_mode="HTML")
+    except Exception as exc:
+        logger.exception("Erro ao reiniciar container Docker")
+        await query.edit_message_text(
+            f"❌ Erro ao reiniciar o container:\n<code>{html.escape(str(exc))}</code>",
+            parse_mode="HTML",
+        )
+
+
 def main():
     if not TELEGRAM_BOT_TOKEN:
         raise RuntimeError(
-            "TELEGRAM_BOT_TOKEN não configurado no arquivo .env"
+            "TELEGRAM_BOT_TOKEN não configurado no arquivo .env.token"
         )
 
     application = Application.builder().token(
@@ -241,10 +324,16 @@ def main():
         CommandHandler("deploy", deploy_command)
     )
     application.add_handler(
-        CommandHandler("restart", restart_command)
+        CommandHandler("restart-service", restart_command)
+    )
+    application.add_handler(
+        CommandHandler("restart-docker", restart_docker_command)
     )
     application.add_handler(
         CallbackQueryHandler(restart_callback, pattern=r"^restart:")
+    )
+    application.add_handler(
+        CallbackQueryHandler(restart_docker_callback, pattern=r"^docker-restart:")
     )
 
     logger.info("NotApHome iniciado")
