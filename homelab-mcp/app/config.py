@@ -9,7 +9,7 @@ load_dotenv(env_path)
 
 
 class Config:
-    MCP_NAME = os.getenv("MCP_NAME")
-    MCP_HOST = os.getenv("MCP_HOST")
-    MCP_PORT = int(os.getenv("MCP_PORT"))
-    ENVIRONMENT = os.getenv("ENVIRONMENT")
+    MCP_NAME = os.getenv("MCP_NAME") #nao completar com valor default, para forçar a configuração no .env
+    MCP_HOST = os.getenv("MCP_HOST") #nao completar com valor default, para forçar a configuração no .env
+    MCP_PORT = int(os.getenv("MCP_PORT")) #nao completar com valor default, para forçar a configuração no .env
+    ENVIRONMENT = os.getenv("ENVIRONMENT") #nao completar com valor default, para forçar a configuração no .env

@@ -1,4 +1,4 @@
-from app.services.deploy import deploy
+from app.services.deploy import deploy, restart_service
 
 
 def register_deploy_tools(mcp):
@@ -6,3 +6,8 @@ def register_deploy_tools(mcp):
     def deploy_homelab() -> dict:
         """Atualiza o repositório do homelab com git pull."""
         return deploy()
+
+    @mcp.tool()
+    def restart_homelab_service(service: str) -> dict:
+        """Reinicia um serviço permitido do homelab."""
+        return restart_service(service)

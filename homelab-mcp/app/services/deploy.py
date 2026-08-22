@@ -9,9 +9,42 @@ env_path = Path(__file__).parent.parent.parent.parent / ".env"
 load_dotenv(env_path)
 
 _deploy_lock = threading.Lock()
-_COMMAND_TIMEOUT = int(os.getenv("DEPLOY_COMMAND_TIMEOUT"))
+_COMMAND_TIMEOUT = int(os.getenv("DEPLOY_COMMAND_TIMEOUT")) #nao completar com valor default, para forçar a configuração no .env
 _MAX_OUTPUT_LENGTH = 2000
 _DEFAULT_SERVICES = ("homelab-telegram-bot", "homelab-mcp")
+
+
+def _configured_services() -> tuple[str, ...]:
+    return tuple(
+        service.strip()
+        for service in os.getenv("DEPLOY_SERVICES", ",".join(_DEFAULT_SERVICES)).split(",")
+        if service.strip()
+    )
+
+
+def restart_service(service: str) -> Dict[str, Any]:
+    if service not in _configured_services():
+        return {"success": False, "error": f"Serviço não permitido: {service}"}
+
+    try:
+        result = subprocess.run(
+            ["sudo", "systemctl", "restart", service],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=_COMMAND_TIMEOUT,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired) as exc:
+        return {"success": False, "service": service, "error": str(exc)}
+
+    if result.returncode != 0:
+        return {
+            "success": False,
+            "service": service,
+            "error": _output(result) or f"failed to restart {service}",
+        }
+
+    return {"success": True, "service": service}
 
 
 def _output(result: subprocess.CompletedProcess[str]) -> str:
@@ -100,11 +133,7 @@ def deploy() -> Dict[str, Any]:
                     "error": _output(sync_setup) or "app-config-sync setup failed",
                 }
 
-        services = tuple(
-            service.strip()
-            for service in os.getenv("DEPLOY_SERVICES", ",".join(_DEFAULT_SERVICES)).split(",")
-            if service.strip()
-        )
+        services = _configured_services()
         restarted_services = []
         for service in services:
             try:
