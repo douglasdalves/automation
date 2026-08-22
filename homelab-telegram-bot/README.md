@@ -47,7 +47,7 @@ python bot.py
 
 - `/status`: mostra CPU, temperatura, memoria, disco, uptime e containers ativos.
 - `/deploy`: atualiza o repositorio e reinicia os servicos configurados.
-- `/restart-service`: mostra botoes para escolher qual servico reiniciar.
+- `/restart_service`: mostra botoes para escolher qual servico reiniciar.
 - `/restart-docker`: lista os containers Docker ativos e mostra botoes para escolher qual reiniciar.
 
 O `/deploy` executa o fluxo completo no MCP: faz `git pull --ff-only`, atualiza o sincronizador `app-config-sync`, recarrega o systemd, sincroniza os arquivos e reinicia os servicos definidos em `DEPLOY_SERVICES`. Se uma etapa falhar, o bot informa o erro retornado pelo MCP.

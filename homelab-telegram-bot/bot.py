@@ -324,10 +324,10 @@ def main():
         CommandHandler("deploy", deploy_command)
     )
     application.add_handler(
-        CommandHandler("restart-service", restart_command)
+        CommandHandler("restart_service", restart_command)
     )
     application.add_handler(
-        CommandHandler("restart-docker", restart_docker_command)
+        CommandHandler("restart_docker", restart_docker_command)
     )
     application.add_handler(
         CallbackQueryHandler(restart_callback, pattern=r"^restart:")
