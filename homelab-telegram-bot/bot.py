@@ -14,6 +14,8 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 # Carregar .env compartilhado em automation/.env
 env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(env_path)
+env_path = Path(__file__).parent.parent / ".env.token"
+load_dotenv(env_path)
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 MCP_URL = os.getenv("MCP_URL")

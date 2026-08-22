@@ -1,4 +1,4 @@
-.env
+.env.token
 __pycache__/
 *.py[cod]
 dc-local/.env

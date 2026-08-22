@@ -3,10 +3,13 @@ import subprocess
 import threading
 from pathlib import Path
 from typing import Any, Dict
+from dotenv import load_dotenv
 
+env_path = Path(__file__).parent.parent.parent.parent / ".env"
+load_dotenv(env_path)
 
 _deploy_lock = threading.Lock()
-_COMMAND_TIMEOUT = int(os.getenv("DEPLOY_COMMAND_TIMEOUT", "300"))
+_COMMAND_TIMEOUT = int(os.getenv("DEPLOY_COMMAND_TIMEOUT")
 _MAX_OUTPUT_LENGTH = 2000
 _DEFAULT_SERVICES = ("homelab-telegram-bot", "homelab-mcp")
 
@@ -20,7 +23,7 @@ def _output(result: subprocess.CompletedProcess[str]) -> str:
 
 def deploy() -> Dict[str, Any]:
     repository_dir = Path(
-        os.getenv("DEPLOY_REPOSITORY_DIR", "/home/dalves/automation")
+        os.getenv("DEPLOY_REPOSITORY_DIR")
     ).expanduser()
 
     if not repository_dir.is_dir():
