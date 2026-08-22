@@ -307,6 +307,99 @@ async def restart_docker_callback(
         )
 
 
+async def manage_docker_command(
+    update: Update,
+    action: str,
+):
+    if not is_authorized(update):
+        await update.message.reply_text("⛔ Acesso não autorizado.")
+        return
+
+    labels = {"start": "iniciar", "stop": "parar"}
+    try:
+        data = await call_mcp_tool("list_docker_containers", {"all_containers": True})
+        if not data.get("success"):
+            error = html.escape(str(data.get("error", "Erro desconhecido")))
+            await update.message.reply_text(
+                f"❌ Erro ao listar containers:\n<code>{error}</code>",
+                parse_mode="HTML",
+            )
+            return
+
+        containers = data.get("containers", [])
+        if not containers:
+            await update.message.reply_text("Nenhum container encontrado.")
+            return
+
+        keyboard = [
+            [
+                InlineKeyboardButton(
+                    container.get("name", container.get("id", "desconhecido")),
+                    callback_data=f"docker-{action}:{container.get('id', '')}",
+                )
+            ]
+            for container in containers
+            if container.get("id")
+        ]
+        await update.message.reply_text(
+            f"Qual container deseja {labels[action]}?",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+        )
+    except Exception as exc:
+        logger.exception("Erro ao listar containers Docker")
+        await update.message.reply_text(
+            f"❌ Erro ao listar containers:\n<code>{html.escape(str(exc))}</code>",
+            parse_mode="HTML",
+        )
+
+
+async def start_docker_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await manage_docker_command(update, "start")
+
+
+async def stop_docker_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await manage_docker_command(update, "stop")
+
+
+async def manage_docker_callback(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+    query = update.callback_query
+    if not query:
+        return
+
+    if not is_authorized(update):
+        await query.answer("Acesso não autorizado.", show_alert=True)
+        return
+
+    action, container_id = query.data.removeprefix("docker-").split(":", 1)
+    labels = {"start": "iniciando", "stop": "parando"}
+    await query.answer()
+    await query.edit_message_text(
+        f"🔄 {labels[action].capitalize()} container <code>{html.escape(container_id)}</code>...",
+        parse_mode="HTML",
+    )
+
+    try:
+        data = await call_mcp_tool(
+            "manage_docker_container",
+            {"container_id": container_id, "action": action},
+        )
+        if data.get("success"):
+            message = f"✅ Container <code>{html.escape(container_id)}</code>: {action} concluído."
+        else:
+            error = html.escape(str(data.get("error", "Erro desconhecido")))
+            message = f"❌ Falha ao executar {action}:\n<code>{error}</code>"
+        await query.edit_message_text(message, parse_mode="HTML")
+    except Exception as exc:
+        logger.exception("Erro ao gerenciar container Docker")
+        await query.edit_message_text(
+            f"❌ Erro ao executar {action}:\n<code>{html.escape(str(exc))}</code>",
+            parse_mode="HTML",
+        )
+
+
 def main():
     if not TELEGRAM_BOT_TOKEN:
         raise RuntimeError(
@@ -330,10 +423,19 @@ def main():
         CommandHandler("restart_docker", restart_docker_command)
     )
     application.add_handler(
+        CommandHandler("start_docker", start_docker_command)
+    )
+    application.add_handler(
+        CommandHandler("stop_docker", stop_docker_command)
+    )
+    application.add_handler(
         CallbackQueryHandler(restart_callback, pattern=r"^restart:")
     )
     application.add_handler(
         CallbackQueryHandler(restart_docker_callback, pattern=r"^docker-restart:")
+    )
+    application.add_handler(
+        CallbackQueryHandler(manage_docker_callback, pattern=r"^docker-(start|stop):")
     )
 
     logger.info("NotApHome iniciado")
