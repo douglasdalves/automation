@@ -11,11 +11,11 @@ from mcp.client.streamable_http import streamable_http_client
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
-# Carregar .env compartilhado em automation/.env
+# Carregar configurações compartilhadas e o token separado.
 env_path = Path(__file__).parent.parent / ".env"
 load_dotenv(env_path)
-env_path = Path(__file__).parent.parent / ".env.token"
-load_dotenv(env_path)
+token_path = Path(__file__).parent.parent / ".env.token"
+load_dotenv(token_path, override=True)
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 MCP_URL = os.getenv("MCP_URL")
