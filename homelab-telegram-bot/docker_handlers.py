@@ -34,14 +34,14 @@ async def show_docker_containers(update: Update, action: str):
         )
         if not data.get("success"):
             await update.message.reply_text(
-                f"Erro ao listar containers: <code>{html.escape(str(data.get('error', 'Erro desconhecido')))}</code>",
+                f"❌ Erro ao listar containers: <code>{html.escape(str(data.get('error', 'Erro desconhecido')))}</code>",
                 parse_mode="HTML",
             )
             return
 
         containers = data.get("containers", [])
         if not containers:
-            await update.message.reply_text("Nenhum container encontrado.")
+            await update.message.reply_text("❌ Nenhum container encontrado.")
             return
 
         keyboard = [
@@ -61,7 +61,7 @@ async def show_docker_containers(update: Update, action: str):
     except Exception as exc:
         logger.exception("Erro ao listar containers Docker")
         await update.message.reply_text(
-            f"Erro ao listar containers: <code>{html.escape(str(exc))}</code>",
+            f"❌ Erro ao listar containers: <code>{html.escape(str(exc))}</code>",
             parse_mode="HTML",
         )
 
@@ -90,11 +90,11 @@ async def manage_docker_callback(update: Update, context: ContextTypes.DEFAULT_T
         if data.get("success"):
             message = f"✅ Container <code>{html.escape(container_id)}</code>: {action} concluido."
         else:
-            message = f"Falha ao executar {action}: <code>{html.escape(str(data.get('error', 'Erro desconhecido')))}</code>"
+            message = f"❌ Falha ao executar {action}: <code>{html.escape(str(data.get('error', 'Erro desconhecido')))}</code>"
         await query.edit_message_text(message, parse_mode="HTML")
     except Exception as exc:
         logger.exception("Erro ao gerenciar container Docker")
         await query.edit_message_text(
-            f"Erro ao executar {action}: <code>{html.escape(str(exc))}</code>",
+            f"❌ Erro ao executar {action}: <code>{html.escape(str(exc))}</code>",
             parse_mode="HTML",
         )
