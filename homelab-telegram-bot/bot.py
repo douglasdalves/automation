@@ -1,27 +1,23 @@
-import asyncio
 import html
-import json
 import logging
 import os
-from pathlib import Path
 
-from dotenv import load_dotenv
-from mcp import ClientSession
-from mcp.client.streamable_http import streamable_http_client
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes
 
-# Carregar configurações compartilhadas e o token separado.
-env_path = Path(__file__).parent.parent / ".env"
-load_dotenv(env_path)
-token_path = Path(__file__).parent.parent / ".env.token"
-load_dotenv(token_path, override=True)
-
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-MCP_URL = os.getenv("MCP_URL")
-TELEGRAM_ALLOWED_USER_ID = int(
-    os.getenv("TELEGRAM_ALLOWED_USER_ID", "0")
+import config
+from docker_handlers import (
+    manage_docker_callback,
+    restart_docker_command,
+    start_docker_command,
+    stop_docker_command,
 )
+from mcp_client import call_mcp_tool, is_authorized
+
+
+TELEGRAM_BOT_TOKEN = config.TELEGRAM_BOT_TOKEN
+MCP_URL = config.MCP_URL
+TELEGRAM_ALLOWED_USER_ID = config.TELEGRAM_ALLOWED_USER_ID
 
 
 logging.basicConfig(
@@ -31,34 +27,6 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-
-async def call_mcp_tool(tool_name: str, arguments: dict | None = None):
-    async with streamable_http_client(MCP_URL) as (read_stream, write_stream, _):
-        async with ClientSession(read_stream, write_stream) as session:
-            await session.initialize()
-
-            result = await session.call_tool(
-                tool_name,
-                arguments or {},
-            )
-
-            if result.isError:
-                raise RuntimeError(str(result))
-
-            if not result.content:
-                return None
-
-            text = result.content[0].text
-
-            return json.loads(text)
-
-#------ limitar uso a um usuário específico do Telegram ---#
-def is_authorized(update: Update) -> bool:
-    if not update.effective_user:
-        return False
-
-    return update.effective_user.id == TELEGRAM_ALLOWED_USER_ID
-#----------------------------------------------------------#
 
 def format_health(data: dict) -> str:
     cpu = data.get("cpu", {})
@@ -224,182 +192,6 @@ async def restart_callback(
         )
 
 
-async def restart_docker_command(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE,
-):
-    if not is_authorized(update):
-        await update.message.reply_text("⛔ Acesso não autorizado.")
-        return
-
-    try:
-        data = await call_mcp_tool("list_docker_containers")
-        if not data.get("success"):
-            error = html.escape(str(data.get("error", "Erro desconhecido")))
-            await update.message.reply_text(
-                f"❌ Erro ao listar containers:\n<code>{error}</code>",
-                parse_mode="HTML",
-            )
-            return
-
-        containers = data.get("containers", [])
-        if not containers:
-            await update.message.reply_text("Nenhum container ativo encontrado.")
-            return
-
-        keyboard = [
-            [
-                InlineKeyboardButton(
-                    container.get("name", container.get("id", "desconhecido")),
-                    callback_data=f"docker-restart:{container.get('id', '')}",
-                )
-            ]
-            for container in containers
-            if container.get("id")
-        ]
-        await update.message.reply_text(
-            "Qual container deseja reiniciar?",
-            reply_markup=InlineKeyboardMarkup(keyboard),
-        )
-    except Exception as exc:
-        logger.exception("Erro ao listar containers Docker")
-        await update.message.reply_text(
-            f"❌ Erro ao listar containers:\n<code>{html.escape(str(exc))}</code>",
-            parse_mode="HTML",
-        )
-
-
-async def restart_docker_callback(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE,
-):
-    query = update.callback_query
-    if not query:
-        return
-
-    if not is_authorized(update):
-        await query.answer("Acesso não autorizado.", show_alert=True)
-        return
-
-    await query.answer()
-    container_id = query.data.removeprefix("docker-restart:")
-    await query.edit_message_text(
-        f"🔄 Reiniciando container <code>{html.escape(container_id)}</code>...",
-        parse_mode="HTML",
-    )
-
-    try:
-        data = await call_mcp_tool(
-            "manage_docker_container",
-            {"container_id": container_id, "action": "restart"},
-        )
-        if data.get("success"):
-            message = f"✅ Container <code>{html.escape(container_id)}</code> reiniciado."
-        else:
-            error = html.escape(str(data.get("error", "Erro desconhecido")))
-            message = f"❌ Falha ao reiniciar o container:\n<code>{error}</code>"
-        await query.edit_message_text(message, parse_mode="HTML")
-    except Exception as exc:
-        logger.exception("Erro ao reiniciar container Docker")
-        await query.edit_message_text(
-            f"❌ Erro ao reiniciar o container:\n<code>{html.escape(str(exc))}</code>",
-            parse_mode="HTML",
-        )
-
-
-async def manage_docker_command(
-    update: Update,
-    action: str,
-):
-    if not is_authorized(update):
-        await update.message.reply_text("⛔ Acesso não autorizado.")
-        return
-
-    labels = {"start": "iniciar", "stop": "parar"}
-    try:
-        data = await call_mcp_tool("list_docker_containers", {"all_containers": True})
-        if not data.get("success"):
-            error = html.escape(str(data.get("error", "Erro desconhecido")))
-            await update.message.reply_text(
-                f"❌ Erro ao listar containers:\n<code>{error}</code>",
-                parse_mode="HTML",
-            )
-            return
-
-        containers = data.get("containers", [])
-        if not containers:
-            await update.message.reply_text("Nenhum container encontrado.")
-            return
-
-        keyboard = [
-            [
-                InlineKeyboardButton(
-                    container.get("name", container.get("id", "desconhecido")),
-                    callback_data=f"docker-{action}:{container.get('id', '')}",
-                )
-            ]
-            for container in containers
-            if container.get("id")
-        ]
-        await update.message.reply_text(
-            f"Qual container deseja {labels[action]}?",
-            reply_markup=InlineKeyboardMarkup(keyboard),
-        )
-    except Exception as exc:
-        logger.exception("Erro ao listar containers Docker")
-        await update.message.reply_text(
-            f"❌ Erro ao listar containers:\n<code>{html.escape(str(exc))}</code>",
-            parse_mode="HTML",
-        )
-
-
-async def start_docker_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await manage_docker_command(update, "start")
-
-
-async def stop_docker_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await manage_docker_command(update, "stop")
-
-
-async def manage_docker_callback(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE,
-):
-    query = update.callback_query
-    if not query:
-        return
-
-    if not is_authorized(update):
-        await query.answer("Acesso não autorizado.", show_alert=True)
-        return
-
-    action, container_id = query.data.removeprefix("docker-").split(":", 1)
-    labels = {"start": "iniciando", "stop": "parando"}
-    await query.answer()
-    await query.edit_message_text(
-        f"🔄 {labels[action].capitalize()} container <code>{html.escape(container_id)}</code>...",
-        parse_mode="HTML",
-    )
-
-    try:
-        data = await call_mcp_tool(
-            "manage_docker_container",
-            {"container_id": container_id, "action": action},
-        )
-        if data.get("success"):
-            message = f"✅ Container <code>{html.escape(container_id)}</code>: {action} concluído."
-        else:
-            error = html.escape(str(data.get("error", "Erro desconhecido")))
-            message = f"❌ Falha ao executar {action}:\n<code>{error}</code>"
-        await query.edit_message_text(message, parse_mode="HTML")
-    except Exception as exc:
-        logger.exception("Erro ao gerenciar container Docker")
-        await query.edit_message_text(
-            f"❌ Erro ao executar {action}:\n<code>{html.escape(str(exc))}</code>",
-            parse_mode="HTML",
-        )
-
-
 def main():
     if not TELEGRAM_BOT_TOKEN:
         raise RuntimeError(
@@ -432,10 +224,7 @@ def main():
         CallbackQueryHandler(restart_callback, pattern=r"^restart:")
     )
     application.add_handler(
-        CallbackQueryHandler(restart_docker_callback, pattern=r"^docker-restart:")
-    )
-    application.add_handler(
-        CallbackQueryHandler(manage_docker_callback, pattern=r"^docker-(start|stop):")
+        CallbackQueryHandler(manage_docker_callback, pattern=r"^docker-(restart|start|stop):")
     )
 
     logger.info("NotApHome iniciado")
