@@ -3,9 +3,10 @@ import logging
 import os
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes
+from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 
 import config
+from ai_client import answer_homelab_question
 from docker_handlers import (
     manage_docker_callback,
     restart_docker_command,
@@ -123,22 +124,41 @@ async def deploy_command(
         await update.message.reply_text("⛔ Acesso não autorizado.")
         return
 
-    await update.message.reply_text("🔄 Atualizando o repositório...")
+    await update.message.reply_text("🔄 Atualizando a aplicação...")
 
     try:
         data = await call_mcp_tool("deploy_homelab")
         if data.get("success"):
-            message = "✅ <b>Repositório atualizado</b>"
+            message = "✅ <b>Aplicação atualizada</b>"
         else:
             error = html.escape(str(data.get("error", "Erro desconhecido")))
-            message = f"❌ <b>Falha ao atualizar o repositório</b>\n<code>{error}</code>"
+            message = f"❌ <b>Falha ao atualizar a aplicação</b>\n<code>{error}</code>"
 
         await update.message.reply_text(message, parse_mode="HTML")
     except Exception as exc:
-        logger.exception("Erro ao atualizar o repositório")
+        logger.exception("Erro ao atualizar a aplicação")
         await update.message.reply_text(
-            f"❌ Erro ao atualizar o repositório:\n<code>{html.escape(str(exc))}</code>",
+            f"❌ Erro ao atualizar a aplicação:\n<code>{html.escape(str(exc))}</code>",
             parse_mode="HTML",
+        )
+
+
+async def natural_language_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+    if not is_authorized(update) or not update.message or not update.message.text:
+        return
+
+    try:
+        await update.message.chat.send_action("typing")
+        answer = await answer_homelab_question(update.message.text)
+        await update.message.reply_text(answer)
+    except Exception as exc:
+        logger.exception("Erro ao consultar a IA")
+        await update.message.reply_text(
+            "❌ Não foi possível consultar a IA. "
+            f"Verifique AI_API_URL, AI_MODEL e o serviço configurado. ({exc})"
         )
 
 
@@ -175,6 +195,9 @@ def main():
     )
     application.add_handler(
         CallbackQueryHandler(manage_docker_callback, pattern=r"^docker-(restart|start|stop):")
+    )
+    application.add_handler(
+        MessageHandler(filters.TEXT & ~filters.COMMAND, natural_language_command)
     )
 
     logger.info("NotApHome iniciado")

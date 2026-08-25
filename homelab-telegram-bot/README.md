@@ -16,6 +16,10 @@ Na raiz de `automation`, crie ou preencha `.env` com as configuracoes compartilh
 MCP_URL=http://127.0.0.1:5080/mcp
 TELEGRAM_ALLOWED_USER_ID=123456789
 DEPLOY_SERVICES=homelab-telegram-bot,homelab-mcp
+# Ollama local (alternativa: https://api.openai.com/v1)
+AI_API_URL=http://127.0.0.1:11434/v1
+AI_API_KEY=ollama
+AI_MODEL=llama3.2
 ```
 
 Crie `.env.token` dentro desta pasta com o token do bot:
@@ -55,6 +59,15 @@ python bot.py
 O `/deploy` executa o fluxo completo no MCP: faz `git pull --ff-only`, atualiza o sincronizador `app-config-sync`, recarrega o systemd, sincroniza os arquivos e reinicia os servicos definidos em `DEPLOY_SERVICES`. Se uma etapa falhar, o bot informa o erro retornado pelo MCP.
 
 Somente o usuario cujo ID esta em `TELEGRAM_ALLOWED_USER_ID` pode usar os comandos.
+Mensagens de texto sem comando sao enviadas para a IA, que pode consultar e operar o homelab pelas ferramentas MCP.
+
+Para usar Ollama localmente, instale um modelo e deixe o servico ativo:
+
+```bash
+ollama pull llama3.2
+```
+
+Para usar OpenAI, defina `AI_API_URL=https://api.openai.com/v1`, `AI_API_KEY` no `.env.token` e escolha o modelo em `AI_MODEL`.
 
 ## systemd
 

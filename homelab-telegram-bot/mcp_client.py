@@ -21,6 +21,14 @@ async def call_mcp_tool(tool_name: str, arguments: dict | None = None):
             return json.loads(result.content[0].text)
 
 
+async def list_mcp_tools():
+    async with streamable_http_client(config.MCP_URL) as (read_stream, write_stream, _):
+        async with ClientSession(read_stream, write_stream) as session:
+            await session.initialize()
+            result = await session.list_tools()
+            return result.tools
+
+
 def is_authorized(update: Update) -> bool:
     return bool(
         update.effective_user
