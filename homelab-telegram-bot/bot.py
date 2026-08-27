@@ -158,7 +158,7 @@ async def natural_language_command(
         logger.exception("Erro ao consultar a IA")
         await update.message.reply_text(
             "❌ Não foi possível consultar a IA. "
-            f"Verifique AI_API_URL, AI_MODEL e o serviço configurado. ({exc})"
+            f"Verifique AI_API_URL, AI_API_KEY, AI_MODEL e o provedor configurado. ({exc})"
         )
 
 

@@ -16,16 +16,16 @@ Na raiz de `automation`, crie ou preencha `.env` com as configuracoes compartilh
 MCP_URL=http://127.0.0.1:5080/mcp
 TELEGRAM_ALLOWED_USER_ID=123456789
 DEPLOY_SERVICES=homelab-telegram-bot,homelab-mcp
-# Ollama local (alternativa: https://api.openai.com/v1)
-AI_API_URL=http://127.0.0.1:11434/v1
-AI_API_KEY=ollama
-AI_MODEL=llama3.2
+# API compativel com OpenAI (OpenAI, Groq, OpenRouter etc.)
+AI_API_URL=https://api.openai.com/v1
+AI_MODEL=gpt-4o-mini
 ```
 
 Crie `.env.token` dentro desta pasta com o token do bot:
 
 ```env
 TELEGRAM_BOT_TOKEN=cole_o_token_do_bot_aqui
+AI_API_KEY=cole_a_chave_da_api_aqui
 ```
 
 O `.env.token` deve permanecer privado e ja e ignorado pelo Git.
@@ -59,15 +59,25 @@ python bot.py
 O `/deploy` executa o fluxo completo no MCP: faz `git pull --ff-only`, atualiza o sincronizador `app-config-sync`, recarrega o systemd, sincroniza os arquivos e reinicia os servicos definidos em `DEPLOY_SERVICES`. Se uma etapa falhar, o bot informa o erro retornado pelo MCP.
 
 Somente o usuario cujo ID esta em `TELEGRAM_ALLOWED_USER_ID` pode usar os comandos.
-Mensagens de texto sem comando sao enviadas para a IA, que pode consultar e operar o homelab pelas ferramentas MCP.
+Mensagens de texto sem comando sao enviadas para a API de IA configurada, que pode consultar e operar o homelab pelas ferramentas MCP.
 
-Para usar Ollama localmente, instale um modelo e deixe o servico ativo:
+Para usar um provedor compativel com a API da OpenAI, configure `AI_API_URL`, `AI_API_KEY` e `AI_MODEL`. Exemplos:
 
 ```bash
-ollama pull llama3.2
+# OpenAI
+AI_API_URL=https://api.openai.com/v1
+AI_MODEL=gpt-4o-mini
+
+# Groq
+AI_API_URL=https://api.groq.com/openai/v1
+AI_MODEL=llama-3.3-70b-versatile
+
+# OpenRouter
+AI_API_URL=https://openrouter.ai/api/v1
+AI_MODEL=openai/gpt-4o-mini
 ```
 
-Para usar OpenAI, defina `AI_API_URL=https://api.openai.com/v1`, `AI_API_KEY` no `.env.token` e escolha o modelo em `AI_MODEL`.
+O provedor precisa aceitar `POST /chat/completions` e tool calling. O MCP continua rodando localmente; somente o processamento da linguagem e a chave ficam no provedor externo.
 
 ## systemd
 
