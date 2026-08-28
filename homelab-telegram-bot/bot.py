@@ -6,7 +6,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 
 import config
-from ai_client import answer_homelab_question
+from ai_client import AIProviderError, answer_homelab_question
 from docker_handlers import (
     manage_docker_callback,
     restart_docker_command,
@@ -156,9 +156,20 @@ async def natural_language_command(
         await update.message.reply_text(answer)
     except Exception as exc:
         logger.exception("Erro ao consultar a IA")
+        if isinstance(exc, AIProviderError) and exc.status_code == 429:
+            message = (
+                "❌ A IA recusou a requisição por limite ou quota excedida. "
+                "Verifique créditos, faturamento e limites da conta no provedor "
+                f"configurado. Detalhe: {exc}"
+            )
+        else:
+            message = (
+                "❌ Não foi possível consultar a IA. "
+                "Verifique AI_API_URL, AI_API_KEY, AI_MODEL e o provedor configurado. "
+                f"({exc})"
+            )
         await update.message.reply_text(
-            "❌ Não foi possível consultar a IA. "
-            f"Verifique AI_API_URL, AI_API_KEY, AI_MODEL e o provedor configurado. ({exc})"
+            message
         )
 
 

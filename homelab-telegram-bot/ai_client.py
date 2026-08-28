@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import httpx
@@ -7,6 +8,14 @@ import config
 
 
 logger = logging.getLogger(__name__)
+
+
+class AIProviderError(RuntimeError):
+    """Erro retornado pelo provedor de IA, com uma mensagem segura para o bot."""
+
+    def __init__(self, status_code: int, detail: str):
+        super().__init__(detail)
+        self.status_code = status_code
 
 SYSTEM_PROMPT = """Voce e o assistente do homelab. Responda em portugues, de forma curta e objetiva.
 Use as ferramentas MCP quando a pergunta envolver o estado ou uma acao no homelab.
@@ -35,12 +44,32 @@ async def _chat(messages: list[dict], tools: list[dict]) -> dict:
         "tool_choice": "auto",
     }
     async with httpx.AsyncClient(timeout=90) as client:
-        response = await client.post(
-            f"{config.AI_API_URL.rstrip('/')}/chat/completions",
-            headers=headers,
-            json=payload,
-        )
-        response.raise_for_status()
+        for attempt in range(2):
+            response = await client.post(
+                f"{config.AI_API_URL.rstrip('/')}/chat/completions",
+                headers=headers,
+                json=payload,
+            )
+            if response.status_code != 429 or attempt:
+                break
+
+            retry_after = response.headers.get("Retry-After")
+            try:
+                delay = float(retry_after or "0")
+            except ValueError:
+                delay = 0
+            if not 0 < delay <= 10:
+                break
+            await asyncio.sleep(delay)
+
+        if response.is_error:
+            detail = response.text[:500]
+            try:
+                error = response.json().get("error", {})
+                detail = error.get("message") or detail
+            except ValueError:
+                pass
+            raise AIProviderError(response.status_code, detail)
         return response.json()
 
 

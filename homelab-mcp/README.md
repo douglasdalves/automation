@@ -13,13 +13,13 @@ Servidor MCP do homelab. Ele disponibiliza ferramentas de saude, Docker, deploy 
 Crie o arquivo `../.env` na raiz de `automation`:
 
 ```env
-MCP_NAME=Health Check
-MCP_HOST=0.0.0.0
-MCP_PORT=5080
-ENVIRONMENT=development
-DEPLOY_REPOSITORY_DIR=/home/dalves/automation
-DEPLOY_COMMAND_TIMEOUT=300
-DEPLOY_SERVICES=homelab-telegram-bot,homelab-mcp
+MCP_NAME=name
+MCP_HOST=host
+MCP_PORT=port
+ENVIRONMENT=ambiente
+DEPLOY_REPOSITORY_DIR=path
+DEPLOY_COMMAND_TIMEOUT=number
+DEPLOY_SERVICES=service_value
 ```
 
 O arquivo e carregado por `app/config.py` e pelo servico de deploy.

@@ -13,12 +13,12 @@ Bot Telegram para consultar a saude do homelab, executar deploy e reiniciar serv
 Na raiz de `automation`, crie ou preencha `.env` com as configuracoes compartilhadas:
 
 ```env
-MCP_URL=http://127.0.0.1:5080/mcp
-TELEGRAM_ALLOWED_USER_ID=123456789
-DEPLOY_SERVICES=homelab-telegram-bot,homelab-mcp
+MCP_URL=http-url
+TELEGRAM_ALLOWED_USER_ID=id-user
+DEPLOY_SERVICES=names-services
 # API compativel com OpenAI (OpenAI, Groq, OpenRouter etc.)
-AI_API_URL=https://api.openai.com/v1
-AI_MODEL=gpt-4o-mini
+AI_API_URL=https-url
+AI_MODEL=name-model-ia
 ```
 
 Crie `.env.token` dentro desta pasta com o token do bot:
@@ -64,17 +64,9 @@ Mensagens de texto sem comando sao enviadas para a API de IA configurada, que po
 Para usar um provedor compativel com a API da OpenAI, configure `AI_API_URL`, `AI_API_KEY` e `AI_MODEL`. Exemplos:
 
 ```bash
-# OpenAI
-AI_API_URL=https://api.openai.com/v1
-AI_MODEL=gpt-4o-mini
-
 # Groq
 AI_API_URL=https://api.groq.com/openai/v1
-AI_MODEL=llama-3.3-70b-versatile
-
-# OpenRouter
-AI_API_URL=https://openrouter.ai/api/v1
-AI_MODEL=openai/gpt-4o-mini
+AI_MODEL=openai/gpt-oss-120b
 ```
 
 O provedor precisa aceitar `POST /chat/completions` e tool calling. O MCP continua rodando localmente; somente o processamento da linguagem e a chave ficam no provedor externo.
