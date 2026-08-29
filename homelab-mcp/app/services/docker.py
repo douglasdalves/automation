@@ -6,7 +6,12 @@ from typing import Any, Dict, List
 
 
 def _get_compose_directory() -> Path:
-    return Path(__file__).resolve().parents[2] / "dc-local"
+    base_dir = Path(__file__).resolve()
+    for parent in [*base_dir.parents, base_dir]:
+        candidate = parent / "dc-local"
+        if candidate.exists():
+            return candidate
+    return base_dir.parents[2] / "dc-local"
 
 
 def _is_valid_compose_file_name(file_name: str) -> bool:
