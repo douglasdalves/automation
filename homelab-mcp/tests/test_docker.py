@@ -1,6 +1,12 @@
 from subprocess import CompletedProcess
 
-from app.services.docker import list_containers, manage_container, inspect_container
+from app.services.docker import (
+    inspect_container,
+    list_compose_files,
+    list_containers,
+    manage_container,
+    start_compose_file,
+)
 
 
 def test_list_containers_parses_docker_ps_output(monkeypatch):
@@ -88,3 +94,49 @@ def test_list_containers_parses_space_separated_output(monkeypatch):
     assert result["success"] is True
     assert result["containers"][0]["id"] == "abc123"
     assert result["containers"][0]["name"] == "web"
+
+
+def test_list_compose_files_lists_only_allowed_yaml_files(monkeypatch):
+    allowed_dir = "/tmp/automation/dc-local"
+    monkeypatch.setattr("app.services.docker.Path", lambda *parts: __import__("pathlib").Path(*parts))
+
+    def fake_iterdir(path):
+        assert str(path) == allowed_dir
+        return [
+            __import__("pathlib").Path("/tmp/automation/dc-local/dc-compose-filebrowser.yaml"),
+            __import__("pathlib").Path("/tmp/automation/dc-local/notes.txt"),
+            __import__("pathlib").Path("/tmp/automation/dc-local/.hidden.yml"),
+            __import__("pathlib").Path("/tmp/automation/dc-local/other.yaml.bak"),
+        ]
+
+    monkeypatch.setattr("app.services.docker._get_compose_directory", lambda: __import__("pathlib").Path(allowed_dir))
+    monkeypatch.setattr("pathlib.Path.iterdir", fake_iterdir)
+
+    result = list_compose_files()
+
+    assert result["success"] is True
+    assert result["files"] == ["dc-compose-filebrowser.yaml"]
+
+
+def test_start_compose_file_rejects_invalid_file_name(monkeypatch):
+    result = start_compose_file("../etc/passwd")
+
+    assert result["success"] is False
+    assert "inválido" in result["error"].lower()
+
+
+def test_start_compose_file_runs_docker_compose(monkeypatch):
+    def fake_run(cmd, capture_output=True, text=True, check=False, cwd=None):
+        assert cmd[:3] == ["docker", "compose", "-f"]
+        assert cmd[3].endswith("dc-compose-filebrowser.yaml")
+        assert cmd[4:] == ["up", "-d"]
+        assert cwd == "/tmp/automation/dc-local"
+        return CompletedProcess(args=cmd, returncode=0, stdout="done", stderr="")
+
+    monkeypatch.setattr("app.services.docker._get_compose_directory", lambda: __import__("pathlib").Path("/tmp/automation/dc-local"))
+    monkeypatch.setattr("app.services.docker.subprocess.run", fake_run)
+
+    result = start_compose_file("dc-compose-filebrowser.yaml")
+
+    assert result["success"] is True
+    assert result["file_name"] == "dc-compose-filebrowser.yaml"

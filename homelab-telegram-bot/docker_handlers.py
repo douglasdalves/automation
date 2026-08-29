@@ -66,6 +66,79 @@ async def show_docker_containers(update: Update, action: str):
         )
 
 
+async def create_compose_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_authorized(update):
+        await update.message.reply_text("⛔ Acesso não autorizado.")
+        return
+
+    try:
+        data = await call_mcp_tool("list_compose_files_in_dc_local")
+        if not data.get("success"):
+            await update.message.reply_text(
+                f"❌ Erro ao listar arquivos do compose: <code>{html.escape(str(data.get('error', 'Erro desconhecido')))}</code>",
+                parse_mode="HTML",
+            )
+            return
+
+        files = data.get("files", [])
+        if not files:
+            await update.message.reply_text("❌ Nenhum arquivo YAML encontrado em dc-local.")
+            return
+
+        keyboard = [
+            [InlineKeyboardButton(file_name, callback_data=f"compose:start:{file_name}")]
+            for file_name in files
+        ]
+        await update.message.reply_text(
+            "Qual arquivo do diretório dc-local deseja subir?",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+        )
+    except Exception as exc:
+        logger.exception("Erro ao listar arquivos compose")
+        await update.message.reply_text(
+            f"❌ Erro ao listar arquivos compose: <code>{html.escape(str(exc))}</code>",
+            parse_mode="HTML",
+        )
+
+
+async def create_compose_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    if not query:
+        return
+    if not is_authorized(update):
+        await query.answer("Acesso nao autorizado.", show_alert=True)
+        return
+
+    _, action, file_name = query.data.split(":", 2)
+    if action != "start":
+        await query.answer("Ação inválida.", show_alert=True)
+        return
+
+    await query.answer()
+    await query.edit_message_text(
+        f"🚀 Iniciando compose <code>{html.escape(file_name)}</code>...",
+        parse_mode="HTML",
+    )
+
+    try:
+        data = await call_mcp_tool(
+            "start_compose_file_in_dc_local",
+            {"file_name": file_name},
+        )
+        if data.get("success"):
+            message = f"✅ Compose <code>{html.escape(file_name)}</code> iniciado com sucesso."
+        else:
+            error = html.escape(str(data.get("error", "Erro desconhecido")))
+            message = f"❌ Falha ao iniciar compose <code>{html.escape(file_name)}</code>:\n<code>{error}</code>"
+        await query.edit_message_text(message, parse_mode="HTML")
+    except Exception as exc:
+        logger.exception("Erro ao iniciar compose")
+        await query.edit_message_text(
+            f"❌ Erro ao iniciar compose: <code>{html.escape(str(exc))}</code>",
+            parse_mode="HTML",
+        )
+
+
 async def manage_docker_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     if not query:

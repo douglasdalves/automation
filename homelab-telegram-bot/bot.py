@@ -8,6 +8,8 @@ from telegram.ext import Application, CallbackQueryHandler, CommandHandler, Cont
 import config
 from ai_client import AIProviderError, answer_homelab_question
 from docker_handlers import (
+    create_compose_callback,
+    create_compose_command,
     manage_docker_callback,
     restart_docker_command,
     start_docker_command,
@@ -202,10 +204,16 @@ def main():
         CommandHandler("stop_docker", stop_docker_command)
     )
     application.add_handler(
+        CommandHandler("create_docker", create_compose_command)
+    )
+    application.add_handler(
         CallbackQueryHandler(restart_callback, pattern=r"^restart:")
     )
     application.add_handler(
         CallbackQueryHandler(manage_docker_callback, pattern=r"^docker-(restart|start|stop):")
+    )
+    application.add_handler(
+        CallbackQueryHandler(create_compose_callback, pattern=r"^compose:start:")
     )
     application.add_handler(
         MessageHandler(filters.TEXT & ~filters.COMMAND, natural_language_command)

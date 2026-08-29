@@ -1,0 +1,13 @@
+# Copy to /etc/homelab-cleanup.conf and edit for unattended cron runs.
+
+# The Linux account that owns /home/<user>/.vscode-server.
+VSCODE_USER="dalves"
+
+# Trigger a warning at this root-filesystem usage percentage.
+ROOT_USAGE_THRESHOLD=70
+
+# Optional integration point for an existing notification bot.
+# This command is run only by --apply when the threshold is reached.
+# It receives ALERT_MESSAGE, ROOT_USAGE_PERCENT, ROOT_USAGE_THRESHOLD, and ROOT_MOUNT
+# as environment variables. Keep secrets in the bot's own protected config, not here.
+# ALERT_COMMAND='/home/dalves/automation/send-telegram-alert.sh "$ALERT_MESSAGE"'

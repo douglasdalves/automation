@@ -1,10 +1,64 @@
 import json
 import shutil
 import subprocess
+from pathlib import Path
 from typing import Any, Dict, List
 
 
-def _run_docker_command(args: List[str]) -> Dict[str, Any]:
+def _get_compose_directory() -> Path:
+    return Path(__file__).resolve().parents[2] / "dc-local"
+
+
+def _is_valid_compose_file_name(file_name: str) -> bool:
+    if not file_name or file_name.strip() != file_name:
+        return False
+    if file_name.startswith("."):
+        return False
+    if "/" in file_name or "\\" in file_name:
+        return False
+    if not file_name.lower().endswith(".yaml") and not file_name.lower().endswith(".yml"):
+        return False
+    return True
+
+
+def list_compose_files() -> Dict[str, Any]:
+    compose_dir = _get_compose_directory()
+    if not compose_dir.exists():
+        return {"success": False, "error": f"Diretório de compose não encontrado: {compose_dir}"}
+
+    files = []
+    for path in sorted(compose_dir.iterdir(), key=lambda item: item.name.lower()):
+        if path.is_file() and path.name.lower().endswith((".yaml", ".yml")):
+            files.append(path.name)
+
+    return {"success": True, "files": files}
+
+
+def start_compose_file(file_name: str) -> Dict[str, Any]:
+    if not _is_valid_compose_file_name(file_name):
+        return {
+            "success": False,
+            "error": "Nome de arquivo inválido. Use apenas arquivos .yaml/.yml dentro da pasta dc-local.",
+        }
+
+    compose_dir = _get_compose_directory()
+    compose_path = compose_dir / file_name
+    if not compose_path.is_file():
+        return {"success": False, "error": f"Arquivo não encontrado: {file_name}"}
+
+    result = _run_docker_command(["compose", "-f", str(compose_path), "up", "-d"], cwd=str(compose_dir))
+    if not result["success"]:
+        return result
+
+    return {
+        "success": True,
+        "file_name": file_name,
+        "path": str(compose_path),
+        "message": f"Compose '{file_name}' iniciado com sucesso.",
+    }
+
+
+def _run_docker_command(args: List[str], cwd: str | None = None) -> Dict[str, Any]:
     command = ["docker", *args]
     try:
         result = subprocess.run(
@@ -12,6 +66,7 @@ def _run_docker_command(args: List[str]) -> Dict[str, Any]:
             capture_output=True,
             text=True,
             check=False,
+            cwd=cwd,
         )
     except FileNotFoundError as exc:
         return {
@@ -46,6 +101,7 @@ def _run_docker_command(args: List[str]) -> Dict[str, Any]:
         capture_output=True,
         text=True,
         check=False,
+        cwd=cwd,
     )
     if elevated_result.returncode == 0:
         return {

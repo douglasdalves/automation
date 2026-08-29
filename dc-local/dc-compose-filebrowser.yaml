@@ -1,0 +1,131 @@
+name: big-bear-filebrowser
+services:
+  big-bear-filebrowser:
+    cpu_shares: 90
+    command: []
+    container_name: dc-filebrowser
+    mem_limit: 2048m
+    deploy:
+      resources:
+        limits:
+          memory: 2048M
+    environment:
+      - PGID=0
+      - PUID=0
+    hostname: dc-filebrowser
+    image: filebrowser/filebrowser:v2.63.23-s6@sha256:ee4ac79e52966a5f6247f99c7d667c1debfb277a3a61ab829f505aa8f4c74b21
+    labels:
+      icon: https://cdn.jsdelivr.net/gh/selfhst/icons/png/file-browser.png
+    ports:
+      - mode: ingress
+        target: 80
+        published: "10180"
+        protocol: tcp
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /DATA/AppData
+        target: /srv/app-data
+        bind:
+          create_host_path: true
+      - type: bind
+        source: /DATA/Documents
+        target: /srv/documents
+        bind:
+          create_host_path: true
+      - type: bind
+        source: /DATA/Downloads
+        target: /srv/downloads
+        bind:
+          create_host_path: true
+      - type: bind
+        source: /DATA/Gallery
+        target: /srv/gallery
+        bind:
+          create_host_path: true
+      - type: bind
+        source: /DATA/media
+        target: /srv/media
+        bind:
+          create_host_path: true
+      - type: bind
+        source: /DATA/AppData/big-bear-filebrowser/data/db
+        target: /database
+        bind:
+          create_host_path: true
+      - type: bind
+        source: /DATA/AppData/big-bear-filebrowser/data/config
+        target: /config
+        bind:
+          create_host_path: true
+    x-casaos:
+      envs:
+        - container: PUID
+          description:
+            en_US: "Container Variable: PUID"
+        - container: PGID
+          description:
+            en_US: "Container Variable: PGID"
+      ports:
+        - container: "80"
+          description:
+            en_US: "Container Port: 80"
+      volumes:
+        - container: /srv/app-data
+          description:
+            en_US: "Container Path: /srv/app-data"
+        - container: /srv/documents
+          description:
+            en_US: "Container Path: /srv/documents"
+        - container: /srv/downloads
+          description:
+            en_US: "Container Path: /srv/downloads"
+        - container: /srv/gallery
+          description:
+            en_US: "Container Path: /srv/gallery"
+        - container: /srv/media
+          description:
+            en_US: "Container Path: /srv/media"
+        - container: /database
+          description:
+            en_US: "Container Path: /database"
+        - container: /config
+          description:
+            en_US: "Container Path: /config"
+    devices: []
+    cap_add: []
+    networks:
+      - default
+    privileged: false
+networks:
+  default:
+    name: big-bear-filebrowser_default
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  author: BigBearTechWorld
+  category: Others
+  description:
+    en_US: Reliable and Performant File Management Desktop Sync and File Sharing Tool.
+  developer: filebrowser
+  hostname: file.aphome201.local
+  icon: https://cdn.jsdelivr.net/gh/selfhst/icons/png/file-browser.png
+  id: com.bigbeartechworld.filebrowser
+  index: /
+  is_uncontrolled: false
+  main: big-bear-filebrowser
+  port_map: "10180"
+  scheme: http
+  store_app_id: big-bear-filebrowser
+  tagline:
+    en_US: Access your homeserver files from your browser
+  thumbnail: ""
+  tips:
+    before_install:
+      en_US: >
+        Read this before installing:
+        https://community.bigbeartechworld.com/t/added-filebrowser-to-bigbearcasaos/1934#p-3590-documentation-4
+  title:
+    custom: ""
+    en_US: Filebrowser
