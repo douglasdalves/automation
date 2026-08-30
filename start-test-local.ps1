@@ -1,0 +1,1 @@
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tests\setup-test-env.ps1 -RunTests
