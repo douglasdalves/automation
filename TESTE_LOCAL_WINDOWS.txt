@@ -1,0 +1,95 @@
+PLANO DE TESTE LOCAL NO WINDOWS
+
+Objetivo:
+Validar a lógica do projeto no Windows antes de fazer deploy no servidor Raspberry Pi.
+
+1. Separar producao e testes
+- Manter o ambiente de produção com os serviços que rodam no servidor.
+- Centralizar os testes em uma pasta ou branch separada, por exemplo:
+  - tests/
+  - scripts-local-validation/
+  - docs/
+- No servidor, manter apenas a parte de execução real.
+
+2. Estrutura recomendada
+- homelab-mcp/
+- homelab-telegram-bot/
+- dc-local/
+- configs-apps/
+- raspberry-scripts/
+- tests/
+
+3. Fluxo de validacao local
+3.1 Testes unitarios Python
+- Rodar pytest em arquivos focados de MCP e bot.
+- Exemplo:
+  cd c:\usebash\automation\homelab-mcp
+  python -m pytest tests/test_docker.py -q
+
+- Cobrir:
+  - validacao de nomes de arquivo YAML
+  - lista de compose em dc-local
+  - rejeicao de path invalidos
+  - execucao correta do docker compose -f ... up -d
+  - erros de Docker e permissao
+
+3.2 Simulacao do MCP
+- Rodar o servidor MCP localmente no Windows.
+- Chamar as ferramentas mockadas ou via script de teste.
+- Validar o retorno JSON esperado.
+
+3.3 Simulacao do bot
+- Validar a montagem da mensagem do Telegram.
+- Validar callbacks para create_docker.
+- Validar bloqueio de acesso para usuario nao autorizado.
+- Validar mensagem de erro ao falhar o compose.
+
+3.4 Simulacao sem Docker real
+- Usar mocks em Python para substituir subprocess.run.
+- Simular stdout/stderr do Docker para testar:
+  - sucesso
+  - permission denied
+  - docker: not found
+  - arquivo inexistente
+
+4. Regras de seguranca
+- Validar qualquer nome de arquivo antes de executar docker compose.
+- Aceitar apenas arquivos .yaml/.yml dentro da pasta dc-local.
+- Nunca aceitar path com ../ ou com barra invertida.
+- Nunca rodar compose fora do diretorio autorizado.
+
+5. Como evitar baixar testes no servidor
+Existem 3 opcoes praticas:
+
+Opcao A - Branch separada
+- main/prod: apenas codigo de producao
+- dev: com testes e validacoes
+- No servidor: git checkout main
+
+Opcao B - Sparse checkout
+- Usar git sparse-checkout para baixar somente as pastas de producao.
+- Exemplo:
+  git sparse-checkout init --cone
+  git sparse-checkout set homelab-mcp homelab-telegram-bot dc-local configs-apps raspberry-scripts
+
+Opcao C - Repositorio separado
+- Repositorio de producao para o servidor
+- Repositorio de teste para desenvolvimento local
+
+6. Recomendacao final
+O melhor para o seu caso:
+- manter production branch com o ambiente que roda no servidor
+- manter dev com testes e validacoes locais
+- usar pytest localmente no Windows
+- fazer pull no servidor somente da branch de producao
+
+7. Resultado esperado
+- logica validada antes do deploy real
+- menor risco ao subir no Raspberry Pi
+- menos chance de quebrar o ambiente em producao
+- processo de teste centralizado e reutilizavel
+
+8. Proximo passo
+- mover testes para uma pasta exclusiva
+- decidir branch de producao vs dev
+- preparar um comando de validacao local para rodar antes do pull real
