@@ -22,11 +22,11 @@ Este repositório organiza a automação do homelab com foco em Raspberry Pi, Do
 - Manter a lógica de rede/infra em `homelab-mcp` e a lógica de interface em `homelab-telegram-bot`.
 - Usar funções pequenas e bem nomeadas.
 - Preferir retorno explícito de sucesso/erro em dicionários JSON.
-- Tests focados devem cobrir comportamento real de Docker, paths e validação.
+- Não rodar comandos de sistema diretamente no bot, sempre passar pelo MCP.
+- Não realizar ou criar testes na branch develop, apenas em branches de feature ou hotfix.
 - Documentar mudanças relevantes em `CHANGELOG.md`.
 
 ## Comandos esperados
-- Testes Python: `pytest` em diretórios específicos, preferencialmente em módulos focados.
 - Compose local: `docker compose -f <arquivo>.yaml up -d` apenas dentro de `dc-local`.
 - Deploy do homelab: via ferramenta MCP e não via execução manual improvisada.
 
@@ -46,8 +46,7 @@ A IA deve operar como assistente do homelab, não como agente genérico para qua
 ## Workflow recomendado
 1. Entender o problema e a área afetada.
 2. Ajustar a parte correta: MCP, bot, Docker, scripts ou documentação.
-3. Validar com testes focados e, quando for o caso, com comandos reais de ambiente.
-4. Atualizar documentação e changelog quando houver mudança funcional.
+3. Atualizar documentação e changelog quando houver mudança funcional.
 
 ## Observação final
 O projeto é um conjunto de automação local e deve continuar sendo simples, controlado e fácil de manter por Git.

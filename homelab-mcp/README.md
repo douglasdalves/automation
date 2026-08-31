@@ -105,10 +105,4 @@ sudo visudo -f /etc/sudoers.d/homelab-deploy
 
 Inclua os comandos necessarios para `mkdir`, `cp`, `chmod` e `systemctl`, sempre usando caminhos absolutos e somente os servicos permitidos.
 
-## Testes
 
-```bash
-cd /home/dalves/automation/homelab-mcp
-source .venv/bin/activate
-pytest -q
-```

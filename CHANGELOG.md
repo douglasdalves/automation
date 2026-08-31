@@ -17,6 +17,9 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 - Melhor organização da documentação e arquitetura do homelab
 - Ajuste de memória do compose do Filebrowser para uso mais estável em Raspberry Pi 4
 
+### Removido
+- Exclusão das pastas de testes e dos artefatos de cache do projeto, sem impacto na execução principal do homelab
+
 ### Corrigido
 - Ajustes de segurança na execução de compose para aceitar somente arquivos válidos dentro da pasta permitida
 - Correção do caminho de resolução do diretório `dc-local`, evitando erro ao procurar o compose fora da pasta correta do projeto
