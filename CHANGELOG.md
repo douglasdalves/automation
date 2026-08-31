@@ -12,6 +12,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 - Comando Telegram `/create_docker` para iniciar um compose selecionado
 - Ferramentas MCP para listar e iniciar compose locais
 - Validação de nomes de arquivos YAML para evitar uso indevido de caminhos
+- Comando Telegram `/options` para listar rapidamente todas as ações disponíveis no bot
 
 ### Ajustado
 - Melhor organização da documentação e arquitetura do homelab

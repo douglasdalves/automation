@@ -43,6 +43,7 @@ O bot em [homelab-telegram-bot](homelab-telegram-bot) conecta com o MCP via HTTP
 - `/start_docker`
 - `/stop_docker`
 - `/create_docker`
+- `/options` — lista todas as opções disponíveis no bot com descrição breve
 
 O arquivo principal é [homelab-telegram-bot/bot.py](homelab-telegram-bot/bot.py), e a lógica de ferramentas do MCP fica em [homelab-telegram-bot/mcp_client.py](homelab-telegram-bot/mcp_client.py).
 

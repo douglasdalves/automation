@@ -35,6 +35,17 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+BOT_COMMANDS = {
+    "status": "status do sistema",
+    "deploy": "deploy da aplicação",
+    "restart_service": "reinicia serviço do homelab",
+    "restart_docker": "reinicia container Docker",
+    "start_docker": "inicia container Docker",
+    "stop_docker": "para container Docker",
+    "create_docker": "cria container via compose",
+    "options": "lista todos os comandos",
+}
+
 
 def format_health(data: dict) -> str:
     cpu = data.get("cpu", {})
@@ -145,6 +156,24 @@ async def deploy_command(
         )
 
 
+async def options_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+    if not is_authorized(update):
+        await update.message.reply_text("⛔ Acesso não autorizado.")
+        return
+
+    commands = "\n".join(
+        f"• /{command} — {description}"
+        for command, description in BOT_COMMANDS.items()
+    )
+    await update.message.reply_text(
+        "<b>Opções disponíveis</b>\n\n" + commands,
+        parse_mode="HTML",
+    )
+
+
 async def natural_language_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -185,27 +214,25 @@ def main():
         TELEGRAM_BOT_TOKEN
     ).build()
 
-    application.add_handler(
-        CommandHandler("status", status_command)
-    )
-    application.add_handler(
-        CommandHandler("deploy", deploy_command)
-    )
-    application.add_handler(
-        CommandHandler("restart_service", restart_command)
-    )
-    application.add_handler(
-        CommandHandler("restart_docker", restart_docker_command)
-    )
-    application.add_handler(
-        CommandHandler("start_docker", start_docker_command)
-    )
-    application.add_handler(
-        CommandHandler("stop_docker", stop_docker_command)
-    )
-    application.add_handler(
-        CommandHandler("create_docker", create_compose_command)
-    )
+    for command_name in BOT_COMMANDS:
+        if command_name == "options":
+            application.add_handler(CommandHandler("options", options_command))
+            continue
+        if command_name == "status":
+            application.add_handler(CommandHandler("status", status_command))
+        elif command_name == "deploy":
+            application.add_handler(CommandHandler("deploy", deploy_command))
+        elif command_name == "restart_service":
+            application.add_handler(CommandHandler("restart_service", restart_command))
+        elif command_name == "restart_docker":
+            application.add_handler(CommandHandler("restart_docker", restart_docker_command))
+        elif command_name == "start_docker":
+            application.add_handler(CommandHandler("start_docker", start_docker_command))
+        elif command_name == "stop_docker":
+            application.add_handler(CommandHandler("stop_docker", stop_docker_command))
+        elif command_name == "create_docker":
+            application.add_handler(CommandHandler("create_docker", create_compose_command))
+
     application.add_handler(
         CallbackQueryHandler(restart_callback, pattern=r"^restart:")
     )

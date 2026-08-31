@@ -24,7 +24,7 @@ Este repositório organiza a automação do homelab com foco em Raspberry Pi, Do
 - Preferir retorno explícito de sucesso/erro em dicionários JSON.
 - Não rodar comandos de sistema diretamente no bot, sempre passar pelo MCP.
 - Não realizar ou criar testes na branch develop, apenas em branches de feature ou hotfix.
-- Documentar mudanças relevantes em `CHANGELOG.md`.
+- Documentar mudanças em `CHANGELOG.md`.
 
 ## Comandos esperados
 - Compose local: `docker compose -f <arquivo>.yaml up -d` apenas dentro de `dc-local`.
@@ -46,7 +46,7 @@ A IA deve operar como assistente do homelab, não como agente genérico para qua
 ## Workflow recomendado
 1. Entender o problema e a área afetada.
 2. Ajustar a parte correta: MCP, bot, Docker, scripts ou documentação.
-3. Atualizar documentação e changelog quando houver mudança funcional.
+3. Atualizar readme e changelog quando houver mudança ou nova funcionalidade.
 
 ## Observação final
 O projeto é um conjunto de automação local e deve continuar sendo simples, controlado e fácil de manter por Git.

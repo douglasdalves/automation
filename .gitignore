@@ -7,3 +7,6 @@ dc-local/beszel_agent_data
 homelab-mcp/app/services/__pycache__
 homelab-mcp/tests/__pycache__
 homelab-mcp/app/tools/__pycache__
+*.pyo
+.pytest_cache/
+.mypy_cache/
