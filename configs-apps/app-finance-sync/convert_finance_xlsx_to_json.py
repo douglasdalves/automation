@@ -18,6 +18,7 @@ import os
 import re
 import shutil
 import tempfile
+import unicodedata
 from pathlib import Path
 from typing import Any, Iterable
 from urllib.request import Request, urlopen
@@ -58,15 +59,38 @@ def parse_decimal(value: Any) -> float:
 
 
 def normalize_key(value: Any) -> str:
-    return str(value or "").strip().lower().replace(" ", "_")
+    text = str(value or "").strip()
+    text = unicodedata.normalize("NFKD", text)
+    text = text.encode("ascii", "ignore").decode("ascii")
+    text = text.lower()
+    text = re.sub(r"[^a-z0-9]+", "_", text)
+    return text.strip("_")
+
+
+def header_aliases() -> dict[str, set[str]]:
+    return {
+        "mes": {"mes", "meses", "mês"},
+        "receita": {"receita", "receitas"},
+        "contas_mensais": {"contas_mensais", "contas_fixas", "contasfixas", "contas_fixas", "fixas"},
+        "extras": {"extras", "extra"},
+        "despesas": {"despesas", "despesa", "gastos"},
+        "saldo": {"saldo", "saldo_geral", "saldogerald"},
+        "reserva": {"reserva", "reservas"},
+        "investimentos": {"investimentos", "investimento"},
+        "item": {"item", "categoria", "classe", "nome"},
+        "total": {"total", "valor_total", "valor", "valor_total_mensal"},
+        "valor": {"valor", "total", "total_mensal", "valor_total"},
+    }
 
 
 def header_index(headers: Iterable[Any], desired: Iterable[str]) -> dict[str, int]:
     normalized = [normalize_key(h) for h in headers]
+    aliases = header_aliases()
     result: dict[str, int] = {}
     for target in desired:
+        accepted = {normalize_key(v) for v in aliases.get(target, {target})} | {target}
         for idx, header in enumerate(normalized):
-            if header == target:
+            if header in accepted:
                 result[target] = idx
                 break
     return result
@@ -78,9 +102,9 @@ def first_sheet_with_header(workbook, candidates: list[str]):
         if not rows:
             continue
         headers = [normalize_key(v) for v in rows[0]]
-        for candidate in candidates:
-            if candidate in headers:
-                return ws
+        normalized_candidates = {normalize_key(c) for c in candidates}
+        if any(c in headers for c in normalized_candidates):
+            return ws
     return None
 
 
