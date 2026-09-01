@@ -1,0 +1,32 @@
+{
+  "labels": ["Dez/25", "Jan/26", "Fev/26", "Mar/26", "Abr/26", "Mai/26", "Jun/26", "Jul/26", "Ago/26", "Set/26"],
+  "months": [
+    {"label": "Dez/25", "receita": 8659.47, "contas_mensais": 6504.62, "extras": 119.56, "despesas": 6624.18, "saldo": 14673.91, "reserva": 4255.78, "investimentos": 2993.95},
+    {"label": "Jan/26", "receita": 12426.17, "contas_mensais": 4935.34, "extras": 829, "despesas": 5764.34, "saldo": 17780.16, "reserva": 8308.72, "investimentos": 2907.1},
+    {"label": "Fev/26", "receita": 6563.31, "contas_mensais": 7775.88, "extras": 169.2, "despesas": 7945.08, "saldo": 16570.1, "reserva": 5219.16, "investimentos": 2405.86},
+    {"label": "Mar/26", "receita": 6641.61, "contas_mensais": 6416.54, "extras": 0, "despesas": 6416.54, "saldo": 13350.77, "reserva": 3427.98, "investimentos": 2706.25},
+    {"label": "Abr/26", "receita": 6519.03, "contas_mensais": 6339.91, "extras": 660, "despesas": 6999.91, "saldo": 10956.94, "reserva": 1340.08, "investimentos": 1816.95},
+    {"label": "Mai/26", "receita": 8859.81, "contas_mensais": 5824.89, "extras": 315.25, "despesas": 6140.14, "saldo": 10999.89, "reserva": 2283.5, "investimentos": 1776.25},
+    {"label": "Jun/26", "receita": 9782.45, "contas_mensais": 4483.91, "extras": 130, "despesas": 4613.91, "saldo": 10199.84, "reserva": 2632.34, "investimentos": 2153.59},
+    {"label": "Jul/26", "receita": 6761.72, "contas_mensais": 5021.09, "extras": 3731.33, "despesas": 8752.42, "saldo": 10440.26, "reserva": -1511.51, "investimentos": 2399.35},
+    {"label": "Ago/26", "receita": 6480.44, "contas_mensais": 3517.53, "extras": 0, "despesas": 3517.53, "saldo": 7828.56, "reserva": 976.56, "investimentos": 2321.47},
+    {"label": "Set/26", "receita": 0, "contas_mensais": 3200.1, "extras": 0, "despesas": 3200.1, "saldo": 1846.16, "reserva": -2153.94, "investimentos": 0}
+  ],
+  "categorias": [
+    {"item": "Fatura nu", "total": 16915.06},
+    {"item": "Dollar trip", "total": 11425.0},
+    {"item": "Acerto AP", "total": 9536.91},
+    {"item": "Fatura btg", "total": 9097.91},
+    {"item": "Inglês", "total": 2400.0}
+  ],
+  "investimentos_recentes": {
+    "mes": "Ago/26",
+    "itens": [
+      {"item": "cripto", "valor": 30},
+      {"item": "Invest ações", "valor": 663.73},
+      {"item": "Dollar", "valor": 920},
+      {"item": "tesouro", "valor": 207.74},
+      {"item": "Reservas", "valor": 500}
+    ]
+  }
+}
