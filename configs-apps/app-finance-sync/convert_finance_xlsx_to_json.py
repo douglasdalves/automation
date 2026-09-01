@@ -108,115 +108,214 @@ def first_sheet_with_header(workbook, candidates: list[str]):
     return None
 
 
+def normalize_month_label(sheet_name: str, year_hint: int | None = None) -> str:
+    text = str(sheet_name or "").strip()
+    if not text:
+        return text
+
+    normalized = normalize_key(text)
+    month_names = {
+        "janeiro": 1, "jan": 1, "january": 1,
+        "fevereiro": 2, "fev": 2, "feb": 2, "february": 2,
+        "marco": 3, "mar": 3, "march": 3,
+        "abril": 4, "apr": 4, "april": 4,
+        "maio": 5, "may": 5,
+        "junho": 6, "jun": 6, "june": 6,
+        "julho": 7, "jul": 7, "july": 7,
+        "agosto": 8, "ago": 8, "aug": 8, "august": 8,
+        "setembro": 9, "set": 9, "sep": 9, "september": 9,
+        "outubro": 10, "out": 10, "oct": 10, "october": 10,
+        "novembro": 11, "nov": 11, "november": 11,
+        "dezembro": 12, "dez": 12, "dec": 12, "december": 12,
+    }
+
+    month_number = None
+    for key, value in month_names.items():
+        if key in normalized:
+            month_number = value
+            break
+
+    if month_number is None:
+        return text
+
+    match = re.search(r"(19|20)\d{2}|\b(\d{2})\b", text)
+    if match:
+        year_raw = match.group(1) or match.group(2)
+        year = int(f"20{year_raw}") if len(year_raw) == 2 else int(year_raw)
+    elif year_hint is not None:
+        year = year_hint if month_number != 12 else year_hint - 1
+    else:
+        year = 2025
+
+    month_abbr = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"][month_number - 1]
+    return f"{month_abbr}/{str(year)[-2:]}"
+
+
+def _infer_year_hint(workbook) -> int | None:
+    years = []
+    for ws in workbook.worksheets:
+        match = re.search(r"(19|20)\d{2}|\b(\d{2})\b", ws.title)
+        if not match:
+            continue
+        year_raw = match.group(1) or match.group(2)
+        if len(year_raw) == 2:
+            years.append(2000 + int(year_raw))
+        else:
+            years.append(int(year_raw))
+    return max(years) if years else None
+
+
+def _sum_numeric_values_after_label(rows, labels: set[str], target_index: int | None = None):
+    total = 0.0
+    for idx, row in enumerate(rows[:-1]):
+        row_labels = {normalize_key(v) for v in row}
+        if not row_labels.intersection(labels):
+            continue
+        next_row = rows[idx + 1]
+        if target_index is not None:
+            if target_index < len(next_row):
+                total += parse_decimal(next_row[target_index])
+        else:
+            for value in next_row:
+                if isinstance(value, (int, float)):
+                    total += parse_decimal(value)
+    return total
+
+
 def load_month_rows(workbook):
-    expected = [
-        "mes",
-        "receita",
-        "contas_mensais",
-        "extras",
-        "despesas",
-        "saldo",
-        "reserva",
-        "investimentos",
-    ]
-    ws = first_sheet_with_header(workbook, ["mes", "receita", "despesas"])
-    if ws is None:
-        raise ValueError(
-            "Nenhuma aba com colunas de meses foi identificada. Use colunas como: "
-            "mes, receita, contas_mensais, extras, despesas, saldo, reserva, investimentos."
-        )
-
-    rows = list(ws.iter_rows(values_only=True))
-    headers = rows[0]
-    indexes = header_index(headers, expected)
-
-    missing = [key for key in expected if key not in indexes]
-    if missing:
-        raise ValueError(
-            "A aba de meses está incompleta. Faltam colunas: " + ", ".join(missing)
-        )
-
+    year_hint = _infer_year_hint(workbook)
     months = []
-    for row in rows[1:]:
-        if not any(normalize_value(v) not in (None, "") for v in row):
+
+    for ws in workbook.worksheets:
+        rows = list(ws.iter_rows(values_only=True))
+        if not rows:
+            continue
+        first_text = " ".join(str(v or "") for v in rows[0][:10]).lower()
+        if "saldos" not in first_text and "entrada mês" not in first_text and "entrada mes" not in first_text:
             continue
 
-        label = normalize_value(row[indexes["mes"]]) if indexes["mes"] < len(row) else ""
-        if not label:
+        revenue = 0.0
+        for idx, row in enumerate(rows[:-1]):
+            row_labels = {normalize_key(v) for v in row}
+            if not row_labels.intersection({"recebido", "adicional", "descontos"}):
+                continue
+            next_row = rows[idx + 1]
+            if len(next_row) > 1 and isinstance(next_row[1], (int, float)):
+                revenue += parse_decimal(next_row[1])
+
+        contas_mensais = _sum_numeric_values_after_label(rows, {"mensais"}, 3)
+        extras = _sum_numeric_values_after_label(rows, {"extras", "gastos"}, 3)
+        saldo = _sum_numeric_values_after_label(rows, {"saldo_geral", "saldo", "resultados"}, 4)
+        reserva = _sum_numeric_values_after_label(rows, {"reserva"}, 4)
+        investimentos = 0.0
+        for idx, row in enumerate(rows[:-2]):
+            row_labels = {normalize_key(v) for v in row}
+            if "investimentos" not in row_labels:
+                continue
+            future_row = rows[idx + 2]
+            for value in future_row:
+                if isinstance(value, (int, float)):
+                    investimentos = parse_decimal(value)
+                    break
+
+        if revenue == 0 and contas_mensais == 0 and saldo == 0:
             continue
 
         month_data = {
-            "label": str(label),
-            "receita": parse_decimal(row[indexes["receita"]] if indexes["receita"] < len(row) else 0),
-            "contas_mensais": parse_decimal(row[indexes["contas_mensais"]] if indexes["contas_mensais"] < len(row) else 0),
-            "extras": parse_decimal(row[indexes["extras"]] if indexes["extras"] < len(row) else 0),
-            "despesas": parse_decimal(row[indexes["despesas"]] if indexes["despesas"] < len(row) else 0),
-            "saldo": parse_decimal(row[indexes["saldo"]] if indexes["saldo"] < len(row) else 0),
-            "reserva": parse_decimal(row[indexes["reserva"]] if indexes["reserva"] < len(row) else 0),
-            "investimentos": parse_decimal(row[indexes["investimentos"]] if indexes["investimentos"] < len(row) else 0),
+            "label": normalize_month_label(ws.title, year_hint),
+            "receita": revenue,
+            "contas_mensais": contas_mensais,
+            "extras": extras,
+            "despesas": contas_mensais + extras,
+            "saldo": saldo,
+            "reserva": reserva,
+            "investimentos": investimentos,
         }
         months.append(month_data)
 
     if not months:
-        raise ValueError("Nenhuma linha de meses foi encontrada na planilha.")
+        raise ValueError("Nenhuma aba de meses foi identificada. Verifique o nome da aba ou a estrutura da planilha.")
 
     labels = [m["label"] for m in months]
     return labels, months
 
 
 def load_categories(workbook):
-    candidates = ["categorias", "categoria", "contas_fixas", "contas_fixas"]
-    ws = first_sheet_with_header(workbook, candidates)
-    if ws is None:
-        return []
-
-    rows = list(ws.iter_rows(values_only=True))
-    if not rows:
-        return []
-
-    headers = [normalize_key(v) for v in rows[0]]
-    target = ["item", "total"]
-    indexes = header_index(headers, target)
-    if "item" not in indexes or "total" not in indexes:
-        return []
-
-    result = []
-    for row in rows[1:]:
-        item = row[indexes["item"]] if indexes["item"] < len(row) else ""
-        total = row[indexes["total"]] if indexes["total"] < len(row) else 0
-        if not item:
+    totals: dict[str, float] = {}
+    for ws in workbook.worksheets:
+        rows = list(ws.iter_rows(values_only=True))
+        if not rows:
             continue
-        result.append({"item": str(item), "total": parse_decimal(total)})
+        for row in rows:
+            if len(row) < 9:
+                continue
+            item = row[7]
+            value = row[8] if len(row) > 8 else None
+            text = str(item or "").strip()
+            if not text or text.lower() in {"item", "total", "status", "valor"}:
+                continue
+            if isinstance(value, (int, float)):
+                totals[text] = totals.get(text, 0.0) + parse_decimal(value)
+
+    result = [{"item": item, "total": total} for item, total in sorted(totals.items(), key=lambda kv: kv[1], reverse=True)]
     return result
 
 
 def load_investment_recent(workbook):
-    ws = first_sheet_with_header(workbook, ["investimentos_recentes", "carteira", "investimento", "classe"])
-    if ws is None:
+    recent_label = ""
+    recent_items: dict[str, float] = {}
+
+    for ws in workbook.worksheets:
+        rows = list(ws.iter_rows(values_only=True))
+        if not rows:
+            continue
+
+        label = normalize_month_label(ws.title, _infer_year_hint(workbook))
+        items: dict[str, float] = {}
+        collecting = False
+        for row in rows:
+            row_text = " ".join(str(v or "") for v in row).lower()
+            if "investimentos" in row_text:
+                collecting = True
+                continue
+            if not collecting:
+                continue
+            if "contas ap" in row_text or "contas toronto" in row_text:
+                break
+
+            item = None
+            item_index = None
+            for idx, value in enumerate(row):
+                text = str(value or "").strip()
+                if not text:
+                    continue
+                if text.lower() in {"item", "valor", "status", "total"}:
+                    continue
+                if isinstance(value, str):
+                    item = text
+                    item_index = idx
+                    break
+
+            if item is None:
+                continue
+
+            value = None
+            for candidate in row[item_index + 1:]:
+                if isinstance(candidate, (int, float)):
+                    value = candidate
+                    break
+            if value is not None:
+                items[item] = parse_decimal(value)
+
+        if items:
+            recent_label = label
+            recent_items = items
+
+    if not recent_items:
         return {"mes": "", "itens": []}
 
-    rows = list(ws.iter_rows(values_only=True))
-    if not rows:
-        return {"mes": "", "itens": []}
-
-    headers = [normalize_key(v) for v in rows[0]]
-    idx = header_index(headers, ["mes", "item", "valor"])
-
-    month_name = ""
-    items = []
-    for row in rows[1:]:
-        if len(row) == 0:
-            continue
-        if "mes" in idx and idx["mes"] < len(row) and row[idx["mes"]] not in (None, ""):
-            month_name = str(row[idx["mes"]]).strip()
-            continue
-        if "item" in idx and "valor" in idx:
-            item = row[idx["item"]] if idx["item"] < len(row) else ""
-            value = row[idx["valor"]] if idx["valor"] < len(row) else 0
-            if item not in (None, ""):
-                items.append({"item": str(item), "valor": parse_decimal(value)})
-
-    return {"mes": month_name, "itens": items}
+    clean_items = [{"item": item, "valor": value} for item, value in recent_items.items()]
+    return {"mes": recent_label, "itens": clean_items}
 
 
 def build_payload(workbook):

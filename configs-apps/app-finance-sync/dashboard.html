@@ -260,325 +260,340 @@ const DATA_URL = './finance-data.json';
 let data = { labels: [], months: [], categorias: [], investimentos_recentes: { mes: '', itens: [] } };
 
 fetch(DATA_URL)
-  .then(response => {
+  .then((response) => {
     if (!response.ok) {
       throw new Error('Não foi possível carregar finance-data.json');
     }
     return response.json();
   })
-  .then(payload => {
+  .then((payload) => {
     data = payload;
     renderDashboard();
   })
-  .catch(error => {
+  .catch((error) => {
     console.error(error);
     document.getElementById('kpiRow').innerHTML = '<div class="kpi"><div class="label">Erro</div><div class="value down">JSON não carregado</div></div>';
     document.getElementById('fluxoChart').innerHTML = '<p style="font-family:Arial,Helvetica,sans-serif;color:#A8462F;margin:0;">Não foi possível carregar os dados do dashboard.</p>';
   });
 
 function renderDashboard() {
+  const INK = '#1E2A38';
+  const TEAL = '#3E7C74';
+  const GOLD = '#C08A2E';
+  const RUST = '#A8462F';
+  const MUTED = '#7A7266';
+  const LINE = '#D6CFC0';
+  const NS = 'http://www.w3.org/2000/svg';
 
-const INK='#1E2A38', TEAL='#3E7C74', GOLD='#C08A2E', RUST='#A8462F', MUTED='#7A7266', LINE='#D6CFC0';
-const NS = 'http://www.w3.org/2000/svg';
-
-function brl(v){
-  return v.toLocaleString('pt-BR', {style:'currency', currency:'BRL', maximumFractionDigits:0});
-}
-function el(tag, attrs){
-  const e = document.createElementNS(NS, tag);
-  for(const k in attrs) e.setAttribute(k, attrs[k]);
-  return e;
-}
-const tooltip = document.getElementById('tooltip');
-function showTip(evt, text){
-  tooltip.textContent = text;
-  tooltip.style.left = (evt.clientX + 14) + 'px';
-  tooltip.style.top = (evt.clientY + 14) + 'px';
-  tooltip.style.opacity = 1;
-}
-function hideTip(){ tooltip.style.opacity = 0; }
-
-// ---------- Grouped bar chart (receita x despesas) ----------
-function groupedBarChart(container, labels, seriesA, seriesB, colorA, colorB){
-  const W = 1040, H = 320, padL = 60, padR = 20, padT = 20, padB = 40;
-  const plotW = W - padL - padR, plotH = H - padT - padB;
-  const maxVal = Math.max(...seriesA, ...seriesB) * 1.12;
-  const n = labels.length;
-  const groupW = plotW / n;
-  const barW = groupW * 0.32;
-
-  const svg = el('svg', {viewBox:`0 0 ${W} ${H}`, preserveAspectRatio:'xMidYMid meet'});
-
-  const steps = 4;
-  for(let i=0;i<=steps;i++){
-    const v = maxVal * i / steps;
-    const y = padT + plotH - (v/maxVal)*plotH;
-    svg.appendChild(el('line', {x1:padL, x2:W-padR, y1:y, y2:y, stroke:LINE, 'stroke-width':1}));
-    const t = el('text', {x:padL-8, y:y+4, 'text-anchor':'end', 'font-size':11, fill:MUTED});
-    t.textContent = 'R$ ' + Math.round(v/1000) + 'k';
-    svg.appendChild(t);
+  function brl(value) {
+    const amount = Number(value) || 0;
+    return amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
   }
 
-  labels.forEach((lab,i)=>{
-    const gx = padL + i*groupW;
-    const vA = seriesA[i], vB = seriesB[i];
-    const hA = (vA/maxVal)*plotH, hB = (vB/maxVal)*plotH;
-    const xA = gx + groupW/2 - barW - 3;
-    const xB = gx + groupW/2 + 3;
-
-    const rA = el('rect', {x:xA, y:padT+plotH-hA, width:barW, height:Math.max(hA,0.5), fill:colorA, rx:2});
-    rA.addEventListener('mousemove', e=>showTip(e, `${lab} · Receita: ${brl(vA)}`));
-    rA.addEventListener('mouseleave', hideTip);
-    svg.appendChild(rA);
-
-    const rB = el('rect', {x:xB, y:padT+plotH-hB, width:barW, height:Math.max(hB,0.5), fill:colorB, rx:2});
-    rB.addEventListener('mousemove', e=>showTip(e, `${lab} · Despesas: ${brl(vB)}`));
-    rB.addEventListener('mouseleave', hideTip);
-    svg.appendChild(rB);
-
-    const t = el('text', {x:gx+groupW/2, y:H-14, 'text-anchor':'middle', 'font-size':11, fill:MUTED});
-    t.textContent = lab;
-    svg.appendChild(t);
-  });
-
-  svg.appendChild(el('line', {x1:padL, x2:W-padR, y1:padT+plotH, y2:padT+plotH, stroke:INK, 'stroke-width':1.2}));
-  container.appendChild(svg);
-}
-
-// ---------- Line chart (multi series) ----------
-function lineChart(container, labels, series){
-  const W = 500, H = 300, padL = 55, padR = 16, padT = 20, padB = 34;
-  const plotW = W - padL - padR, plotH = H - padT - padB;
-  const all = series.flatMap(s=>s.data);
-  const maxVal = Math.max(...all) * 1.1;
-  const minVal = Math.min(0, Math.min(...all) * 1.1);
-  const range = maxVal - minVal;
-  const n = labels.length;
-  const stepX = plotW/(n-1);
-
-  const svg = el('svg', {viewBox:`0 0 ${W} ${H}`, preserveAspectRatio:'xMidYMid meet'});
-
-  const steps = 4;
-  for(let i=0;i<=steps;i++){
-    const v = minVal + range*i/steps;
-    const y = padT + plotH - ((v-minVal)/range)*plotH;
-    svg.appendChild(el('line', {x1:padL, x2:W-padR, y1:y, y2:y, stroke:LINE, 'stroke-width':1}));
-    const t = el('text', {x:padL-8, y:y+3, 'text-anchor':'end', 'font-size':10, fill:MUTED});
-    t.textContent = 'R$ ' + Math.round(v/1000) + 'k';
-    svg.appendChild(t);
+  function el(tag, attrs) {
+    const element = document.createElementNS(NS, tag);
+    Object.entries(attrs).forEach(([key, value]) => element.setAttribute(key, value));
+    return element;
   }
 
-  if(minVal < 0){
-    const y0 = padT + plotH - ((0-minVal)/range)*plotH;
-    svg.appendChild(el('line', {x1:padL, x2:W-padR, y1:y0, y2:y0, stroke:INK, 'stroke-width':1}));
+  const tooltip = document.getElementById('tooltip');
+
+  function showTip(event, text) {
+    tooltip.textContent = text;
+    tooltip.style.left = (event.clientX + 14) + 'px';
+    tooltip.style.top = (event.clientY + 14) + 'px';
+    tooltip.style.opacity = '1';
   }
 
-  series.forEach(s=>{
-    let pts = s.data.map((v,i)=>{
-      const x = padL + i*stepX;
-      const y = padT + plotH - ((v-minVal)/range)*plotH;
-      return [x,y];
+  function hideTip() {
+    tooltip.style.opacity = '0';
+  }
+
+  function groupedBarChart(container, labels, seriesA, seriesB, colorA, colorB) {
+    const W = 1040;
+    const H = 320;
+    const padL = 60;
+    const padR = 20;
+    const padT = 20;
+    const padB = 40;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+    const maxVal = Math.max(...seriesA, ...seriesB) * 1.12;
+    const n = labels.length;
+    const groupW = plotW / n;
+    const barW = groupW * 0.32;
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'xMidYMid meet' });
+
+    for (let i = 0; i <= 4; i += 1) {
+      const v = (maxVal * i) / 4;
+      const y = padT + plotH - (v / maxVal) * plotH;
+      svg.appendChild(el('line', { x1: padL, x2: W - padR, y1: y, y2: y, stroke: LINE, 'stroke-width': 1 }));
+      const text = el('text', { x: padL - 8, y: y + 4, 'text-anchor': 'end', 'font-size': 11, fill: MUTED });
+      text.textContent = 'R$ ' + Math.round(v / 1000) + 'k';
+      svg.appendChild(text);
+    }
+
+    labels.forEach((lab, index) => {
+      const gx = padL + index * groupW;
+      const vA = seriesA[index];
+      const vB = seriesB[index];
+      const hA = (vA / maxVal) * plotH;
+      const hB = (vB / maxVal) * plotH;
+      const xA = gx + groupW / 2 - barW - 3;
+      const xB = gx + groupW / 2 + 3;
+
+      const rectA = el('rect', { x: xA, y: padT + plotH - hA, width: barW, height: Math.max(hA, 0.5), fill: colorA, rx: 2 });
+      rectA.addEventListener('mousemove', (event) => showTip(event, `${lab} · Receita: ${brl(vA)}`));
+      rectA.addEventListener('mouseleave', hideTip);
+      svg.appendChild(rectA);
+
+      const rectB = el('rect', { x: xB, y: padT + plotH - hB, width: barW, height: Math.max(hB, 0.5), fill: colorB, rx: 2 });
+      rectB.addEventListener('mousemove', (event) => showTip(event, `${lab} · Despesas: ${brl(vB)}`));
+      rectB.addEventListener('mouseleave', hideTip);
+      svg.appendChild(rectB);
+
+      const label = el('text', { x: gx + groupW / 2, y: H - 14, 'text-anchor': 'middle', 'font-size': 11, fill: MUTED });
+      label.textContent = lab;
+      svg.appendChild(label);
     });
-    const d = pts.map((p,i)=> (i===0?'M':'L')+p[0]+','+p[1]).join(' ');
-    const path = el('path', {d, fill:'none', stroke:s.color, 'stroke-width':2, 'stroke-dasharray': s.dash?'5,4':'none'});
-    svg.appendChild(path);
-    pts.forEach((p,i)=>{
-      const c = el('circle', {cx:p[0], cy:p[1], r:3.2, fill:s.color});
-      c.addEventListener('mousemove', e=>showTip(e, `${labels[i]} · ${s.name}: ${brl(s.data[i])}`));
-      c.addEventListener('mouseleave', hideTip);
-      svg.appendChild(c);
+
+    svg.appendChild(el('line', { x1: padL, x2: W - padR, y1: padT + plotH, y2: padT + plotH, stroke: INK, 'stroke-width': 1.2 }));
+    container.appendChild(svg);
+  }
+
+  function lineChart(container, labels, series) {
+    const W = 500;
+    const H = 300;
+    const padL = 55;
+    const padR = 16;
+    const padT = 20;
+    const padB = 34;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+    const all = series.flatMap((item) => item.data);
+    const maxVal = Math.max(...all) * 1.1;
+    const minVal = Math.min(0, Math.min(...all) * 1.1);
+    const range = maxVal - minVal;
+    const stepX = plotW / (labels.length - 1);
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'xMidYMid meet' });
+
+    for (let i = 0; i <= 4; i += 1) {
+      const v = minVal + (range * i) / 4;
+      const y = padT + plotH - ((v - minVal) / range) * plotH;
+      svg.appendChild(el('line', { x1: padL, x2: W - padR, y1: y, y2: y, stroke: LINE, 'stroke-width': 1 }));
+      const text = el('text', { x: padL - 8, y: y + 3, 'text-anchor': 'end', 'font-size': 10, fill: MUTED });
+      text.textContent = 'R$ ' + Math.round(v / 1000) + 'k';
+      svg.appendChild(text);
+    }
+
+    if (minVal < 0) {
+      const y0 = padT + plotH - ((0 - minVal) / range) * plotH;
+      svg.appendChild(el('line', { x1: padL, x2: W - padR, y1: y0, y2: y0, stroke: INK, 'stroke-width': 1 }));
+    }
+
+    series.forEach((seriesItem) => {
+      const points = seriesItem.data.map((value, index) => {
+        const x = padL + index * stepX;
+        const y = padT + plotH - ((value - minVal) / range) * plotH;
+        return [x, y];
+      });
+      const d = points.map((point, index) => `${index === 0 ? 'M' : 'L'}${point[0]},${point[1]}`).join(' ');
+      const path = el('path', { d, fill: 'none', stroke: seriesItem.color, 'stroke-width': 2, 'stroke-dasharray': seriesItem.dash ? '5,4' : 'none' });
+      svg.appendChild(path);
+      points.forEach((point, index) => {
+        const circle = el('circle', { cx: point[0], cy: point[1], r: 3.2, fill: seriesItem.color });
+        circle.addEventListener('mousemove', (event) => showTip(event, `${labels[index]} · ${seriesItem.name}: ${brl(seriesItem.data[index])}`));
+        circle.addEventListener('mouseleave', hideTip);
+        svg.appendChild(circle);
+      });
     });
-  });
 
-  labels.forEach((lab,i)=>{
-    const x = padL + i*stepX;
-    const t = el('text', {x, y:H-10, 'text-anchor':'middle', 'font-size':9.5, fill:MUTED});
-    t.textContent = lab.replace('/26','').replace('/25','');
-    svg.appendChild(t);
-  });
+    labels.forEach((lab, index) => {
+      const x = padL + index * stepX;
+      const text = el('text', { x, y: H - 10, 'text-anchor': 'middle', 'font-size': 9.5, fill: MUTED });
+      text.textContent = lab.replace('/26', '').replace('/25', '');
+      svg.appendChild(text);
+    });
 
-  container.appendChild(svg);
-}
-
-// ---------- Single-series bar chart ----------
-function barChart(container, labels, values, color){
-  const W = 500, H = 300, padL = 55, padR = 16, padT = 20, padB = 34;
-  const plotW = W - padL - padR, plotH = H - padT - padB;
-  const maxVal = Math.max(...values) * 1.15;
-  const n = labels.length;
-  const slot = plotW/n;
-  const barW = slot*0.55;
-
-  const svg = el('svg', {viewBox:`0 0 ${W} ${H}`, preserveAspectRatio:'xMidYMid meet'});
-
-  const steps = 4;
-  for(let i=0;i<=steps;i++){
-    const v = maxVal*i/steps;
-    const y = padT + plotH - (v/maxVal)*plotH;
-    svg.appendChild(el('line', {x1:padL, x2:W-padR, y1:y, y2:y, stroke:LINE, 'stroke-width':1}));
-    const t = el('text', {x:padL-8, y:y+3, 'text-anchor':'end', 'font-size':10, fill:MUTED});
-    t.textContent = 'R$ '+(v/1000).toFixed(1)+'k';
-    svg.appendChild(t);
+    container.appendChild(svg);
   }
 
-  labels.forEach((lab,i)=>{
-    const v = values[i];
-    const h = (v/maxVal)*plotH;
-    const x = padL + i*slot + (slot-barW)/2;
-    const rect = el('rect', {x, y:padT+plotH-h, width:barW, height:Math.max(h,0.5), fill:color, rx:2});
-    rect.addEventListener('mousemove', e=>showTip(e, `${lab}: ${brl(v)}`));
-    rect.addEventListener('mouseleave', hideTip);
-    svg.appendChild(rect);
-    const t = el('text', {x:x+barW/2, y:H-10, 'text-anchor':'middle', 'font-size':9.5, fill:MUTED});
-    t.textContent = lab.replace('/26','').replace('/25','');
-    svg.appendChild(t);
-  });
+  function barChart(container, labels, values, color) {
+    const W = 500;
+    const H = 300;
+    const padL = 55;
+    const padR = 16;
+    const padT = 20;
+    const padB = 34;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+    const maxVal = Math.max(...values) * 1.15;
+    const slot = plotW / labels.length;
+    const barW = slot * 0.55;
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'xMidYMid meet' });
 
-  svg.appendChild(el('line', {x1:padL, x2:W-padR, y1:padT+plotH, y2:padT+plotH, stroke:INK, 'stroke-width':1.2}));
-  container.appendChild(svg);
-}
+    for (let i = 0; i <= 4; i += 1) {
+      const v = (maxVal * i) / 4;
+      const y = padT + plotH - (v / maxVal) * plotH;
+      svg.appendChild(el('line', { x1: padL, x2: W - padR, y1: y, y2: y, stroke: LINE, 'stroke-width': 1 }));
+      const text = el('text', { x: padL - 8, y: y + 3, 'text-anchor': 'end', 'font-size': 10, fill: MUTED });
+      text.textContent = 'R$ ' + (v / 1000).toFixed(1) + 'k';
+      svg.appendChild(text);
+    }
 
-// ---------- Horizontal bar chart ----------
-function hBarChart(container, labels, values, color){
-  const W = 500, H = 280, padL = 130, padR = 60, padT = 10, padB = 10;
-  const plotW = W - padL - padR, plotH = H - padT - padB;
-  const maxVal = Math.max(...values) * 1.1;
-  const n = labels.length;
-  const slot = plotH/n;
-  const barH = slot*0.55;
+    labels.forEach((lab, index) => {
+      const v = values[index];
+      const h = (v / maxVal) * plotH;
+      const x = padL + index * slot + (slot - barW) / 2;
+      const rect = el('rect', { x, y: padT + plotH - h, width: barW, height: Math.max(h, 0.5), fill: color, rx: 2 });
+      rect.addEventListener('mousemove', (event) => showTip(event, `${lab}: ${brl(v)}`));
+      rect.addEventListener('mouseleave', hideTip);
+      svg.appendChild(rect);
+      const text = el('text', { x: x + barW / 2, y: H - 10, 'text-anchor': 'middle', 'font-size': 9.5, fill: MUTED });
+      text.textContent = lab.replace('/26', '').replace('/25', '');
+      svg.appendChild(text);
+    });
 
-  const svg = el('svg', {viewBox:`0 0 ${W} ${H}`, preserveAspectRatio:'xMidYMid meet'});
-
-  labels.forEach((lab,i)=>{
-    const v = values[i];
-    const w = (v/maxVal)*plotW;
-    const y = padT + i*slot + (slot-barH)/2;
-    const rect = el('rect', {x:padL, y, width:Math.max(w,0.5), height:barH, fill:color, rx:2});
-    rect.addEventListener('mousemove', e=>showTip(e, `${lab}: ${brl(v)}`));
-    rect.addEventListener('mouseleave', hideTip);
-    svg.appendChild(rect);
-
-    const lt = el('text', {x:padL-8, y:y+barH/2+4, 'text-anchor':'end', 'font-size':11, fill:INK});
-    lt.textContent = lab;
-    svg.appendChild(lt);
-
-    const vt = el('text', {x:padL+w+8, y:y+barH/2+4, 'text-anchor':'start', 'font-size':10.5, fill:MUTED});
-    vt.textContent = 'R$ '+(v/1000).toFixed(1)+'k';
-    svg.appendChild(vt);
-  });
-
-  container.appendChild(svg);
-}
-
-// ---------- Donut chart ----------
-function donutChart(container, legendContainer, items, palette){
-  const total = items.reduce((a,i)=>a+i.valor,0);
-  const W=280,H=280, cx=W/2, cy=H/2, rOuter=110, rInner=62;
-  const svg = el('svg', {viewBox:`0 0 ${W} ${H}`, preserveAspectRatio:'xMidYMid meet'});
-  let angle = -Math.PI/2;
-
-  function arcPath(a0,a1,r0,r1){
-    const x0o=cx+r1*Math.cos(a0), y0o=cy+r1*Math.sin(a0);
-    const x1o=cx+r1*Math.cos(a1), y1o=cy+r1*Math.sin(a1);
-    const x1i=cx+r0*Math.cos(a1), y1i=cy+r0*Math.sin(a1);
-    const x0i=cx+r0*Math.cos(a0), y0i=cy+r0*Math.sin(a0);
-    const large = (a1-a0) > Math.PI ? 1 : 0;
-    return `M${x0o},${y0o} A${r1},${r1} 0 ${large} 1 ${x1o},${y1o} L${x1i},${y1i} A${r0},${r0} 0 ${large} 0 ${x0i},${y0i} Z`;
+    svg.appendChild(el('line', { x1: padL, x2: W - padR, y1: padT + plotH, y2: padT + plotH, stroke: INK, 'stroke-width': 1.2 }));
+    container.appendChild(svg);
   }
 
-  items.forEach((it,i)=>{
-    const frac = it.valor/total;
-    const a1 = angle + frac*Math.PI*2;
-    const path = el('path', {d:arcPath(angle,a1,rInner,rOuter), fill:palette[i%palette.length]});
-    path.addEventListener('mousemove', e=>showTip(e, `${it.item}: ${brl(it.valor)} (${(frac*100).toFixed(1)}%)`));
-    path.addEventListener('mouseleave', hideTip);
-    svg.appendChild(path);
-    angle = a1;
-  });
+  function hBarChart(container, labels, values, color) {
+    const W = 500;
+    const H = 280;
+    const padL = 130;
+    const padR = 60;
+    const padT = 10;
+    const padB = 10;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+    const maxVal = Math.max(...values) * 1.1;
+    const slot = plotH / labels.length;
+    const barH = slot * 0.55;
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'xMidYMid meet' });
 
-  const ct = el('text', {x:cx, y:cy-4, 'text-anchor':'middle', 'font-size':10, fill:MUTED});
-  ct.textContent = 'Total';
-  svg.appendChild(ct);
-  const cv = el('text', {x:cx, y:cy+13, 'text-anchor':'middle', 'font-size':14, 'font-weight':'600', fill:INK});
-  cv.textContent = brl(total);
-  svg.appendChild(cv);
+    labels.forEach((lab, index) => {
+      const v = values[index];
+      const w = (v / maxVal) * plotW;
+      const y = padT + index * slot + (slot - barH) / 2;
+      const rect = el('rect', { x: padL, y, width: Math.max(w, 0.5), height: barH, fill: color, rx: 2 });
+      rect.addEventListener('mousemove', (event) => showTip(event, `${lab}: ${brl(v)}`));
+      rect.addEventListener('mouseleave', hideTip);
+      svg.appendChild(rect);
 
-  container.appendChild(svg);
+      const leftText = el('text', { x: padL - 8, y: y + barH / 2 + 4, 'text-anchor': 'end', 'font-size': 11, fill: INK });
+      leftText.textContent = lab;
+      svg.appendChild(leftText);
 
-  legendContainer.innerHTML = items.map((it,i)=>
-    `<span><i style="background:${palette[i%palette.length]}"></i>${it.item} — ${brl(it.valor)}</span>`
+      const rightText = el('text', { x: padL + w + 8, y: y + barH / 2 + 4, 'text-anchor': 'start', 'font-size': 10.5, fill: MUTED });
+      rightText.textContent = 'R$ ' + (v / 1000).toFixed(1) + 'k';
+      svg.appendChild(rightText);
+    });
+
+    container.appendChild(svg);
+  }
+
+  function donutChart(container, legendContainer, items, palette) {
+    const total = items.reduce((sum, item) => sum + item.valor, 0);
+    const W = 280;
+    const H = 280;
+    const cx = W / 2;
+    const cy = H / 2;
+    const rOuter = 110;
+    const rInner = 62;
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'xMidYMid meet' });
+    let angle = -Math.PI / 2;
+
+    function arcPath(a0, a1, r0, r1) {
+      const x0o = cx + r1 * Math.cos(a0);
+      const y0o = cy + r1 * Math.sin(a0);
+      const x1o = cx + r1 * Math.cos(a1);
+      const y1o = cy + r1 * Math.sin(a1);
+      const x1i = cx + r0 * Math.cos(a1);
+      const y1i = cy + r0 * Math.sin(a1);
+      const x0i = cx + r0 * Math.cos(a0);
+      const y0i = cy + r0 * Math.sin(a0);
+      const large = a1 - a0 > Math.PI ? 1 : 0;
+      return `M${x0o},${y0o} A${r1},${r1} 0 ${large} 1 ${x1o},${y1o} L${x1i},${y1i} A${r0},${r0} 0 ${large} 0 ${x0i},${y0i} Z`;
+    }
+
+    items.forEach((item, index) => {
+      const frac = item.valor / total;
+      const a1 = angle + frac * Math.PI * 2;
+      const path = el('path', { d: arcPath(angle, a1, rInner, rOuter), fill: palette[index % palette.length] });
+      path.addEventListener('mousemove', (event) => showTip(event, `${item.item}: ${brl(item.valor)} (${(frac * 100).toFixed(1)}%)`));
+      path.addEventListener('mouseleave', hideTip);
+      svg.appendChild(path);
+      angle = a1;
+    });
+
+    const totalLabel = el('text', { x: cx, y: cy - 4, 'text-anchor': 'middle', 'font-size': 10, fill: MUTED });
+    totalLabel.textContent = 'Total';
+    svg.appendChild(totalLabel);
+
+    const totalValue = el('text', { x: cx, y: cy + 13, 'text-anchor': 'middle', 'font-size': 14, 'font-weight': '600', fill: INK });
+    totalValue.textContent = brl(total);
+    svg.appendChild(totalValue);
+
+    container.appendChild(svg);
+
+    legendContainer.innerHTML = items
+      .map((item, index) => `<span><i style="background:${palette[index % palette.length]}"></i>${item.item} — ${brl(item.valor)}</span>`)
+      .join('');
+  }
+
+  const validMonths = data.months.filter((month) => month.receita > 0);
+  const lastFull = validMonths[validMonths.length - 1];
+  const totalReceita = validMonths.reduce((sum, month) => sum + month.receita, 0);
+  const totalDespesas = validMonths.reduce((sum, month) => sum + month.despesas, 0);
+
+  const kpis = [
+    { label: 'Saldo geral · ' + lastFull.label, value: brl(lastFull.saldo), cls: 'up' },
+    { label: 'Receita acumulada (10 meses)', value: brl(totalReceita), cls: '' },
+    { label: 'Despesas acumuladas (10 meses)', value: brl(totalDespesas), cls: 'down' },
+    { label: 'Investimentos · ' + lastFull.label, value: brl(lastFull.investimentos), cls: '' }
+  ];
+
+  document.getElementById('kpiRow').innerHTML = kpis
+    .map((kpi) => `<div class="kpi"><div class="label">${kpi.label}</div><div class="value ${kpi.cls}">${kpi.value}</div></div>`)
+    .join('');
+
+  groupedBarChart(document.getElementById('fluxoChart'), data.labels, data.months.map((month) => month.receita), data.months.map((month) => month.despesas), TEAL, RUST);
+  lineChart(document.getElementById('saldoChart'), data.labels, [
+    { name: 'Saldo geral', data: data.months.map((month) => month.saldo), color: INK },
+    { name: 'Reserva', data: data.months.map((month) => month.reserva), color: GOLD, dash: true }
+  ]);
+  barChart(document.getElementById('investChart'), data.labels, data.months.map((month) => month.investimentos), TEAL);
+  hBarChart(document.getElementById('categoriaChart'), data.categorias.map((categoria) => categoria.item), data.categorias.map((categoria) => categoria.total), GOLD);
+
+  const ir = data.investimentos_recentes;
+  document.getElementById('investTitle').textContent = 'Carteira de investimentos · ' + ir.mes;
+  document.getElementById('investDeck').textContent = 'Distribuição por classe em ' + ir.mes + ', o mês mais recente com dados na planilha.';
+  donutChart(document.getElementById('carteiraChart'), document.getElementById('carteiraLegend'), ir.itens, [TEAL, GOLD, RUST, INK, MUTED]);
+
+  const cols = [
+    ['label', 'Mês'],
+    ['receita', 'Receita'],
+    ['contas_mensais', 'Contas fixas'],
+    ['extras', 'Extras'],
+    ['despesas', 'Despesas'],
+    ['saldo', 'Saldo geral'],
+    ['reserva', 'Reserva'],
+    ['investimentos', 'Investimentos']
+  ];
+
+  const thead = '<tr>' + cols.map(([key, label]) => `<th>${label}</th>`).join('') + '</tr>';
+  const rows = data.months.map((month) =>
+    '<tr>' + cols.map(([key, label]) => {
+      if (key === 'label') {
+        return `<td>${month[key]}</td>`;
+      }
+      return `<td class="num">${brl(month[key])}</td>`;
+    }).join('') + '</tr>'
   ).join('');
+
+  document.getElementById('resumoTable').innerHTML = thead + rows;
 }
-
-// ---------- Populate KPIs ----------
-const validMonths = data.months.filter(m => m.receita > 0);
-const lastFull = validMonths[validMonths.length - 1];
-const totalReceita = validMonths.reduce((a,m)=>a+m.receita,0);
-const totalDespesas = validMonths.reduce((a,m)=>a+m.despesas,0);
-
-const kpis = [
-  {label:'Saldo geral · ' + lastFull.label, value: brl(lastFull.saldo), cls:'up'},
-  {label:'Receita acumulada (10 meses)', value: brl(totalReceita), cls:''},
-  {label:'Despesas acumuladas (10 meses)', value: brl(totalDespesas), cls:'down'},
-  {label:'Investimentos · ' + lastFull.label, value: brl(lastFull.investimentos), cls:''}
-];
-document.getElementById('kpiRow').innerHTML = kpis.map(k =>
-  `<div class="kpi"><div class="label">${k.label}</div><div class="value ${k.cls}">${k.value}</div></div>`
-).join('');
-
-// ---------- Render charts ----------
-groupedBarChart(
-  document.getElementById('fluxoChart'),
-  data.labels,
-  data.months.map(m=>m.receita),
-  data.months.map(m=>m.despesas),
-  TEAL, RUST
-);
-
-lineChart(
-  document.getElementById('saldoChart'),
-  data.labels,
-  [
-    {name:'Saldo geral', data:data.months.map(m=>m.saldo), color:INK},
-    {name:'Reserva', data:data.months.map(m=>m.reserva), color:GOLD, dash:true}
-  ]
-);
-
-barChart(
-  document.getElementById('investChart'),
-  data.labels,
-  data.months.map(m=>m.investimentos),
-  TEAL
-);
-
-hBarChart(
-  document.getElementById('categoriaChart'),
-  data.categorias.map(c=>c.item),
-  data.categorias.map(c=>c.total),
-  GOLD
-);
-
-const ir = data.investimentos_recentes;
-document.getElementById('investTitle').textContent = 'Carteira de investimentos · ' + ir.mes;
-document.getElementById('investDeck').textContent = 'Distribuição por classe em ' + ir.mes + ', o mês mais recente com dados na planilha.';
-donutChart(
-  document.getElementById('carteiraChart'),
-  document.getElementById('carteiraLegend'),
-  ir.itens,
-  [TEAL, GOLD, RUST, INK, MUTED]
-);
-
-// ---------- Table ----------
-const cols = [
-  ['label','Mês'], ['receita','Receita'], ['contas_mensais','Contas fixas'],
-  ['extras','Extras'], ['despesas','Despesas'], ['saldo','Saldo geral'],
-  ['reserva','Reserva'], ['investimentos','Investimentos']
-];
-let thead = '<tr>' + cols.map(c=>`<th>${c[1]}</th>`).join('') + '</tr>';
-let rows = data.months.map(m =>
-  '<tr>' + cols.map(c => c[0]==='label' ? `<td>${m[c[0]]}</td>` : `<td class="num">${brl(m[c[0]])}</td>`).join('') + '</tr>'
-).join('');
-document.getElementById('resumoTable').innerHTML = thead + rows;
 </script>
 
 </body>
