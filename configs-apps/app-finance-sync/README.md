@@ -17,9 +17,19 @@ python -m pip install -r requirements.txt
 
 ## Gerar o JSON
 
+### Arquivo local
+
 ```bash
 python convert_finance_xlsx_to_json.py "C:/Users/SeuUsuario/OneDrive/2026_Contas.xlsx" --output finance-data.json
 ```
+
+### Link compartilhado do OneDrive
+
+```bash
+python convert_finance_xlsx_to_json.py "https://1drv.ms/x/c/SEU_LINK_AQUI?e=SEU_TOKEN" --output finance-data.json
+```
+
+O script detecta URLs do OneDrive e faz o download do arquivo antes de ler o Excel. Isso permite usar o link compartilhado diretamente sem precisar baixar o arquivo manualmente.
 
 A planilha esperada deve ter:
 

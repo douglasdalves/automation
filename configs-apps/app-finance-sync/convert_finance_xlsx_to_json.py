@@ -14,8 +14,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import re
+import shutil
+import tempfile
 from pathlib import Path
 from typing import Any, Iterable
+from urllib.request import Request, urlopen
 
 try:
     from openpyxl import load_workbook
@@ -215,13 +220,48 @@ def build_payload(workbook):
     }
 
 
+def is_url(value: str) -> bool:
+    return value.startswith(("http://", "https://", "file://"))
+
+
+def append_download_param(url: str) -> str:
+    if "download=1" in url:
+        return url
+    separator = "&" if "?" in url else "?"
+    return f"{url}{separator}download=1"
+
+
+def resolve_source_path(source: str) -> Path:
+    if not is_url(source):
+        return Path(source)
+
+    if source.startswith("file://"):
+        return Path(source[7:])
+
+    download_url = append_download_param(source)
+    request = Request(download_url, headers={"User-Agent": "Mozilla/5.0"})
+
+    with urlopen(request, timeout=60) as response:
+        content_disposition = response.headers.get("Content-Disposition", "")
+        filename_match = re.search(r'filename\s*=\s*"?([^";]+)"?', content_disposition)
+        suffix = ".xlsx"
+        if filename_match:
+            suffix = Path(filename_match.group(1)).suffix or suffix
+        temp_fd, temp_path = tempfile.mkstemp(prefix="finance_", suffix=suffix)
+        os.close(temp_fd)
+        with open(temp_path, "wb") as file_obj:
+            shutil.copyfileobj(response, file_obj)
+
+    return Path(temp_path)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Converte a planilha financeira em JSON usado pelo dashboard.")
-    parser.add_argument("source", help="Arquivo .xlsx com dados da planilha financeira")
+    parser.add_argument("source", help="Arquivo .xlsx local ou link compartilhado do OneDrive/Google Drive")
     parser.add_argument("--output", default="finance-data.json", help="Arquivo JSON de saída")
     args = parser.parse_args()
 
-    source = Path(args.source)
+    source = resolve_source_path(args.source)
     if not source.exists():
         raise SystemExit(f"Arquivo não encontrado: {source}")
 
