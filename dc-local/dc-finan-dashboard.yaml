@@ -1,10 +1,91 @@
 name: finance-dashboard
 services:
   finance-dashboard:
+    cpu_shares: 90
+    command:
+      - nginx
+      - -g
+      - daemon off;
+    container_name: dc-finance-dash
+    deploy:
+      resources:
+        limits:
+          memory: 3796M
+    environment:
+      - DYNPKG_RELEASE=1
+      - NGINX_VERSION=1.27.5
+      - NJS_RELEASE=1
+      - NJS_VERSION=0.8.10
+      - PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      - PKG_RELEASE=1
+    hostname: dc-finance-dash
     image: nginx:1.27-alpine
-    container_name: finance-dashboard
-    restart: unless-stopped
     ports:
-      - "8085:80"
+      - target: 80
+        published: "8085"
+        protocol: tcp
+    restart: unless-stopped
     volumes:
-      - /home/pi/automation/configs-apps/app-finance-sync:/usr/share/nginx/html:ro
+      - type: bind
+        source: /home/dalves/automation/configs-apps/app-finance-sync
+        target: /usr/share/nginx/html
+    x-casaos:
+      envs:
+        - container: PATH
+          description:
+            en_us: ""
+        - container: NGINX_VERSION
+          description:
+            en_us: ""
+        - container: PKG_RELEASE
+          description:
+            en_us: ""
+        - container: DYNPKG_RELEASE
+          description:
+            en_us: ""
+        - container: NJS_VERSION
+          description:
+            en_us: ""
+        - container: NJS_RELEASE
+          description:
+            en_us: ""
+      image: ""
+      ports:
+        - container: "80"
+          description:
+            en_us: ""
+      volumes:
+        - container: /usr/share/nginx/html
+          description:
+            en_us: ""
+    devices: []
+    cap_add: []
+    network_mode: finance-dashboard_default
+    privileged: false
+x-casaos:
+  architectures:
+    - arm64
+  author: CasaOS User
+  category: unknown
+  description:
+    en_us: ""
+  developer: unknown
+  hostname: aphome201.local
+  icon: ""
+  image: null
+  index: ""
+  is_uncontrolled: false
+  main: finance-dashboard
+  port_map: "8085"
+  scheme: http
+  store_app_id: finance-dashboard
+  tagline:
+    en_us: This is a compose app converted from a legacy app (CasaOS v0.4.3 or
+      earlier)
+  thumbnail: ""
+  tips:
+    custom: This is a compose app converted from a legacy app (CasaOS v0.4.3 or
+      earlier)
+  title:
+    custom: ""
+    en_us: finance-dashboard

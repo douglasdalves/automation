@@ -1,32 +1,227 @@
 {
-  "labels": ["Dez/25", "Jan/26", "Fev/26", "Mar/26", "Abr/26", "Mai/26", "Jun/26", "Jul/26", "Ago/26", "Set/26"],
+  "labels": [
+    "Dez/25",
+    "Jan/26",
+    "Fev/26",
+    "Mar/26",
+    "Abr/26",
+    "Mai/26",
+    "Jun/26",
+    "Jul/26",
+    "Ago/26",
+    "Set/26"
+  ],
   "months": [
-    {"label": "Dez/25", "receita": 8659.47, "contas_mensais": 6504.62, "extras": 119.56, "despesas": 6624.18, "saldo": 14673.91, "reserva": 4255.78, "investimentos": 2993.95},
-    {"label": "Jan/26", "receita": 12426.17, "contas_mensais": 4935.34, "extras": 829, "despesas": 5764.34, "saldo": 17780.16, "reserva": 8308.72, "investimentos": 2907.1},
-    {"label": "Fev/26", "receita": 6563.31, "contas_mensais": 7775.88, "extras": 169.2, "despesas": 7945.08, "saldo": 16570.1, "reserva": 5219.16, "investimentos": 2405.86},
-    {"label": "Mar/26", "receita": 6641.61, "contas_mensais": 6416.54, "extras": 0, "despesas": 6416.54, "saldo": 13350.77, "reserva": 3427.98, "investimentos": 2706.25},
-    {"label": "Abr/26", "receita": 6519.03, "contas_mensais": 6339.91, "extras": 660, "despesas": 6999.91, "saldo": 10956.94, "reserva": 1340.08, "investimentos": 1816.95},
-    {"label": "Mai/26", "receita": 8859.81, "contas_mensais": 5824.89, "extras": 315.25, "despesas": 6140.14, "saldo": 10999.89, "reserva": 2283.5, "investimentos": 1776.25},
-    {"label": "Jun/26", "receita": 9782.45, "contas_mensais": 4483.91, "extras": 130, "despesas": 4613.91, "saldo": 10199.84, "reserva": 2632.34, "investimentos": 2153.59},
-    {"label": "Jul/26", "receita": 6761.72, "contas_mensais": 5021.09, "extras": 3731.33, "despesas": 8752.42, "saldo": 10440.26, "reserva": -1511.51, "investimentos": 2399.35},
-    {"label": "Ago/26", "receita": 6480.44, "contas_mensais": 3517.53, "extras": 0, "despesas": 3517.53, "saldo": 7828.56, "reserva": 976.56, "investimentos": 2321.47},
-    {"label": "Set/26", "receita": 0, "contas_mensais": 3200.1, "extras": 0, "despesas": 3200.1, "saldo": 1846.16, "reserva": -2153.94, "investimentos": 0}
+    {
+      "label": "Dez/25",
+      "receita": 8659.470000000001,
+      "contas_mensais": 6504.62,
+      "extras": 119.56,
+      "despesas": 6624.18,
+      "saldo": 14673.910000000002,
+      "reserva": 4255.780000000001,
+      "investimentos": 2993.9500000000003
+    },
+    {
+      "label": "Jan/26",
+      "receita": 12426.17,
+      "contas_mensais": 4935.34,
+      "extras": 829.0,
+      "despesas": 5764.34,
+      "saldo": 17780.16,
+      "reserva": 8308.72,
+      "investimentos": 2907.1000000000004
+    },
+    {
+      "label": "Fev/26",
+      "receita": 6563.3099999999995,
+      "contas_mensais": 7775.88,
+      "extras": 169.2,
+      "despesas": 7945.08,
+      "saldo": 16570.1,
+      "reserva": 5219.16,
+      "investimentos": 150.0
+    },
+    {
+      "label": "Mar/26",
+      "receita": 6641.610000000001,
+      "contas_mensais": 6416.54,
+      "extras": 0.0,
+      "despesas": 6416.54,
+      "saldo": 13350.77,
+      "reserva": 3427.9799999999996,
+      "investimentos": 80.0
+    },
+    {
+      "label": "Abr/26",
+      "receita": 6519.03,
+      "contas_mensais": 6339.91,
+      "extras": 660.0,
+      "despesas": 6999.91,
+      "saldo": 10956.939999999999,
+      "reserva": 1340.079999999998,
+      "investimentos": 1816.95
+    },
+    {
+      "label": "Mai/26",
+      "receita": 8859.81,
+      "contas_mensais": 5824.889999999999,
+      "extras": 315.25,
+      "despesas": 6140.139999999999,
+      "saldo": 10999.889999999998,
+      "reserva": 2283.499999999998,
+      "investimentos": 1776.25
+    },
+    {
+      "label": "Jun/26",
+      "receita": 9782.45,
+      "contas_mensais": 4483.91,
+      "extras": 130.0,
+      "despesas": 4613.91,
+      "saldo": 10199.84,
+      "reserva": 2632.34,
+      "investimentos": 2153.59
+    },
+    {
+      "label": "Jul/26",
+      "receita": 6761.719999999999,
+      "contas_mensais": 5021.09,
+      "extras": 3731.33,
+      "despesas": 8752.42,
+      "saldo": 10440.26,
+      "reserva": -1511.5100000000002,
+      "investimentos": 2399.3499999999995
+    },
+    {
+      "label": "Ago/26",
+      "receita": 6480.4400000000005,
+      "contas_mensais": 3517.5299999999997,
+      "extras": 0.0,
+      "despesas": 3517.5299999999997,
+      "saldo": 7828.560000000001,
+      "reserva": 976.5600000000013,
+      "investimentos": 30.0
+    },
+    {
+      "label": "Set/26",
+      "receita": 0.0,
+      "contas_mensais": 3200.1,
+      "extras": 0.0,
+      "despesas": 3200.1,
+      "saldo": 1846.1600000000012,
+      "reserva": -2153.9399999999987,
+      "investimentos": 0.0
+    }
   ],
   "categorias": [
-    {"item": "Fatura nu", "total": 16915.06},
-    {"item": "Dollar trip", "total": 11425.0},
-    {"item": "Acerto AP", "total": 9536.91},
-    {"item": "Fatura btg", "total": 9097.91},
-    {"item": "Inglês", "total": 2400.0}
+    {
+      "item": "Fatura nu",
+      "total": 16915.06
+    },
+    {
+      "item": "Dollar trip",
+      "total": 11425.0
+    },
+    {
+      "item": "Paguei / pagou",
+      "total": 10536.909999999998
+    },
+    {
+      "item": "Acerto AP",
+      "total": 9536.909999999998
+    },
+    {
+      "item": "Fatura btg",
+      "total": 9097.91
+    },
+    {
+      "item": "Prestação",
+      "total": 8473.5
+    },
+    {
+      "item": "Condominio",
+      "total": 4036.59
+    },
+    {
+      "item": "Inglês",
+      "total": 2400.0
+    },
+    {
+      "item": "Viagem eua",
+      "total": 2000.0
+    },
+    {
+      "item": "Faturas",
+      "total": 1983.6999999999998
+    },
+    {
+      "item": "Luz",
+      "total": 1950.0300000000002
+    },
+    {
+      "item": "Caix hab extra",
+      "total": 1100.0
+    },
+    {
+      "item": "Internet",
+      "total": 1000.0
+    },
+    {
+      "item": "Fatura Nomad",
+      "total": 884.13
+    },
+    {
+      "item": "Reserva Not",
+      "total": 660.8
+    },
+    {
+      "item": "Gás",
+      "total": 262.21
+    },
+    {
+      "item": "Falta pagar",
+      "total": -2675.744999999999
+    }
   ],
   "investimentos_recentes": {
-    "mes": "Ago/26",
+    "mes": "Set/26",
     "itens": [
-      {"item": "cripto", "valor": 30},
-      {"item": "Invest ações", "valor": 663.73},
-      {"item": "Dollar", "valor": 920},
-      {"item": "tesouro", "valor": 207.74},
-      {"item": "Reservas", "valor": 500}
+      {
+        "item": "cripto",
+        "valor": 0.0
+      },
+      {
+        "item": "Invest ações",
+        "valor": 444.84
+      },
+      {
+        "item": "Dollar",
+        "valor": 275.61
+      },
+      {
+        "item": "tesouro",
+        "valor": 100.0
+      },
+      {
+        "item": "Previdencia",
+        "valor": 25.95
+      },
+      {
+        "item": "Para cada",
+        "valor": 930.66
+      },
+      {
+        "item": "Paguei",
+        "valor": 1332.2199999999998
+      },
+      {
+        "item": "Paguei / pagou",
+        "valor": 1332.2199999999998
+      },
+      {
+        "item": "Falta pagar",
+        "valor": -443.6899999999997
+      }
     ]
   }
 }
