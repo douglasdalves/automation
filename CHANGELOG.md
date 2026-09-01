@@ -13,6 +13,8 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 - Ferramentas MCP para listar e iniciar compose locais
 - Validação de nomes de arquivos YAML para evitar uso indevido de caminhos
 - Comando Telegram `/options` para listar rapidamente todas as ações disponíveis no bot
+- Painel financeiro local com conversão da planilha Excel para JSON em [configs-apps/app-finance-sync](configs-apps/app-finance-sync)
+- Compose de dashboard financeiro em [dc-local/dc-finan-dashboard.yaml](dc-local/dc-finan-dashboard.yaml)
 
 ### Ajustado
 - Melhor organização da documentação e arquitetura do homelab

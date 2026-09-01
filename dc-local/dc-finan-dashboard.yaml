@@ -1,0 +1,10 @@
+name: finance-dashboard
+services:
+  finance-dashboard:
+    image: nginx:1.27-alpine
+    container_name: finance-dashboard
+    restart: unless-stopped
+    ports:
+      - "8085:80"
+    volumes:
+      - /home/pi/automation/configs-apps/app-finance-sync:/usr/share/nginx/html:ro
