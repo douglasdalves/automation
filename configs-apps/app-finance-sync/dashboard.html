@@ -150,6 +150,7 @@
     font-weight:600;
     font-size:0.72rem;
   }
+  table th.num{text-align:right;}
   table td.num{text-align:right; font-variant-numeric:tabular-nums;}
   table tr:last-child td{border-bottom:none;}
 
@@ -174,8 +175,8 @@
 <div class="wrap">
 
   <header>
-    <h1>Painel Financeiro</h1>
-    <div class="period">Dezembro 2025 – Setembro 2026<br>Fonte: 2026_Contas.xlsx</div>
+    <h1>Financial Dashboard</h1>
+    <div class="period">Dados do Ano 2026</div>
   </header>
 
   <div class="kpis" id="kpiRow"></div>
@@ -183,7 +184,7 @@
   <section>
     <div class="section-title">Fluxo mensal</div>
     <h2>Receitas x Despesas</h2>
-    <p class="deck">Entradas totais do mês contra o total de contas fixas e extras, mês a mês.</p>
+    <p class="deck">Entradas totais do mês contra as despesas, mês a mês.</p>
     <div class="chart-box">
       <div class="legend">
         <span><i style="background:#3E7C74"></i>Receita</span>
@@ -197,21 +198,17 @@
     <div class="section-title">Evolução</div>
     <div class="grid-2">
       <div>
-        <h2>Saldo geral e reserva</h2>
-        <p class="deck">Saldo acumulado ao final de cada mês e o quanto sobrou como reserva.</p>
+        <h2>Contas fixas</h2>
+        <p class="deck">Gastos fixos no mês, agrupados por item no período.</p>
         <div class="chart-box">
-          <div class="legend">
-            <span><i style="background:#1E2A38"></i>Saldo geral</span>
-            <span><i style="background:#C08A2E"></i>Reserva</span>
-          </div>
-          <div id="saldoChart"></div>
+          <div id="categoriaChart"></div>
         </div>
       </div>
       <div>
-        <h2>Investimentos</h2>
-        <p class="deck">Total investido (cripto, ações, dólar, tesouro, reservas) por mês.</p>
+        <h2>Contas extras</h2>
+        <p class="deck">Gastos não previstos no mês, agrupados por item noperíodo.</p>
         <div class="chart-box">
-          <div id="investChart"></div>
+          <div id="extrasChart"></div>
         </div>
       </div>
     </div>
@@ -221,10 +218,10 @@
     <div class="section-title">Composição</div>
     <div class="grid-2">
       <div>
-        <h2>Contas fixas por categoria</h2>
-        <p class="deck">Soma de cada conta recorrente ao longo dos 10 meses.</p>
+        <h2>Investimentos</h2>
+        <p class="deck">Total investido (cripto, ações, dólar, tesouro, reservas) no mês atual.</p>
         <div class="chart-box">
-          <div id="categoriaChart"></div>
+          <div id="investChart"></div>
         </div>
       </div>
       <div>
@@ -241,14 +238,14 @@
   <section>
     <div class="section-title">Detalhamento</div>
     <h2>Resumo mensal</h2>
-    <p class="deck">Todos os valores extraídos da planilha, mês a mês.</p>
+    <p class="deck">Todos os valores registrados, mês a mês.</p>
     <div class="chart-box" style="overflow-x:auto;">
       <table id="resumoTable"></table>
     </div>
   </section>
 
   <footer>
-    Setembro/26 aparece com receita e investimentos zerados na planilha original — mês possivelmente incompleto.
+    <p>Dados do dashboard são atualizados automaticamente a cada 5 minutos, ou ao voltar para a aba do navegador.</p>
   </footer>
 
 </div>
@@ -256,27 +253,178 @@
 <div class="tooltip" id="tooltip"></div>
 
 <script>
-const DATA_URL = './finance-data.json';
+const RESET_MONTH = 'Set/26';
+const DATA_START_MONTH = 'Ago/26';
 let data = { labels: [], months: [], categorias: [], investimentos_recentes: { mes: '', itens: [] } };
 
-fetch(DATA_URL)
-  .then((response) => {
-    if (!response.ok) {
-      throw new Error('Não foi possível carregar finance-data.json');
+function buildFreshBaseline() {
+  return {
+    labels: [RESET_MONTH],
+    months: [{
+      label: RESET_MONTH,
+      receita: 0,
+      saldo_anterior: 0,
+      contas_mensais: 0,
+      extras: 0,
+      despesas: 0,
+      saldo: 0,
+      reserva: 0,
+      investimentos: 0,
+      extras_itens: [],
+      categorias: [],
+      investimentos_itens: [],
+    }],
+    categorias: [],
+    investimentos_recentes: { mes: RESET_MONTH, itens: [] },
+  };
+}
+
+function parseMonthIndex(label) {
+  const text = String(label || '').toLowerCase();
+  const monthMap = {
+    jan: 1, fev: 2, mar: 3, abr: 4, mai: 5, jun: 6,
+    jul: 7, ago: 8, set: 9, out: 10, nov: 11, dez: 12
+  };
+
+  for (const [name, number] of Object.entries(monthMap)) {
+    if (text.includes(name)) {
+      const yearMatch = text.match(/(19|20)\d{2}|\d{2}/);
+      const year = yearMatch ? Number(yearMatch[0]) : 2026;
+      const normalizedYear = year < 100 ? 2000 + year : year;
+      return (normalizedYear * 12) + number;
     }
-    return response.json();
-  })
-  .then((payload) => {
-    data = payload;
-    renderDashboard();
-  })
-  .catch((error) => {
-    console.error(error);
-    document.getElementById('kpiRow').innerHTML = '<div class="kpi"><div class="label">Erro</div><div class="value down">JSON não carregado</div></div>';
-    document.getElementById('fluxoChart').innerHTML = '<p style="font-family:Arial,Helvetica,sans-serif;color:#A8462F;margin:0;">Não foi possível carregar os dados do dashboard.</p>';
+  }
+
+  return 0;
+}
+
+function getCurrentMonthIndex() {
+  const today = new Date();
+  return (today.getFullYear() * 12) + today.getMonth() + 1;
+}
+
+function sanitizePayload(payload) {
+  if (!payload || !Array.isArray(payload.months)) {
+    return payload;
+  }
+
+  const startIndex = parseMonthIndex(DATA_START_MONTH);
+  const months = payload.months.filter((month) => parseMonthIndex(month.label) >= startIndex);
+
+  months.sort((firstMonth, secondMonth) => parseMonthIndex(firstMonth.label) - parseMonthIndex(secondMonth.label));
+
+  if (!months.length) {
+    return buildFreshBaseline();
+  }
+
+  return {
+    ...payload,
+    labels: months.map((month) => month.label),
+    months,
+    categorias: Array.isArray(payload.categorias) ? payload.categorias : [],
+    investimentos_recentes: payload.investimentos_recentes && payload.investimentos_recentes.itens
+      ? payload.investimentos_recentes
+      : { mes: months[months.length - 1].label, itens: [] },
+  };
+}
+
+function ensureFreshStart(payload) {
+  const safePayload = sanitizePayload(payload);
+  if (!safePayload || !Array.isArray(safePayload.months) || safePayload.months.length === 0) {
+    return buildFreshBaseline();
+  }
+
+  let previousSaldo = 0;
+  const months = safePayload.months.map((month) => {
+    const extrasItens = Array.isArray(month.extras_itens) ? month.extras_itens.map((item) => ({
+      item: item.item || '',
+      valor: Number(item.valor || 0),
+    })).filter((item) => item.item && item.valor !== 0) : [];
+    const contasMensais = Number(month.contas_mensais || 0);
+    const extras = extrasItens.length
+      ? extrasItens.reduce((total, item) => total + item.valor, 0)
+      : Number(month.extras || 0);
+    const investimentosItens = Array.isArray(month.investimentos_itens) ? month.investimentos_itens : [];
+    const investimentos = investimentosItens.reduce((total, item) => total + Number(item.valor || 0), 0);
+    const despesas = contasMensais + extras;
+    const saldoAnterior = month.saldo_anterior === undefined
+      ? previousSaldo
+      : Number(month.saldo_anterior || 0);
+    const saldo = Number(month.receita || 0) + saldoAnterior - despesas;
+    const normalizedMonth = {
+      label: month.label || RESET_MONTH,
+      receita: Number(month.receita || 0),
+      saldo_anterior: saldoAnterior,
+      contas_mensais: contasMensais,
+      extras,
+      despesas,
+      saldo,
+      reserva: Number(month.reserva || 0),
+      investimentos,
+      extras_itens: extrasItens,
+        categorias: Array.isArray(month.categorias) ? month.categorias : [],
+        investimentos_itens: investimentosItens,
+    };
+    previousSaldo = saldo;
+    return normalizedMonth;
   });
 
+  return {
+    labels: months.map((month) => month.label),
+    months,
+    categorias: months.flatMap((month) => month.categorias),
+    investimentos_recentes: {
+      mes: months[months.length - 1].label,
+      itens: months[months.length - 1].investimentos_itens,
+    },
+  };
+}
+
+function loadDashboardData() {
+  fetch('/api/data')
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error('Não foi possível carregar /api/data');
+      }
+      return response.json();
+    })
+    .then((payload) => {
+      data = ensureFreshStart(sanitizePayload(payload));
+      renderDashboard();
+    })
+    .catch((error) => {
+      console.error(error);
+      document.getElementById('kpiRow').innerHTML = '<div class="kpi"><div class="label">Erro</div><div class="value down">Dados não carregados</div></div>';
+      document.getElementById('fluxoChart').innerHTML = '<p style="font-family:Arial,Helvetica,sans-serif;color:#A8462F;margin:0;">Não foi possível carregar os dados do dashboard.</p>';
+    });
+}
+
+loadDashboardData();
+
+function refreshFromServer() {
+  fetch('/api/data')
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error('Não foi possível carregar /api/data');
+      }
+      return response.json();
+    })
+    .then((payload) => {
+      data = ensureFreshStart(sanitizePayload(payload));
+      renderDashboard();
+    })
+    .catch((error) => {
+      console.warn('Não foi possível recarregar do servidor, mantendo cache:', error);
+    });
+}
+
+window.addEventListener('focus', () => refreshFromServer());
+
 function renderDashboard() {
+  ['fluxoChart', 'extrasChart', 'investChart', 'categoriaChart', 'carteiraChart'].forEach((id) => {
+    document.getElementById(id).replaceChildren();
+  });
+
   const INK = '#1E2A38';
   const TEAL = '#3E7C74';
   const GOLD = '#C08A2E';
@@ -486,7 +634,7 @@ function renderDashboard() {
       svg.appendChild(leftText);
 
       const rightText = el('text', { x: padL + w + 8, y: y + barH / 2 + 4, 'text-anchor': 'start', 'font-size': 10.5, fill: MUTED });
-      rightText.textContent = 'R$ ' + (v / 1000).toFixed(1) + 'k';
+      rightText.textContent = brl(v);
       svg.appendChild(rightText);
     });
 
@@ -542,16 +690,18 @@ function renderDashboard() {
       .join('');
   }
 
-  const validMonths = data.months.filter((month) => month.receita > 0);
-  const lastFull = validMonths[validMonths.length - 1];
-  const totalReceita = validMonths.reduce((sum, month) => sum + month.receita, 0);
-  const totalDespesas = validMonths.reduce((sum, month) => sum + month.despesas, 0);
+  const sourceMonths = Array.isArray(data.months) ? data.months : [];
+  const lastMonth = sourceMonths.reduce((latest, month) =>
+    parseMonthIndex(month.label) > parseMonthIndex(latest.label) ? month : latest,
+    sourceMonths[0] || buildFreshBaseline().months[0],
+  );
+  const currentMonth = sourceMonths.find((month) => parseMonthIndex(month.label) === getCurrentMonthIndex()) || lastMonth;
 
   const kpis = [
-    { label: 'Saldo geral · ' + lastFull.label, value: brl(lastFull.saldo), cls: 'up' },
-    { label: 'Receita acumulada (10 meses)', value: brl(totalReceita), cls: '' },
-    { label: 'Despesas acumuladas (10 meses)', value: brl(totalDespesas), cls: 'down' },
-    { label: 'Investimentos · ' + lastFull.label, value: brl(lastFull.investimentos), cls: '' }
+    { label: 'Saldo geral · ' + currentMonth.label, value: brl(Number(currentMonth.saldo || 0)), cls: 'up' },
+    { label: 'Saldo anterior · ' + currentMonth.label, value: brl(Number(currentMonth.saldo_anterior || 0)), cls: '' },
+    { label: 'Despesas · ' + currentMonth.label, value: brl(Number(currentMonth.despesas || 0)), cls: 'down' },
+    { label: 'Investimentos · ' + currentMonth.label, value: brl(Number(currentMonth.investimentos || 0)), cls: '' }
   ];
 
   document.getElementById('kpiRow').innerHTML = kpis
@@ -559,30 +709,35 @@ function renderDashboard() {
     .join('');
 
   groupedBarChart(document.getElementById('fluxoChart'), data.labels, data.months.map((month) => month.receita), data.months.map((month) => month.despesas), TEAL, RUST);
-  lineChart(document.getElementById('saldoChart'), data.labels, [
-    { name: 'Saldo geral', data: data.months.map((month) => month.saldo), color: INK },
-    { name: 'Reserva', data: data.months.map((month) => month.reserva), color: GOLD, dash: true }
-  ]);
+  const extras = (currentMonth.extras_itens || [])
+    .map((item) => ({ item: item.item, total: Number(item.valor || 0) }))
+    .sort((a, b) => b.total - a.total);
+  hBarChart(document.getElementById('extrasChart'), extras.map((item) => item.item), extras.map((item) => item.total), RUST);
   barChart(document.getElementById('investChart'), data.labels, data.months.map((month) => month.investimentos), TEAL);
-  hBarChart(document.getElementById('categoriaChart'), data.categorias.map((categoria) => categoria.item), data.categorias.map((categoria) => categoria.total), GOLD);
+  const categories = (currentMonth.categorias || [])
+    .map((item) => ({ item: item.item, total: Number(item.total || 0) }))
+    .sort((a, b) => b.total - a.total);
+  hBarChart(document.getElementById('categoriaChart'), categories.map((item) => item.item), categories.map((item) => item.total), GOLD);
 
-  const ir = data.investimentos_recentes;
+  const ir = {
+    mes: currentMonth.label,
+    itens: currentMonth.investimentos_itens || [],
+  };
   document.getElementById('investTitle').textContent = 'Carteira de investimentos · ' + ir.mes;
-  document.getElementById('investDeck').textContent = 'Distribuição por classe em ' + ir.mes + ', o mês mais recente com dados na planilha.';
+  document.getElementById('investDeck').textContent = 'Distribuição por classe em ' + ir.mes + ', o mês atual selecionado automaticamente.';
   donutChart(document.getElementById('carteiraChart'), document.getElementById('carteiraLegend'), ir.itens, [TEAL, GOLD, RUST, INK, MUTED]);
 
   const cols = [
     ['label', 'Mês'],
+    ['saldo_anterior', 'Saldo anterior'],
     ['receita', 'Receita'],
-    ['contas_mensais', 'Contas fixas'],
     ['extras', 'Extras'],
     ['despesas', 'Despesas'],
     ['saldo', 'Saldo geral'],
-    ['reserva', 'Reserva'],
     ['investimentos', 'Investimentos']
   ];
 
-  const thead = '<tr>' + cols.map(([key, label]) => `<th>${label}</th>`).join('') + '</tr>';
+  const thead = '<tr>' + cols.map(([key, label]) => `<th class="${key === 'label' ? '' : 'num'}">${label}</th>`).join('') + '</tr>';
   const rows = data.months.map((month) =>
     '<tr>' + cols.map(([key, label]) => {
       if (key === 'label') {

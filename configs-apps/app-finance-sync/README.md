@@ -1,41 +1,17 @@
 # Finance Sync
 
-Este diretório reúne o painel financeiro local e o script que converte a planilha Excel em JSON para uso em um dashboard servido na rede.
+Este diretório reúne o painel financeiro local, a interface de lançamentos e o servidor SQLite usado pelo dashboard.
 
 ## Estrutura
 
 - `dashboard.html`: painel estático em HTML/SVG
-- `finance-data.json`: arquivo gerado pela conversão
-- `convert_finance_xlsx_to_json.py`: converte a planilha Excel em JSON
-- `requirements.txt`: dependências do script
+- `dashboard-insert.html`: interface para inserir dados sem planilhas
+- `finance.db`: banco SQLite usado pelo servidor em desenvolvimento local
 
-## Requisitos
+## Persistência
 
-```bash
-python -m pip install -r requirements.txt
-```
-
-## Gerar o JSON
-
-### Arquivo local
-
-```bash
-python convert_finance_xlsx_to_json.py "C:/Users/SeuUsuario/OneDrive/2026_Contas.xlsx" --output finance-data.json
-```
-
-### Link compartilhado do OneDrive
-
-```bash
-python convert_finance_xlsx_to_json.py "https://1drv.ms/x/c/SEU_LINK_AQUI?e=SEU_TOKEN" --output finance-data.json
-```
-
-O script detecta URLs do OneDrive e faz o download do arquivo antes de ler o Excel. Isso permite usar o link compartilhado diretamente sem precisar baixar o arquivo manualmente.
-
-A planilha esperada deve ter:
-
-- uma aba com colunas: `mes`, `receita`, `contas_mensais`, `extras`, `despesas`, `saldo`, `reserva`, `investimentos`
-- uma aba opcional de categorias com colunas: `item`, `total`
-- uma aba opcional de carteira com colunas: `item`, `valor` e, quando existir, `mes`
+O servidor usa SQLite como fonte principal. No Compose, o banco fica no volume persistente `finance_data`.
+O `dashboard-insert.html` grava os lançamentos pela API e o `dashboard.html` consulta os mesmos dados.
 
 ## Uso no Raspberry
 
