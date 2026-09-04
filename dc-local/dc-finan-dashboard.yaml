@@ -1,55 +1,68 @@
 name: finance-dashboard
 services:
-  finance-dashboard:
-    cpu_shares: 90
+  finance-api:
+    image: python:3.13-alpine
+    container_name: dc-finance-api
+    working_dir: /app
     command:
-      - nginx
-      - -g
-      - daemon off;
-    container_name: dc-finance-dash
-    deploy:
-      resources:
-        limits:
-          memory: 3796M
+      - python3
+      - finance_app_server.py
+    hostname: dc-finance-api
+    restart: unless-stopped
     environment:
-      - DYNPKG_RELEASE=1
-      - NGINX_VERSION=1.27.5
-      - NJS_RELEASE=1
-      - NJS_VERSION=0.8.10
-      - PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-      - PKG_RELEASE=1
-    hostname: dc-finance-dash
+      FINANCE_DB_PATH: /data/finance.db
+    expose:
+      - "8001"
+    volumes:
+      - type: bind
+        source: /home/dalves/automation/configs-apps/app-finance-sync
+        target: /app
+      - type: volume
+        source: finance_data
+        target: /data
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8001/api/data"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    privileged: false
+    x-casaos:
+      volumes:
+        - container: /app
+          description:
+            en_us: ""
+
+  finance-dashboard:
     image: nginx:1.27-alpine
+    container_name: dc-finance-dash
+    command:
+      - sh
+      - -c
+      - |
+        mkdir -p /etc/nginx/conf.d && \
+        cp /tmp/nginx.conf /etc/nginx/nginx.conf && \
+        nginx -g 'daemon off;'
+    hostname: dc-finance-dash
+    restart: unless-stopped
     ports:
       - target: 80
         published: "8085"
         protocol: tcp
-    restart: unless-stopped
     volumes:
       - type: bind
         source: /home/dalves/automation/configs-apps/app-finance-sync
         target: /usr/share/nginx/html
+        read_only: true
+      - type: bind
+        source: /home/dalves/automation/configs-apps/app-finance-sync/nginx.conf
+        target: /tmp/nginx.conf
+        read_only: true
+    depends_on:
+      finance-api:
+        condition: service_healthy
+    privileged: false
     x-casaos:
-      envs:
-        - container: PATH
-          description:
-            en_us: ""
-        - container: NGINX_VERSION
-          description:
-            en_us: ""
-        - container: PKG_RELEASE
-          description:
-            en_us: ""
-        - container: DYNPKG_RELEASE
-          description:
-            en_us: ""
-        - container: NJS_VERSION
-          description:
-            en_us: ""
-        - container: NJS_RELEASE
-          description:
-            en_us: ""
-      image: ""
       ports:
         - container: "80"
           description:
@@ -58,10 +71,13 @@ services:
         - container: /usr/share/nginx/html
           description:
             en_us: ""
-    devices: []
-    cap_add: []
-    network_mode: finance-dashboard_default
-    privileged: false
+        - container: /tmp/nginx.conf
+          description:
+            en_us: ""
+
+volumes:
+  finance_data:
+
 x-casaos:
   architectures:
     - arm64

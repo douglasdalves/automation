@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cadastro Financeiro Manual</title>
+    <style>
+      :root {
+        --ink: #1e2a38;
+        --paper: #f5f1ea;
+        --line: #d6cfc0;
+        --teal: #3e7c74;
+        --gold: #c08a2e;
+        --rust: #a8462f;
+        --muted: #7a7266;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+      .wrap {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 32px 20px 60px;
+      }
+
+      h1 {
+        margin: 0 0 6px;
+        font-size: 2rem;
+      }
+
+      .subtitle {
+        color: var(--muted);
+        margin-bottom: 22px;
+      }
+
+      .panel {
+        background: rgba(255,255,255,0.5);
+        border: 1px solid var(--line);
+        padding: 18px;
+        margin-bottom: 24px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(220px, 1fr));
+        gap: 16px;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .field.full {
+        grid-column: 1 / -1;
+      }
+
+      label {
+        font-size: 0.78rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      input, button {
+        font: inherit;
+      }
+
+      input {
+        width: 100%;
+        border: 1px solid var(--line);
+        background: #fff;
+        padding: 10px 12px;
+        color: var(--ink);
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 16px;
+      }
+
+      button {
+        border: 1px solid var(--ink);
+        background: var(--ink);
+        color: #fff;
+        padding: 10px 16px;
+        cursor: pointer;
+      }
+
+      button.secondary {
+        background: transparent;
+        color: var(--ink);
+      }
+
+      button.small {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+      }
+
+      .list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .list-row {
+        display: grid;
+        grid-template-columns: 1fr 120px auto;
+        gap: 10px;
+        align-items: end;
+      }
+
+      .list-row button {
+        height: 42px;
+      }
+
+      .status {
+        min-height: 24px;
+        margin-top: 12px;
+        color: var(--teal);
+        font-size: 0.85rem;
+      }
+
+      .status.error {
+        color: var(--rust);
+      }
+
+      @media (max-width: 720px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Cadastro financeiro manual</h1>
+      <div class="subtitle">Crie o dado do mês aqui e gere o JSON do dashboard sem depender da planilha.</div>
+
+      <form id="entryForm">
+        <div class="panel">
+          <div class="grid">
+            <div class="field">
+              <label for="monthLabel">Mês</label>
+              <input id="monthLabel" name="monthLabel" type="text" placeholder="Ex.: Set/26" required />
+            </div>
+
+            <div class="field">
+              <label for="monthLabel">Fonte</label>
+              <input id="sourceNote" name="sourceNote" type="text" placeholder="Ex.: Cadastro manual" />
+            </div>
+
+            <div class="field">
+              <label for="receita">Receita</label>
+              <input id="receita" name="receita" type="number" step="0.01" value="0" />
+            </div>
+
+            <div class="field">
+              <label for="saldoAnterior">Saldo anterior</label>
+              <input id="saldoAnterior" name="saldoAnterior" type="number" step="0.01" value="0" />
+            </div>
+
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Categorias</h2>
+          <div id="categoriaList" class="list"></div>
+          <div class="actions">
+            <button type="button" class="secondary" id="addCategoria">Adicionar categoria</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Investimentos recentes</h2>
+          <div id="investimentoList" class="list"></div>
+          <div class="actions">
+            <button type="button" class="secondary" id="addInvestimento">Adicionar investimento</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Contas Extras</h2>
+          <div id="extraList" class="list"></div>
+          <div class="actions">
+            <button type="button" class="secondary" id="addExtra">Adicionar conta extra</button>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit">Salvar mês</button>
+          <button type="button" class="secondary" id="downloadJson">Baixar JSON</button>
+          <button type="button" class="secondary" id="downloadCsv">Baixar CSV</button>
+          <button type="button" class="secondary" id="resetDashboard">Começar do zero (Set/26)</button>
+          <button type="button" class="secondary" id="openDashboard">Abrir painel</button>
+        </div>
+
+        <div class="panel">
+          <h2>Zerar dados</h2>
+          <div class="grid">
+            <div class="field">
+              <label for="clearMonthInput">Zerar mês</label>
+              <input id="clearMonthInput" type="text" placeholder="Ex.: Set/26" />
+            </div>
+            <div class="field">
+              <label for="clearCategoryInput">Zerar categoria</label>
+              <input id="clearCategoryInput" type="text" placeholder="Ex.: Fatura Nu" />
+            </div>
+          </div>
+          <div class="actions">
+            <button type="button" id="clearMonthBtn" class="secondary">Zerar mês</button>
+            <button type="button" id="clearCategoryBtn" class="secondary">Zerar categoria</button>
+          </div>
+        </div>
+        <div id="status" class="status" aria-live="polite"></div>
+      </form>
+    </div>
+
+    <script>
+      const EMPTY_CATEGORY = { item: '', total: 0 };
+      const EMPTY_EXTRA = { item: '', valor: 0 };
+      const EMPTY_INVESTIMENTO = { item: '', valor: 0 };
+      let formStore = { entries: [] };
+
+      function readStore() {
+        return formStore;
+      }
+
+      function writeStore(data) {
+        formStore = data;
+      }
+
+      function createCategoryRow(data = EMPTY_CATEGORY) {
+        const row = document.createElement('div');
+        row.className = 'list-row';
+        row.innerHTML = `
+          <div class="field">
+            <label>Item</label>
+            <input type="text" class="item" value="${(data.item || '').replace(/"/g, '&quot;')}" placeholder="Ex.: Fatura nu" />
+          </div>
+          <div class="field">
+            <label>Valor</label>
+            <input type="number" class="total" step="0.01" value="${Number(data.total || 0)}" />
+          </div>
+          <button type="button" class="small secondary save-row">Salvar item</button>
+          <button type="button" class="small secondary remove-row">Remover</button>
+        `;
+        row.querySelector('.remove-row').addEventListener('click', () => row.remove());
+        row.querySelector('.save-row').addEventListener('click', () => saveQuickCategoryRow(row));
+        return row;
+      }
+
+      function createInvestmentRow(data = EMPTY_INVESTIMENTO) {
+        const row = document.createElement('div');
+        row.className = 'list-row';
+        row.innerHTML = `
+          <div class="field">
+            <label>Item</label>
+            <input type="text" class="item" value="${(data.item || '').replace(/"/g, '&quot;')}" placeholder="Ex.: cripto" />
+          </div>
+          <div class="field">
+            <label>Valor</label>
+            <input type="number" class="valor" step="0.01" value="${Number(data.valor || 0)}" />
+          </div>
+          <button type="button" class="small secondary save-row">Salvar item</button>
+          <button type="button" class="small secondary remove-row">Remover</button>
+        `;
+        row.querySelector('.remove-row').addEventListener('click', () => row.remove());
+        row.querySelector('.save-row').addEventListener('click', () => saveQuickInvestmentRow(row));
+        return row;
+      }
+
+      function createExtraRow(data = EMPTY_EXTRA) {
+        const row = document.createElement('div');
+        row.className = 'list-row';
+        row.innerHTML = `
+          <div class="field">
+            <label>Item</label>
+            <input type="text" class="item" value="${(data.item || '').replace(/"/g, '&quot;')}" placeholder="Ex.: Manutenção" />
+          </div>
+          <div class="field">
+            <label>Valor</label>
+            <input type="number" class="valor" step="0.01" value="${Number(data.valor || 0)}" />
+          </div>
+          <button type="button" class="small secondary save-row">Salvar item</button>
+          <button type="button" class="small secondary remove-row">Remover</button>
+        `;
+        row.querySelector('.remove-row').addEventListener('click', () => row.remove());
+        row.querySelector('.save-row').addEventListener('click', () => saveQuickExtraRow(row));
+        return row;
+      }
+
+      function readRows(container, type) {
+        const rows = Array.from(container.querySelectorAll('.list-row'));
+        return rows.map((row) => {
+          const item = row.querySelector('.item')?.value?.trim() || '';
+          const totalInput = row.querySelector('.total');
+          const valorInput = row.querySelector('.valor');
+
+          if (type === 'categoria') {
+            return { item, total: Number(totalInput?.value || 0) };
+          }
+
+          return { item, valor: Number(valorInput?.value || 0) };
+        }).filter((entry) => entry.item !== '' && Number(entry.total || entry.valor || 0) !== 0);
+      }
+
+      function buildPayload() {
+        const store = readStore();
+        const entries = store.entries || [];
+
+        const months = entries.map((entry) => ({
+          label: entry.label,
+          receita: Number(entry.receita || 0),
+          saldo_anterior: Number(entry.saldo_anterior || 0),
+          contas_mensais: (entry.categorias || []).reduce((total, categoria) => total + Number(categoria.total || 0), 0),
+          extras: (entry.extras_itens || []).reduce((total, item) => total + Number(item.valor || 0), 0),
+          extras_itens: entry.extras_itens || [],
+          categorias: entry.categorias || [],
+          despesas: Number(entry.despesas || 0),
+          saldo: Number(entry.saldo || 0),
+          reserva: Number(entry.reserva || 0),
+          investimentos: (entry.investimentos_recentes || []).reduce(
+            (total, item) => total + Number(item.valor || 0),
+            0,
+          ),
+          investimentos_itens: entry.investimentos_recentes || [],
+        }));
+
+        return {
+          labels: months.map((month) => month.label),
+          months,
+        };
+      }
+
+      function buildQuickPayload(type, row) {
+        const monthLabel = document.getElementById('monthLabel').value.trim() || 'Set/26';
+        const baseMonth = {
+          label: monthLabel,
+          receita: Number(document.getElementById('receita').value || 0),
+          saldo_anterior: Number(document.getElementById('saldoAnterior').value || 0),
+        };
+
+        if (type === 'categoria') {
+          const item = row.querySelector('.item')?.value?.trim() || '';
+          const total = Number(row.querySelector('.total')?.value || 0);
+          if (!item || total === 0) {
+            return null;
+          }
+          return {
+            labels: [monthLabel],
+            months: [{ ...baseMonth, contas_mensais: total, categorias: [{ item, total }] }],
+          };
+        }
+
+        const item = row.querySelector('.item')?.value?.trim() || '';
+        const valor = Number(row.querySelector('.valor')?.value || 0);
+        if (!item || valor === 0) {
+          return null;
+        }
+        if (type === 'extra') {
+          return {
+            labels: [monthLabel],
+            months: [{ ...baseMonth, extras: valor, extras_itens: [{ item, valor }] }],
+            categorias: [],
+          };
+        }
+        return {
+          labels: [monthLabel],
+          months: [{ ...baseMonth, investimentos: valor, investimentos_itens: [{ item, valor }] }],
+        };
+      }
+
+      function saveQuickCategoryRow(row) {
+        const payload = buildQuickPayload('categoria', row);
+        if (!payload) {
+          showStatus('Preencha o nome e o valor antes de salvar a categoria.', true);
+          return;
+        }
+
+        fetch('/api/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+          .then((response) => response.json())
+          .then((result) => {
+            if (result && result.ok) {
+              showStatus(`Categoria adicionada em ${document.getElementById('monthLabel').value.trim() || 'Set/26'} com sucesso.`);
+              row.querySelector('.save-row').textContent = 'Salvo';
+              row.querySelector('.save-row').disabled = true;
+              return;
+            }
+            throw new Error(result && result.error ? result.error : 'Erro ao salvar categoria');
+          })
+          .catch((error) => {
+            console.warn('Falha ao salvar categoria:', error);
+            showStatus('Não foi possível salvar a categoria no servidor.', true);
+          });
+      }
+
+      function saveQuickInvestmentRow(row) {
+        const payload = buildQuickPayload('investimento', row);
+        if (!payload) {
+          showStatus('Preencha o nome e o valor antes de salvar o investimento.', true);
+          return;
+        }
+
+        fetch('/api/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+          .then((response) => response.json())
+          .then((result) => {
+            if (result && result.ok) {
+              showStatus(`Investimento adicionado em ${document.getElementById('monthLabel').value.trim() || 'Set/26'} com sucesso.`);
+              row.querySelector('.save-row').textContent = 'Salvo';
+              row.querySelector('.save-row').disabled = true;
+              return;
+            }
+            throw new Error(result && result.error ? result.error : 'Erro ao salvar investimento');
+          })
+          .catch((error) => {
+            console.warn('Falha ao salvar investimento:', error);
+            showStatus('Não foi possível salvar o investimento no servidor.', true);
+          });
+      }
+
+      function saveQuickExtraRow(row) {
+        const payload = buildQuickPayload('extra', row);
+        if (!payload) {
+          showStatus('Preencha o nome e o valor antes de salvar a conta extra.', true);
+          return;
+        }
+
+        fetch('/api/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+          .then((response) => response.json())
+          .then((result) => {
+            if (result && result.ok) {
+              showStatus(`Conta extra adicionada em ${document.getElementById('monthLabel').value.trim() || 'Set/26'} com sucesso.`);
+              row.querySelector('.save-row').textContent = 'Salvo';
+              row.querySelector('.save-row').disabled = true;
+              return;
+            }
+            throw new Error(result && result.error ? result.error : 'Erro ao salvar conta extra');
+          })
+          .catch((error) => {
+            console.warn('Falha ao salvar conta extra:', error);
+            showStatus('Não foi possível salvar a conta extra no servidor.', true);
+          });
+      }
+
+      function downloadBlob(filename, content, type) {
+        const blob = new Blob([content], { type });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = filename;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      function showStatus(message, isError = false) {
+        const status = document.getElementById('status');
+        status.textContent = message;
+        status.classList.toggle('error', isError);
+      }
+
+      document.getElementById('addCategoria').addEventListener('click', () => {
+        document.getElementById('categoriaList').appendChild(createCategoryRow());
+      });
+
+      document.getElementById('addInvestimento').addEventListener('click', () => {
+        document.getElementById('investimentoList').appendChild(createInvestmentRow());
+      });
+
+      document.getElementById('addExtra').addEventListener('click', () => {
+        document.getElementById('extraList').appendChild(createExtraRow());
+      });
+
+      document.getElementById('entryForm').addEventListener('submit', (event) => {
+        event.preventDefault();
+
+        const monthLabel = document.getElementById('monthLabel').value.trim();
+        if (!monthLabel) {
+          showStatus('Informe o mês antes de salvar.', true);
+          return;
+        }
+
+        const store = readStore();
+        const entry = {
+          label: monthLabel,
+          source: document.getElementById('sourceNote').value.trim() || 'Cadastro manual',
+          receita: Number(document.getElementById('receita').value || 0),
+          saldo_anterior: Number(document.getElementById('saldoAnterior').value || 0),
+          extras: 0,
+          extras_itens: readRows(document.getElementById('extraList'), 'extra'),
+          despesas: 0,
+          saldo: 0,
+          reserva: 0,
+          investimentos: 0,
+          categorias: readRows(document.getElementById('categoriaList'), 'categoria'),
+          investimentos_recentes: readRows(document.getElementById('investimentoList'), 'investimento'),
+        };
+
+        const existingIndex = store.entries.findIndex((item) => item.label === monthLabel);
+        if (existingIndex >= 0) {
+          store.entries[existingIndex] = entry;
+        } else {
+          store.entries.push(entry);
+        }
+
+        store.entries.sort((a, b) => {
+          const left = a.label || '';
+          const right = b.label || '';
+          return left.localeCompare(right, 'pt-BR', { numeric: true, sensitivity: 'base' });
+        });
+
+        writeStore(store);
+
+        const payload = buildPayload();
+        fetch('/api/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+          .then((response) => response.json())
+          .then((result) => {
+            if (result && result.ok) {
+              showStatus(`Mês ${monthLabel} salvo com sucesso no arquivo persistente.`);
+              return;
+            }
+            throw new Error(result && result.error ? result.error : 'Erro ao salvar');
+          })
+          .catch((error) => {
+            console.warn('Falha ao salvar no backend:', error);
+            showStatus(`Mês ${monthLabel} salvo localmente, mas não persistiu no servidor.`, true);
+          });
+      });
+
+      document.getElementById('downloadJson').addEventListener('click', () => {
+        const payload = buildPayload();
+        const json = JSON.stringify(payload, null, 2);
+        downloadBlob('finance-export.json', json, 'application/json');
+        showStatus('JSON gerado para download.');
+      });
+
+      document.getElementById('downloadCsv').addEventListener('click', () => {
+        const payload = buildPayload();
+        const rows = [
+          ['mes', 'receita', 'saldo_anterior', 'extras', 'despesas', 'saldo', 'reserva', 'investimentos'],
+          ...payload.months.map((month) => [
+            month.label,
+            month.receita,
+            month.saldo_anterior,
+            month.extras,
+            month.despesas,
+            month.saldo,
+            month.reserva,
+            month.investimentos,
+          ]),
+        ];
+        const csv = rows.map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\n');
+        downloadBlob('finance-dados.csv', csv, 'text/csv;charset=utf-8;');
+        showStatus('CSV gerado para Excel/Google Sheets.');
+      });
+
+      document.getElementById('openDashboard').addEventListener('click', () => {
+        window.location.href = './index.html';
+      });
+
+      function hydrateFormWithDefaultData() {
+        document.getElementById('monthLabel').value = 'Set/26';
+        document.getElementById('sourceNote').value = 'Cadastro manual';
+        document.getElementById('receita').value = 0;
+        document.getElementById('saldoAnterior').value = 0;
+
+        const categoriaList = document.getElementById('categoriaList');
+        const investimentoList = document.getElementById('investimentoList');
+        const extraList = document.getElementById('extraList');
+        categoriaList.innerHTML = '';
+        investimentoList.innerHTML = '';
+        extraList.innerHTML = '';
+
+        categoriaList.appendChild(createCategoryRow({ item: 'Fatura nu', total: 0 }));
+        categoriaList.appendChild(createCategoryRow({ item: 'Paguei / pagou', total: 0 }));
+
+        investimentoList.appendChild(createInvestmentRow({ item: 'cripto', valor: 0 }));
+        investimentoList.appendChild(createInvestmentRow({ item: 'Invest ações', valor: 0 }));
+        extraList.appendChild(createExtraRow());
+      }
+
+      function resetManualData() {
+        fetch('/api/reset');
+        hydrateFormWithDefaultData();
+        showStatus('Histórico limpo. Começando em Set/26.');
+      }
+
+      document.getElementById('resetDashboard').addEventListener('click', resetManualData);
+
+      document.getElementById('clearMonthBtn').addEventListener('click', async () => {
+        const month = document.getElementById('clearMonthInput').value.trim();
+        if (!month) {
+          showStatus('Informe o mês para zerar.', true);
+          return;
+        }
+
+        const response = await fetch('/api/clear-month', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ month }),
+        });
+        const result = await response.json();
+        if (result && result.ok) {
+          showStatus(`Mês ${month} zerado com sucesso.`);
+          document.getElementById('clearMonthInput').value = '';
+          return;
+        }
+        showStatus(result && result.error ? result.error : 'Erro ao zerar mês.', true);
+      });
+
+      document.getElementById('clearCategoryBtn').addEventListener('click', async () => {
+        const item = document.getElementById('clearCategoryInput').value.trim();
+        if (!item) {
+          showStatus('Informe a categoria para zerar.', true);
+          return;
+        }
+
+        const response = await fetch('/api/clear-category', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ item }),
+        });
+        const result = await response.json();
+        if (result && result.ok) {
+          showStatus(`Categoria ${item} zerada com sucesso.`);
+          document.getElementById('clearCategoryInput').value = '';
+          return;
+        }
+        showStatus(result && result.error ? result.error : 'Erro ao zerar categoria.', true);
+      });
+
+      hydrateFormWithDefaultData();
+    </script>
+  </body>
+</html>
