@@ -136,8 +136,12 @@ def ensure_clean_payload(payload: dict | None) -> dict:
     if not months:
         return build_fresh_baseline()
 
-    start_index = normalize_month_index("Ago/26")
-    filtered = [month for month in months if isinstance(month, dict) and normalize_month_index(str(month.get("label", ""))) >= start_index]
+    filtered = [
+        month
+        for month in months
+        if isinstance(month, dict) and normalize_month_index(str(month.get("label", ""))) > 0
+    ]
+    filtered.sort(key=lambda month: normalize_month_index(str(month.get("label", ""))))
     if not filtered:
         return build_fresh_baseline()
 
