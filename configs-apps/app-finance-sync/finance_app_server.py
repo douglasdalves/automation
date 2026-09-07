@@ -21,12 +21,13 @@ DEFAULT_PAYLOAD = {
         {
             "label": "Set/26",
             "receita": 0,
+            "ganho_extra": 0,
+            "ganho_extra_itens": [],
             "saldo_anterior": 0,
             "contas_mensais": 0,
             "extras": 0,
             "despesas": 0,
             "saldo": 0,
-            "reserva": 0,
             "investimentos": 0,
             "extras_itens": [],
         }
@@ -221,15 +222,17 @@ def merge_payload(existing: dict, incoming: dict) -> dict:
             categorias = merge_item_lists(previous.get("categorias", []), month.get("categorias", []), "total")
             investimentos_itens = merge_item_lists(previous.get("investimentos_itens", []), month.get("investimentos_itens", []), "valor")
             extras_itens = merge_item_lists(previous.get("extras_itens", []), month.get("extras_itens", []), "valor")
+            ganho_extra_itens = merge_item_lists(previous.get("ganho_extra_itens", []), month.get("ganho_extra_itens", []), "valor")
             normalized = {
                 "label": label,
                 "receita": float(month.get("receita", previous.get("receita", 0)) or 0),
+                "ganho_extra": sum(item["valor"] for item in ganho_extra_itens) or float(month.get("ganho_extra", previous.get("ganho_extra", 0)) or 0),
+                "ganho_extra_itens": ganho_extra_itens,
                 "saldo_anterior": float(month.get("saldo_anterior", previous.get("saldo_anterior", 0)) or 0),
                 "contas_mensais": sum(item["total"] for item in categorias),
                 "extras": sum(item["valor"] for item in extras_itens),
                 "despesas": float(month.get("despesas", previous.get("despesas", 0)) or 0),
                 "saldo": float(month.get("saldo", previous.get("saldo", 0)) or 0),
-                "reserva": float(month.get("reserva", previous.get("reserva", 0)) or 0),
                 "investimentos": sum(item["valor"] for item in investimentos_itens),
                 "extras_itens": extras_itens,
                 "categorias": categorias,
@@ -318,19 +321,27 @@ def clear_month_data(month_label: str) -> dict:
     return write_database_payload(payload)
 
 
-def clear_category_data(category_name: str) -> dict:
+def clear_category_data(category_name: str, month_label: str = "") -> dict:
     current = load_data()
     target = str(category_name or "").strip()
+    selected_month = str(month_label or "").strip()
     if not target:
         return current
 
     months = []
     for month in current.get("months", []):
         updated = json.loads(json.dumps(month))
-        updated["categorias"] = [
-            item for item in (updated.get("categorias") or [])
-            if not (isinstance(item, dict) and str(item.get("item") or "").strip() == target)
-        ]
+        is_selected_month = not selected_month or str(updated.get("label") or "").strip() == selected_month
+        if is_selected_month:
+            updated["categorias"] = [
+                item for item in (updated.get("categorias") or [])
+                if not (isinstance(item, dict) and str(item.get("item") or "").strip() == target)
+            ]
+            updated["contas_mensais"] = sum(
+                float(item.get("total") or 0)
+                for item in updated["categorias"]
+                if isinstance(item, dict)
+            )
         months.append(updated)
     return write_database_payload({"months": months})
 
@@ -445,7 +456,8 @@ class FinanceHandler(BaseHTTPRequestHandler):
 
             try:
                 item_name = payload.get("item") or payload.get("category") or ""
-                cleared = clear_category_data(item_name)
+                month_label = payload.get("month") or payload.get("month_label") or ""
+                cleared = clear_category_data(item_name, month_label)
                 self._send_json({"ok": True, "data": cleared})
                 return
             except Exception as exc:  # pragma: no cover - defensive path

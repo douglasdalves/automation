@@ -7,6 +7,8 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 ## [Unreleased]
 
 ### Adicionado
+- Campo `ganho_extra` com detalhamento por item no cadastro e no painel financeiro
+- Detalhamento mensal por item para contas fixas e investimentos no painel financeiro
 - Documentação principal do projeto em [README.md](README.md)
 - Suporte para listar arquivos Docker Compose em `dc-local`
 - Comando Telegram `/create_docker` para iniciar um compose selecionado
@@ -18,6 +20,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 
 ### Ajustado
 - Reorganização das seções do painel financeiro entre evolução de contas e composição de investimentos
+- Tela de cadastro financeiro permite remover uma conta fixa por item e por mês
 - Melhor organização da documentação e arquitetura do homelab
 - Ajuste de memória do compose do Filebrowser para uso mais estável em Raspberry Pi 4
 - Gráficos de composição e evolução do painel financeiro passam a abrir no mês atual
@@ -26,9 +29,11 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 - Removidos cache do navegador, fallback JSON e ferramentas antigas de importação por planilha
 
 ### Removido
+- Campo `reserva` do fluxo ativo e exportações JSON/CSV do dashboard de inserção
 - Exclusão das pastas de testes e dos artefatos de cache do projeto, sem impacto na execução principal do homelab
 
 ### Corrigido
+- Preservação de receita e saldo anterior ao cadastrar itens pelo dashboard de inserção
 - Ordenação cronológica dos meses no gráfico de receitas e despesas do painel financeiro
 - Soma dos itens de `investimentos_recentes` no campo mensal `investimentos`
 - Cálculo de `contas_mensais` pela soma das categorias e remoção do campo das interfaces de entrada e fluxo
