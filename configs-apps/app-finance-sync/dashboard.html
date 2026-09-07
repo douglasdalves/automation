@@ -152,7 +152,35 @@
   }
   table th.num{text-align:right;}
   table td.num{text-align:right; font-variant-numeric:tabular-nums;}
+  #contasFixasTable, #investimentosTable{
+    min-width:0;
+    table-layout:fixed;
+  }
+  #contasFixasTable td:first-child, #investimentosTable td:first-child{
+    overflow-wrap:anywhere;
+  }
   table tr:last-child td{border-bottom:none;}
+
+  .month-selector{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin:0 0 20px;
+  }
+  .month-selector button{
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--ink);
+    cursor:pointer;
+    font:600 0.78rem Arial,Helvetica,sans-serif;
+    padding:8px 12px;
+  }
+  .month-selector button:hover,
+  .month-selector button.active{
+    background:var(--ink);
+    border-color:var(--ink);
+    color:#fff;
+  }
 
   footer{
     margin-top:40px;
@@ -187,7 +215,7 @@
     <p class="deck">Entradas totais do mês contra as despesas, mês a mês.</p>
     <div class="chart-box">
       <div class="legend">
-        <span><i style="background:#3E7C74"></i>Receita</span>
+        <span><i style="background:#3E7C74"></i>Entradas</span>
         <span><i style="background:#A8462F"></i>Despesas</span>
       </div>
       <div id="fluxoChart"></div>
@@ -236,6 +264,27 @@
   </section>
 
   <section>
+    <div class="section-title">Detalhamento por item</div>
+    <div class="month-selector" id="detailMonthSelector" aria-label="Selecionar mês"></div>
+    <div class="grid-2">
+      <div>
+        <h2>Contas fixas por item</h2>
+        <p class="deck">Consulte quanto foi pago em cada conta fixa por mês.</p>
+        <div class="chart-box">
+          <table id="contasFixasTable"></table>
+        </div>
+      </div>
+      <div>
+        <h2>Investimentos por item</h2>
+        <p class="deck">Consulte quanto foi investido em cada item por mês.</p>
+        <div class="chart-box">
+          <table id="investimentosTable"></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
     <div class="section-title">Detalhamento</div>
     <h2>Resumo mensal</h2>
     <p class="deck">Todos os valores registrados, mês a mês.</p>
@@ -263,12 +312,13 @@ function buildFreshBaseline() {
     months: [{
       label: RESET_MONTH,
       receita: 0,
+      ganho_extra: 0,
+      ganho_extra_itens: [],
       saldo_anterior: 0,
       contas_mensais: 0,
       extras: 0,
       despesas: 0,
       saldo: 0,
-      reserva: 0,
       investimentos: 0,
       extras_itens: [],
       categorias: [],
@@ -344,24 +394,32 @@ function ensureFreshStart(payload) {
     const extras = extrasItens.length
       ? extrasItens.reduce((total, item) => total + item.valor, 0)
       : Number(month.extras || 0);
+    const ganhoExtraItens = Array.isArray(month.ganho_extra_itens) ? month.ganho_extra_itens.map((item) => ({
+      item: item.item || '',
+      valor: Number(item.valor || 0),
+    })).filter((item) => item.item && item.valor !== 0) : [];
+    const ganhoExtra = ganhoExtraItens.length
+      ? ganhoExtraItens.reduce((total, item) => total + item.valor, 0)
+      : Number(month.ganho_extra || 0);
     const investimentosItens = Array.isArray(month.investimentos_itens) ? month.investimentos_itens : [];
     const investimentos = investimentosItens.reduce((total, item) => total + Number(item.valor || 0), 0);
     const despesas = contasMensais + extras;
     const saldoAnterior = month.saldo_anterior === undefined
       ? previousSaldo
       : Number(month.saldo_anterior || 0);
-    const saldo = Number(month.receita || 0) + saldoAnterior - despesas;
+    const saldo = Number(month.receita || 0) + ganhoExtra + saldoAnterior - despesas;
     const normalizedMonth = {
       label: month.label || RESET_MONTH,
       receita: Number(month.receita || 0),
+      ganho_extra: ganhoExtra,
       saldo_anterior: saldoAnterior,
       contas_mensais: contasMensais,
       extras,
       despesas,
       saldo,
-      reserva: Number(month.reserva || 0),
       investimentos,
       extras_itens: extrasItens,
+      ganho_extra_itens: ganhoExtraItens,
         categorias: Array.isArray(month.categorias) ? month.categorias : [],
         investimentos_itens: investimentosItens,
     };
@@ -491,7 +549,7 @@ function renderDashboard() {
       const xB = gx + groupW / 2 + 3;
 
       const rectA = el('rect', { x: xA, y: padT + plotH - hA, width: barW, height: Math.max(hA, 0.5), fill: colorA, rx: 2 });
-      rectA.addEventListener('mousemove', (event) => showTip(event, `${lab} · Receita: ${brl(vA)}`));
+      rectA.addEventListener('mousemove', (event) => showTip(event, `${lab} · Entradas: ${brl(vA)}`));
       rectA.addEventListener('mouseleave', hideTip);
       svg.appendChild(rectA);
 
@@ -606,7 +664,7 @@ function renderDashboard() {
     container.appendChild(svg);
   }
 
-  function hBarChart(container, labels, values, color) {
+  function hBarChart(container, labels, values, color, balancedRows = false) {
     const W = 500;
     const H = 280;
     const padL = 130;
@@ -616,14 +674,15 @@ function renderDashboard() {
     const plotW = W - padL - padR;
     const plotH = H - padT - padB;
     const maxVal = Math.max(...values) * 1.1;
-    const slot = plotH / labels.length;
-    const barH = slot * 0.55;
+    const slot = balancedRows ? 42 : plotH / labels.length;
+    const barH = balancedRows ? 23 : slot * 0.55;
+    const rowsOffset = balancedRows ? Math.max((plotH - (slot * labels.length)) / 2, 0) : 0;
     const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'xMidYMid meet' });
 
     labels.forEach((lab, index) => {
       const v = values[index];
       const w = (v / maxVal) * plotW;
-      const y = padT + index * slot + (slot - barH) / 2;
+      const y = padT + rowsOffset + index * slot + (slot - barH) / 2;
       const rect = el('rect', { x: padL, y, width: Math.max(w, 0.5), height: barH, fill: color, rx: 2 });
       rect.addEventListener('mousemove', (event) => showTip(event, `${lab}: ${brl(v)}`));
       rect.addEventListener('mouseleave', hideTip);
@@ -690,6 +749,57 @@ function renderDashboard() {
       .join('');
   }
 
+  function renderItemDetailTable(container, month, itemsKey, valueKey) {
+    const itemMap = new Map();
+    const items = Array.isArray(month[itemsKey]) ? month[itemsKey] : [];
+    items.forEach((item) => {
+      const name = String(item.item || '').trim();
+      const value = Number(item[valueKey] || 0);
+      if (name && value !== 0) {
+        itemMap.set(name, (itemMap.get(name) || 0) + value);
+      }
+    });
+
+    if (!itemMap.size) {
+      container.innerHTML = '<tr><th>Item</th><th class="num">Valor</th></tr><tr><td colspan="2">Nenhum item registrado.</td></tr>';
+      return;
+    }
+
+    const entries = Array.from(itemMap, ([name, value]) => ({ name, value }))
+      .sort((first, second) => second.value - first.value);
+    const thead = '<tr><th>Item</th><th class="num">Valor</th></tr>';
+    const body = entries
+      .map((entry) => `<tr><td>${entry.name}</td><td class="num">${brl(entry.value)}</td></tr>`)
+      .join('');
+    container.innerHTML = thead + body;
+  }
+
+  function renderItemDetails(month) {
+    renderItemDetailTable(document.getElementById('contasFixasTable'), month, 'categorias', 'total');
+    renderItemDetailTable(document.getElementById('investimentosTable'), month, 'investimentos_itens', 'valor');
+  }
+
+  function renderMonthSelector(months, selectedLabel) {
+    const selector = document.getElementById('detailMonthSelector');
+    selector.innerHTML = months.map((month) => (
+      `<button type="button" class="${month.label === selectedLabel ? 'active' : ''}" data-month="${month.label}" aria-pressed="${month.label === selectedLabel}">${month.label}</button>`
+    )).join('');
+    selector.querySelectorAll('button').forEach((button) => {
+      button.addEventListener('click', () => {
+        const selectedMonth = months.find((month) => month.label === button.dataset.month);
+        if (!selectedMonth) {
+          return;
+        }
+        selector.querySelectorAll('button').forEach((monthButton) => {
+          const isActive = monthButton === button;
+          monthButton.classList.toggle('active', isActive);
+          monthButton.setAttribute('aria-pressed', String(isActive));
+        });
+        renderItemDetails(selectedMonth);
+      });
+    });
+  }
+
   const sourceMonths = Array.isArray(data.months) ? data.months : [];
   const lastMonth = sourceMonths.reduce((latest, month) =>
     parseMonthIndex(month.label) > parseMonthIndex(latest.label) ? month : latest,
@@ -708,7 +818,7 @@ function renderDashboard() {
     .map((kpi) => `<div class="kpi"><div class="label">${kpi.label}</div><div class="value ${kpi.cls}">${kpi.value}</div></div>`)
     .join('');
 
-  groupedBarChart(document.getElementById('fluxoChart'), data.labels, data.months.map((month) => month.receita), data.months.map((month) => month.despesas), TEAL, RUST);
+  groupedBarChart(document.getElementById('fluxoChart'), data.labels, data.months.map((month) => month.receita + month.ganho_extra), data.months.map((month) => month.despesas), TEAL, RUST);
   const extras = (currentMonth.extras_itens || [])
     .map((item) => ({ item: item.item, total: Number(item.valor || 0) }))
     .sort((a, b) => b.total - a.total);
@@ -726,11 +836,14 @@ function renderDashboard() {
   document.getElementById('investTitle').textContent = 'Carteira de investimentos · ' + ir.mes;
   document.getElementById('investDeck').textContent = 'Distribuição por classe em ' + ir.mes + ', o mês atual selecionado automaticamente.';
   donutChart(document.getElementById('carteiraChart'), document.getElementById('carteiraLegend'), ir.itens, [TEAL, GOLD, RUST, INK, MUTED]);
+  renderMonthSelector(data.months, currentMonth.label);
+  renderItemDetails(currentMonth);
 
   const cols = [
     ['label', 'Mês'],
     ['saldo_anterior', 'Saldo anterior'],
     ['receita', 'Receita'],
+    ['ganho_extra', 'Ganho extra'],
     ['extras', 'Extras'],
     ['despesas', 'Despesas'],
     ['saldo', 'Saldo geral'],
