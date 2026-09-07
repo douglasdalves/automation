@@ -303,7 +303,6 @@
 
 <script>
 const RESET_MONTH = 'Set/26';
-const DATA_START_MONTH = 'Ago/26';
 let data = { labels: [], months: [], categorias: [], investimentos_recentes: { mes: '', itens: [] } };
 
 function buildFreshBaseline() {
@@ -358,8 +357,7 @@ function sanitizePayload(payload) {
     return payload;
   }
 
-  const startIndex = parseMonthIndex(DATA_START_MONTH);
-  const months = payload.months.filter((month) => parseMonthIndex(month.label) >= startIndex);
+  const months = payload.months.filter((month) => parseMonthIndex(month.label) > 0);
 
   months.sort((firstMonth, secondMonth) => parseMonthIndex(firstMonth.label) - parseMonthIndex(secondMonth.label));
 
