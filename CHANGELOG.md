@@ -7,6 +7,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 ## [Unreleased]
 
 ### Adicionado
+- Comando Telegram `/deploy_finance` para atualizar o repositorio e reiniciar o painel financeiro
 - Campo `ganho_extra` com detalhamento por item no cadastro e no painel financeiro
 - Detalhamento mensal por item para contas fixas e investimentos no painel financeiro
 - Documentação principal do projeto em [README.md](README.md)

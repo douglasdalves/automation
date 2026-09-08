@@ -54,6 +54,7 @@ http://localhost:5080/mcp
 - `get_health`: consulta CPU, memoria, disco, uptime e containers.
 - Ferramentas Docker: consulta e gerencia containers conforme os tools registrados.
 - `deploy_homelab`: executa `git pull`, instala o app-config-sync e reinicia os servicos configurados.
+- `deploy_finance_app`: executa `git pull` e reinicia os containers `dc-finance-api` e `dc-finance-dash`.
 - `restart_homelab_service`: reinicia um servico listado em `DEPLOY_SERVICES`.
 
 ## O que o deploy faz
@@ -78,6 +79,7 @@ DEPLOY_SERVICES=homelab-telegram-bot,homelab-mcp
 ```
 
 O `/deploy` do bot apenas chama essa ferramenta MCP e mostra o resultado no Telegram.
+O `/deploy_finance` do bot aguarda o `git pull` terminar com sucesso e entao reinicia os dois containers do painel financeiro.
 
 ## systemd
 

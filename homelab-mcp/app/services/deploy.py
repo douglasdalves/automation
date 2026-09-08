@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import Any, Dict
 from dotenv import load_dotenv
 
+from app.services.docker import manage_container
+
 env_path = Path(__file__).parent.parent.parent.parent / ".env"
 load_dotenv(env_path)
 
@@ -12,6 +14,7 @@ _deploy_lock = threading.Lock()
 _COMMAND_TIMEOUT = int(os.getenv("DEPLOY_COMMAND_TIMEOUT")) #nao completar com valor default, para forçar a configuração no .env
 _MAX_OUTPUT_LENGTH = 2000
 _DEFAULT_SERVICES = ("homelab-telegram-bot", "homelab-mcp")
+_FINANCE_CONTAINERS = ("dc-finance-api", "dc-finance-dash")
 
 
 def _configured_services() -> tuple[str, ...]:
@@ -54,6 +57,29 @@ def _output(result: subprocess.CompletedProcess[str]) -> str:
     return text[-_MAX_OUTPUT_LENGTH:]
 
 
+def _git_pull(repository_dir: Path) -> Dict[str, Any]:
+    try:
+        pull = subprocess.run(
+            ["git", "pull", "--ff-only"],
+            cwd=repository_dir,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=_COMMAND_TIMEOUT,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired) as exc:
+        return {"success": False, "step": "git_pull", "error": str(exc)}
+
+    if pull.returncode != 0:
+        return {
+            "success": False,
+            "step": "git_pull",
+            "error": _output(pull) or "git pull failed",
+        }
+
+    return {"success": True, "output": _output(pull)}
+
+
 def deploy() -> Dict[str, Any]:
     repository_dir = Path(
         os.getenv("DEPLOY_REPOSITORY_DIR")
@@ -66,24 +92,9 @@ def deploy() -> Dict[str, Any]:
         return {"success": False, "error": "A deploy is already running."}
 
     try:
-        try:
-            pull = subprocess.run(
-                ["git", "pull", "--ff-only"],
-                cwd=repository_dir,
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=_COMMAND_TIMEOUT,
-            )
-        except (FileNotFoundError, subprocess.TimeoutExpired) as exc:
-            return {"success": False, "step": "git_pull", "error": str(exc)}
-
-        if pull.returncode != 0:
-            return {
-                "success": False,
-                "step": "git_pull",
-                "error": _output(pull) or "git pull failed",
-            }
+        pull = _git_pull(repository_dir)
+        if not pull["success"]:
+            return pull
 
         sync_dir = repository_dir / "configs-apps" / "app-config-sync"
         sync_commands = [
@@ -167,8 +178,47 @@ def deploy() -> Dict[str, Any]:
         return {
             "success": True,
             "step": "complete",
-            "git_pull": _output(pull),
+            "git_pull": pull["output"],
             "restarted_services": restarted_services,
+        }
+    finally:
+        _deploy_lock.release()
+
+
+def deploy_finance() -> Dict[str, Any]:
+    repository_dir = Path(
+        os.getenv("DEPLOY_REPOSITORY_DIR")
+    ).expanduser()
+
+    if not repository_dir.is_dir():
+        return {"success": False, "error": f"Repository directory not found: {repository_dir}"}
+
+    if not _deploy_lock.acquire(blocking=False):
+        return {"success": False, "error": "A deploy is already running."}
+
+    try:
+        pull = _git_pull(repository_dir)
+        if not pull["success"]:
+            return pull
+
+        restarted_containers = []
+        for container in _FINANCE_CONTAINERS:
+            restart = manage_container(container, "restart")
+            if not restart["success"]:
+                return {
+                    "success": False,
+                    "step": "restart_container",
+                    "container": container,
+                    "restarted_containers": restarted_containers,
+                    "error": restart.get("error", "failed to restart container"),
+                }
+            restarted_containers.append(container)
+
+        return {
+            "success": True,
+            "step": "complete",
+            "git_pull": pull["output"],
+            "restarted_containers": restarted_containers,
         }
     finally:
         _deploy_lock.release()
