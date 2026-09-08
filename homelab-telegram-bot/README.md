@@ -51,6 +51,7 @@ python bot.py
 
 - `/status`: mostra CPU, temperatura, memoria, disco, uptime e containers ativos.
 - `/deploy`: atualiza o repositorio e reinicia os servicos configurados.
+- `/deploy_finance`: atualiza o repositorio e reinicia `dc-finance-api` e `dc-finance-dash`.
 - `/restart_service`: mostra botoes para escolher qual servico reiniciar.
 - `/restart_docker`: lista os containers Docker ativos e mostra botoes para escolher qual reiniciar.
 - `/start_docker`: lista os containers Docker e mostra botoes para escolher qual iniciar.

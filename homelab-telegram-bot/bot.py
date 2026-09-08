@@ -38,6 +38,7 @@ logger = logging.getLogger(__name__)
 BOT_COMMANDS = {
     "status": "status do sistema",
     "deploy": "deploy da aplicação",
+    "deploy_finance": "deploy do painel financeiro",
     "restart_service": "reinicia serviço do homelab",
     "restart_docker": "reinicia container Docker",
     "start_docker": "inicia container Docker",
@@ -156,6 +157,33 @@ async def deploy_command(
         )
 
 
+async def deploy_finance_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+    if not is_authorized(update):
+        await update.message.reply_text("⛔ Acesso não autorizado.")
+        return
+
+    await update.message.reply_text("🔄 Atualizando o painel financeiro...")
+
+    try:
+        data = await call_mcp_tool("deploy_finance_app")
+        if data.get("success"):
+            message = "✅ <b>Painel financeiro atualizado</b>"
+        else:
+            error = html.escape(str(data.get("error", "Erro desconhecido")))
+            message = f"❌ <b>Falha ao atualizar o painel financeiro</b>\n<code>{error}</code>"
+
+        await update.message.reply_text(message, parse_mode="HTML")
+    except Exception as exc:
+        logger.exception("Erro ao atualizar o painel financeiro")
+        await update.message.reply_text(
+            f"❌ Erro ao atualizar o painel financeiro:\n<code>{html.escape(str(exc))}</code>",
+            parse_mode="HTML",
+        )
+
+
 async def options_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -222,6 +250,8 @@ def main():
             application.add_handler(CommandHandler("status", status_command))
         elif command_name == "deploy":
             application.add_handler(CommandHandler("deploy", deploy_command))
+        elif command_name == "deploy_finance":
+            application.add_handler(CommandHandler("deploy_finance", deploy_finance_command))
         elif command_name == "restart_service":
             application.add_handler(CommandHandler("restart_service", restart_command))
         elif command_name == "restart_docker":
