@@ -7,6 +7,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 ## [Unreleased]
 
 ### Adicionado
+- Script de backup consistente do SQLite financeiro com envio via rclone
 - Comando Telegram `/deploy_finance` para atualizar o repositorio e reiniciar o painel financeiro
 - Campo `ganho_extra` com detalhamento por item no cadastro e no painel financeiro
 - Detalhamento mensal por item para contas fixas e investimentos no painel financeiro
@@ -20,6 +21,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 - Compose de dashboard financeiro em [dc-local/dc-finan-dashboard.yaml](dc-local/dc-finan-dashboard.yaml)
 
 ### Ajustado
+- Arquivos locais do SQLite financeiro (`finance.db`, `finance.db-wal` e `finance.db-shm`) passam a ser ignorados pelo Git
 - Reorganização das seções do painel financeiro entre evolução de contas e composição de investimentos
 - Tela de cadastro financeiro permite remover uma conta fixa por item e por mês
 - Melhor organização da documentação e arquitetura do homelab
