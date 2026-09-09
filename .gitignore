@@ -7,6 +7,11 @@ dc-local/beszel_agent_data
 homelab-mcp/app/services/__pycache__
 homelab-mcp/tests/__pycache__
 homelab-mcp/app/tools/__pycache__
+configs-apps/app-finance-sync/__pycache__
+configs-apps/app-config-sync/__pycache__
 *.pyo
 .pytest_cache/
 .mypy_cache/
+configs-apps/app-finance-sync/finance.db
+configs-apps/app-finance-sync/finance.db-wal
+configs-apps/app-finance-sync/finance.db-shm
