@@ -1,5 +1,13 @@
 # Instruções do projeto Homelab Automation
 
+# Tecnologias do Projeto
+- Python 3.8+
+- scripts Bash
+- Docker
+- Docker Compose
+- Raspberry Pi OS
+- Telegram Bot API
+
 ## Objetivo
 Este repositório organiza a automação do homelab com foco em Raspberry Pi, Docker, serviços locais, deploy e automação via Telegram com IA.
 
