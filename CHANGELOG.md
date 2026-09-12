@@ -21,6 +21,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 - Compose de dashboard financeiro em [dc-local/dc-finan-dashboard.yaml](dc-local/dc-finan-dashboard.yaml)
 
 ### Ajustado
+- Detalhamento por item do painel financeiro passa a exibir tabelas de contas extras e ganhos extras
 - Resumo mensal do painel financeiro passa a exibir investimentos antes do saldo geral e descontá-los no cálculo do saldo
 - Handlers do bot Telegram organizados na pasta `homelab-telegram-bot/handlers`
 - Arquivos locais do SQLite financeiro (`finance.db`, `finance.db-wal` e `finance.db-shm`) passam a ser ignorados pelo Git

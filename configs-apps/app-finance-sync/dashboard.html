@@ -152,11 +152,12 @@
   }
   table th.num{text-align:right;}
   table td.num{text-align:right; font-variant-numeric:tabular-nums;}
-  #contasFixasTable, #investimentosTable{
+  #contasFixasTable, #extrasTable, #investimentosTable, #ganhosExtrasTable{
     min-width:0;
     table-layout:fixed;
   }
-  #contasFixasTable td:first-child, #investimentosTable td:first-child{
+  #contasFixasTable td:first-child, #extrasTable td:first-child,
+  #investimentosTable td:first-child, #ganhosExtrasTable td:first-child{
     overflow-wrap:anywhere;
   }
   table tr:last-child td{border-bottom:none;}
@@ -210,7 +211,7 @@
   <div class="kpis" id="kpiRow"></div>
 
   <section>
-    <div class="section-title">Fluxo mensal</div>
+    <div class="section-title">Fluxo Mensal</div>
     <h2>Receitas x Despesas</h2>
     <p class="deck">Entradas totais do mês contra as despesas, mês a mês.</p>
     <div class="chart-box">
@@ -226,14 +227,14 @@
     <div class="section-title">Evolução</div>
     <div class="grid-2">
       <div>
-        <h2>Contas fixas</h2>
+        <h2>Contas Fixas</h2>
         <p class="deck">Gastos fixos no mês, agrupados por item no período.</p>
         <div class="chart-box">
           <div id="categoriaChart"></div>
         </div>
       </div>
       <div>
-        <h2>Contas extras</h2>
+        <h2>Contas Extras</h2>
         <p class="deck">Gastos não previstos no mês, agrupados por item noperíodo.</p>
         <div class="chart-box">
           <div id="extrasChart"></div>
@@ -253,7 +254,7 @@
         </div>
       </div>
       <div>
-        <h2 id="investTitle">Carteira de investimentos</h2>
+        <h2 id="investTitle">Carteira de Investimentos</h2>
         <p class="deck" id="investDeck">Distribuição do mês mais recente com dados.</p>
         <div class="chart-box">
           <div id="carteiraChart"></div>
@@ -264,14 +265,19 @@
   </section>
 
   <section>
-    <div class="section-title">Detalhamento por item</div>
+    <div class="section-title">Detalhamento Mensal</div>
     <div class="month-selector" id="detailMonthSelector" aria-label="Selecionar mês"></div>
     <div class="grid-2">
       <div>
-        <h2>Contas fixas por item</h2>
+        <h2>Contas Fixas Mensais</h2>
         <p class="deck">Consulte quanto foi pago em cada conta fixa por mês.</p>
         <div class="chart-box">
           <table id="contasFixasTable"></table>
+        </div>
+        <h2>Contas Extras Mensais</h2>
+        <p class="deck">Consulte quanto foi gasto em cada conta extra por mês.</p>
+        <div class="chart-box">
+          <table id="extrasTable"></table>
         </div>
       </div>
       <div>
@@ -279,6 +285,11 @@
         <p class="deck">Consulte quanto foi investido em cada item por mês.</p>
         <div class="chart-box">
           <table id="investimentosTable"></table>
+        </div>
+        <h2>Ganhos Extras Mensais</h2>
+        <p class="deck">Consulte quanto foi recebido em cada ganho extra por mês.</p>
+        <div class="chart-box">
+          <table id="ganhosExtrasTable"></table>
         </div>
       </div>
     </div>
@@ -774,7 +785,9 @@ function renderDashboard() {
 
   function renderItemDetails(month) {
     renderItemDetailTable(document.getElementById('contasFixasTable'), month, 'categorias', 'total');
+    renderItemDetailTable(document.getElementById('extrasTable'), month, 'extras_itens', 'valor');
     renderItemDetailTable(document.getElementById('investimentosTable'), month, 'investimentos_itens', 'valor');
+    renderItemDetailTable(document.getElementById('ganhosExtrasTable'), month, 'ganho_extra_itens', 'valor');
   }
 
   function renderMonthSelector(months, selectedLabel) {
