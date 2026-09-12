@@ -7,7 +7,7 @@ from telegram.ext import Application, CallbackQueryHandler, CommandHandler, Cont
 
 import config
 from ai_client import AIProviderError, answer_homelab_question
-from docker_handlers import (
+from handlers.docker_handlers import (
     create_compose_callback,
     create_compose_command,
     manage_docker_callback,
@@ -15,7 +15,7 @@ from docker_handlers import (
     start_docker_command,
     stop_docker_command,
 )
-from restart_handlers import (
+from handlers.restart_handlers import (
     restart_callback, 
     restart_command
 )

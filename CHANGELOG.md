@@ -21,6 +21,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 - Compose de dashboard financeiro em [dc-local/dc-finan-dashboard.yaml](dc-local/dc-finan-dashboard.yaml)
 
 ### Ajustado
+- Handlers do bot Telegram organizados na pasta `homelab-telegram-bot/handlers`
 - Arquivos locais do SQLite financeiro (`finance.db`, `finance.db-wal` e `finance.db-shm`) passam a ser ignorados pelo Git
 - Reorganização das seções do painel financeiro entre evolução de contas e composição de investimentos
 - Tela de cadastro financeiro permite remover uma conta fixa por item e por mês
