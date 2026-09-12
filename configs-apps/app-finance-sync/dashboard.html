@@ -405,7 +405,7 @@ function ensureFreshStart(payload) {
     const saldoAnterior = month.saldo_anterior === undefined
       ? previousSaldo
       : Number(month.saldo_anterior || 0);
-    const saldo = Number(month.receita || 0) + ganhoExtra + saldoAnterior - despesas;
+    const saldo = Number(month.receita || 0) + ganhoExtra + saldoAnterior - despesas - investimentos;
     const normalizedMonth = {
       label: month.label || RESET_MONTH,
       receita: Number(month.receita || 0),
@@ -839,13 +839,13 @@ function renderDashboard() {
 
   const cols = [
     ['label', 'Mês'],
-    ['saldo_anterior', 'Saldo anterior'],
+    ['saldo_anterior', 'Saldo Anterior'],
     ['receita', 'Receita'],
-    ['ganho_extra', 'Ganho extra'],
-    ['extras', 'Extras'],
+    ['ganho_extra', 'Ganho Extra'],
     ['despesas', 'Despesas'],
-    ['saldo', 'Saldo geral'],
-    ['investimentos', 'Investimentos']
+    ['extras', 'Despesa Extra'],
+    ['investimentos', 'Investimentos'],
+    ['saldo', 'Saldo geral']
   ];
 
   const thead = '<tr>' + cols.map(([key, label]) => `<th class="${key === 'label' ? '' : 'num'}">${label}</th>`).join('') + '</tr>';
