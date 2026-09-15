@@ -29,7 +29,8 @@ arquivo, compacta e envia para OneDrive ou Google Drive usando `rclone`.
 Antes de ativar o cron:
 
 1. Configure o remote no `rclone`.
-2. Copie `finance-backup.conf.example` para `/etc/finance-backup.conf` e ajuste `RCLONE_REMOTE`.
+
+2. Copie `finance.conf.example` para `/etc/finance-backup.conf` e ajuste `RCLONE_REMOTE`.
 3. Instale o script em `/usr/local/bin/finance-backup.sh` com permissao de execucao.
 4. Descomente a linha correspondente em `raspberry-scripts/cron.config`.
 

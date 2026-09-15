@@ -9,6 +9,7 @@ LOCAL_CONF="$SCRIPT_DIR/telegram.conf"
 CONTAINERS_CONF="$SCRIPT_DIR/docker-containers.conf"
 DOCKER_MORNING_START="$SCRIPT_DIR/docker_morning_start.sh"
 DOCKER_NIGHT_STOP="$SCRIPT_DIR/docker_night_stop.sh"
+FINANCE_BACKUP="$SCRIPT_DIR/finance_backup.sh"
 
 if [ ! -f "$LOCAL_CONF" ]; then
     echo "❌ Erro: $LOCAL_CONF não encontrado"
@@ -25,10 +26,12 @@ echo "Copiando $LOCAL_CONF para /usr/local/bin/..."
 sudo cp "$CONTAINERS_CONF" /usr/local/bin/docker-containers.conf
 sudo cp "$DOCKER_MORNING_START" /usr/local/bin/docker_morning_start.sh
 sudo cp "$DOCKER_NIGHT_STOP" /usr/local/bin/docker_night_stop.sh
+sudo cp "$FINANCE_BACKUP" /usr/local/bin/finance_backup.sh
 
 # Define permissões apropriadas
 #sudo chmod 644 /usr/local/bin/telegram.conf
 sudo chmod 644 /usr/local/bin/docker-containers.conf
+sudo chmod 755 /usr/local/bin/finance_backup.sh
 
 # Verifica se foi criado com sucesso
 if [ -f /usr/local/bin/telegram.conf ] && [ -f /usr/local/bin/docker-containers.conf ]; then

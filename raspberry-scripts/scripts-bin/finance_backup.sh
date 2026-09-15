@@ -46,7 +46,7 @@ cleanup() {
 trap cleanup EXIT
 
 echo "Criando snapshot SQLite consistente..."
-docker exec "$CONTAINER_NAME" python3 - "$CONTAINER_DATABASE" "$CONTAINER_SNAPSHOT" <<'PY'
+docker exec -i "$CONTAINER_NAME" python3 - "$CONTAINER_DATABASE" "$CONTAINER_SNAPSHOT" <<'PY'
 import sqlite3
 import sys
 
