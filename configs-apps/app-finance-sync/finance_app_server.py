@@ -182,11 +182,58 @@ def ensure_clean_payload(payload: dict | None) -> dict:
             if str(month.get("label") or "").strip() == recent_month:
                 month["investimentos"] = recent_total
 
+    # These are derived values.  The entry form sends them as zero because it
+    # only persists their component rows; previously the dashboard recalculated
+    # them in JavaScript, while API consumers (such as /finance) saw the zeroes.
     for month in cleaned["months"]:
-        month["investimentos"] = sum(
-            float(item.get("valor") or 0)
-            for item in (month.get("investimentos_itens") or [])
-            if isinstance(item, dict)
+        categorias = month.get("categorias")
+        if isinstance(categorias, list) and categorias:
+            month["contas_mensais"] = sum(
+                float(item.get("total") or 0)
+                for item in categorias
+                if isinstance(item, dict)
+            )
+        else:
+            month["contas_mensais"] = float(month.get("contas_mensais") or 0)
+
+        extras_itens = month.get("extras_itens")
+        if isinstance(extras_itens, list) and extras_itens:
+            month["extras"] = sum(
+                float(item.get("valor") or 0)
+                for item in extras_itens
+                if isinstance(item, dict)
+            )
+        else:
+            month["extras"] = float(month.get("extras") or 0)
+
+        ganho_extra_itens = month.get("ganho_extra_itens")
+        if isinstance(ganho_extra_itens, list) and ganho_extra_itens:
+            month["ganho_extra"] = sum(
+                float(item.get("valor") or 0)
+                for item in ganho_extra_itens
+                if isinstance(item, dict)
+            )
+        else:
+            month["ganho_extra"] = float(month.get("ganho_extra") or 0)
+
+        investimentos_itens = month.get("investimentos_itens")
+        if isinstance(investimentos_itens, list) and investimentos_itens:
+            month["investimentos"] = sum(
+                float(item.get("valor") or 0)
+                for item in investimentos_itens
+                if isinstance(item, dict)
+            )
+        else:
+            month["investimentos"] = float(month.get("investimentos") or 0)
+
+        month["despesas"] = month["contas_mensais"] + month["extras"]
+        month["saldo_anterior"] = float(month.get("saldo_anterior") or 0)
+        month["saldo"] = (
+            float(month.get("receita") or 0)
+            + month["ganho_extra"]
+            + month["saldo_anterior"]
+            - month["despesas"]
+            - month["investimentos"]
         )
 
     cleaned.pop("categorias", None)
@@ -204,7 +251,9 @@ def load_data() -> dict:
         return write_database_payload(build_fresh_baseline())
 
     months = [json.loads(payload) for _, payload in rows]
-    return {"labels": [month["label"] for month in months], "months": months}
+    # Normalize on read too, so data saved before derived totals were handled
+    # server-side is immediately correct for API clients after deployment.
+    return ensure_clean_payload({"labels": [month["label"] for month in months], "months": months})
 
 
 def merge_payload(existing: dict, incoming: dict) -> dict:
