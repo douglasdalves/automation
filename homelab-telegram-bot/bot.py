@@ -7,6 +7,7 @@ from telegram.ext import Application, CallbackQueryHandler, CommandHandler, Cont
 
 import config
 from ai_client import AIProviderError, answer_homelab_question
+
 from handlers.docker_handlers import (
     create_compose_callback,
     create_compose_command,
@@ -19,9 +20,14 @@ from handlers.restart_handlers import (
     restart_callback, 
     restart_command
 )
+from handlers.finance_handlers import (
+    deploy_finance_command,
+    finance_command,
+)
 
 from mcp_client import call_mcp_tool, is_authorized
 
+#-------------------------------- CONFIG ---------------------------------
 
 TELEGRAM_BOT_TOKEN = config.TELEGRAM_BOT_TOKEN
 MCP_URL = config.MCP_URL
@@ -39,6 +45,7 @@ BOT_COMMANDS = {
     "status": "status do sistema",
     "deploy": "deploy da aplicação",
     "deploy_finance": "deploy do painel financeiro",
+    "finance": "resumo financeiro do mês atual",
     "restart_service": "reinicia serviço do homelab",
     "restart_docker": "reinicia container Docker",
     "start_docker": "inicia container Docker",
@@ -47,6 +54,8 @@ BOT_COMMANDS = {
     "options": "lista todos os comandos",
 }
 
+
+#-------------------------------- STATUS ---------------------------------
 
 def format_health(data: dict) -> str:
     cpu = data.get("cpu", {})
@@ -130,6 +139,8 @@ async def status_command(
         )
 
 
+#-------------------------------- DEPLOY ---------------------------------
+
 async def deploy_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -157,32 +168,7 @@ async def deploy_command(
         )
 
 
-async def deploy_finance_command(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE,
-):
-    if not is_authorized(update):
-        await update.message.reply_text("⛔ Acesso não autorizado.")
-        return
-
-    await update.message.reply_text("🔄 Atualizando o painel financeiro...")
-
-    try:
-        data = await call_mcp_tool("deploy_finance_app")
-        if data.get("success"):
-            message = "✅ <b>Painel financeiro atualizado</b>"
-        else:
-            error = html.escape(str(data.get("error", "Erro desconhecido")))
-            message = f"❌ <b>Falha ao atualizar o painel financeiro</b>\n<code>{error}</code>"
-
-        await update.message.reply_text(message, parse_mode="HTML")
-    except Exception as exc:
-        logger.exception("Erro ao atualizar o painel financeiro")
-        await update.message.reply_text(
-            f"❌ Erro ao atualizar o painel financeiro:\n<code>{html.escape(str(exc))}</code>",
-            parse_mode="HTML",
-        )
-
+#-------------------------------- OPTIONS ---------------------------------
 
 async def options_command(
     update: Update,
@@ -201,6 +187,7 @@ async def options_command(
         parse_mode="HTML",
     )
 
+#-------------------------------- IA ---------------------------------
 
 async def natural_language_command(
     update: Update,
@@ -231,6 +218,7 @@ async def natural_language_command(
             message
         )
 
+#-------------------------------- BOT ---------------------------------
 
 def main():
     if not TELEGRAM_BOT_TOKEN:
@@ -252,6 +240,8 @@ def main():
             application.add_handler(CommandHandler("deploy", deploy_command))
         elif command_name == "deploy_finance":
             application.add_handler(CommandHandler("deploy_finance", deploy_finance_command))
+        elif command_name == "finance":
+            application.add_handler(CommandHandler("finance", finance_command))
         elif command_name == "restart_service":
             application.add_handler(CommandHandler("restart_service", restart_command))
         elif command_name == "restart_docker":

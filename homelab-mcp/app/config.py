@@ -13,3 +13,4 @@ class Config:
     MCP_HOST = os.getenv("MCP_HOST") #nao completar com valor default, para forçar a configuração no .env
     MCP_PORT = int(os.getenv("MCP_PORT")) #nao completar com valor default, para forçar a configuração no .env
     ENVIRONMENT = os.getenv("ENVIRONMENT") #nao completar com valor default, para forçar a configuração no .env
+    FINANCE_DASHBOARD_DATA_URL = os.getenv("FINANCE_DASHBOARD_DATA_URL")
