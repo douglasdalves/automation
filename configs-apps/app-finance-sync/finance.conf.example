@@ -1,0 +1,16 @@
+# Copie para /etc/finance-backup.conf e ajuste os valores do seu ambiente.
+# Este arquivo é lido pelo script de backup da aplicação financeira.
+
+# Nome do remote configurado no rclone, por exemplo: "onedrive" ou "gdrive"
+RCLONE_REMOTE="googledrive"
+
+# Pasta dentro do remote onde os backups do financeiro serão enviados
+RCLONE_PATH="homelab-backups/finance"
+
+# Configuração opcional do container e do diretório local de backup
+CONTAINER_NAME="dc-finance-api"
+CONTAINER_DATABASE="/app/finance.db"
+BACKUP_DIR="/var/backups/finance"
+
+# Quantos dias manter backups remotos antigos
+RETENTION_DAYS="30"
