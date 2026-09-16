@@ -14,3 +14,5 @@ class Config:
     MCP_PORT = int(os.getenv("MCP_PORT")) #nao completar com valor default, para forçar a configuração no .env
     ENVIRONMENT = os.getenv("ENVIRONMENT") #nao completar com valor default, para forçar a configuração no .env
     FINANCE_DASHBOARD_DATA_URL = os.getenv("FINANCE_DASHBOARD_DATA_URL")
+    FINANCE_BACKUP_SCRIPT = os.getenv("FINANCE_BACKUP_SCRIPT") #nao completar com valor default, para forçar a configuração no .env
+    FINANCE_BACKUP_COMMAND_TIMEOUT = int(os.getenv("FINANCE_BACKUP_COMMAND_TIMEOUT")) #nao completar com valor default, para forçar a configuração no .env
