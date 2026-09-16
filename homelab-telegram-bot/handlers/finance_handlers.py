@@ -81,3 +81,35 @@ async def finance_command(
             f"❌ Erro ao consultar o resumo financeiro:\n<code>{html.escape(str(exc))}</code>",
             parse_mode="HTML",
         )
+
+
+#-------------------------------- FINANCE BACKUP --------------------------
+
+async def finance_backup_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+    if not is_authorized(update):
+        await update.message.reply_text("⛔ Acesso não autorizado.")
+        return
+
+    await update.message.reply_text("💾 Iniciando backup financeiro...")
+
+    try:
+        data = await call_mcp_tool("start_finance_backup")
+        if data.get("success"):
+            output = html.escape(str(data.get("output", "")))
+            message = "✅ <b>Backup financeiro concluído</b>"
+            if output:
+                message += f"\n<code>{output}</code>"
+        else:
+            error = html.escape(str(data.get("error", "Erro desconhecido")))
+            message = f"❌ <b>Falha no backup financeiro</b>\n<code>{error}</code>"
+
+        await update.message.reply_text(message, parse_mode="HTML")
+    except Exception as exc:
+        logger.exception("Erro ao executar backup financeiro")
+        await update.message.reply_text(
+            f"❌ Erro ao executar backup financeiro:\n<code>{html.escape(str(exc))}</code>",
+            parse_mode="HTML",
+        )

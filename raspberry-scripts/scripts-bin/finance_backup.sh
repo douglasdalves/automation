@@ -2,6 +2,20 @@
 
 set -Eeuo pipefail
 
+# Impede que uma chamada manual (MCP/Telegram) e o cron executem o mesmo
+# backup ao mesmo tempo.
+LOCK_FILE="${FINANCE_BACKUP_LOCK_FILE:-/var/lock/finance-backup.lock}"
+if ! command -v flock >/dev/null 2>&1; then
+  echo "Erro: comando nao encontrado: flock" >&2
+  exit 1
+fi
+mkdir -p "$(dirname "$LOCK_FILE")"
+exec 9>"$LOCK_FILE"
+if ! flock -n 9; then
+  echo "Erro: ja existe um backup financeiro em execucao" >&2
+  exit 1
+fi
+
 CONFIG_FILE="${FINANCE_BACKUP_CONFIG:-/etc/finance-backup.conf}"
 if [ -f "$CONFIG_FILE" ]; then
   # shellcheck source=/dev/null

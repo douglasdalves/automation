@@ -20,6 +20,8 @@ ENVIRONMENT=ambiente
 DEPLOY_REPOSITORY_DIR=path
 DEPLOY_COMMAND_TIMEOUT=number
 DEPLOY_SERVICES=service_value
+FINANCE_BACKUP_SCRIPT=/usr/local/bin/finance_backup.sh
+FINANCE_BACKUP_COMMAND_TIMEOUT=900
 ```
 
 O arquivo e carregado por `app/config.py` e pelo servico de deploy.
@@ -55,6 +57,7 @@ http://localhost:5080/mcp
 - Ferramentas Docker: consulta e gerencia containers conforme os tools registrados.
 - `deploy_homelab`: executa `git pull`, instala o app-config-sync e reinicia os servicos configurados.
 - `deploy_finance_app`: executa `git pull` e reinicia os containers `dc-finance-api` e `dc-finance-dash`.
+- `start_finance_backup`: executa, como root e sem argumentos, o script definido em `FINANCE_BACKUP_SCRIPT`.
 - `restart_homelab_service`: reinicia um servico listado em `DEPLOY_SERVICES`.
 
 ## O que o deploy faz
@@ -106,5 +109,11 @@ sudo visudo -f /etc/sudoers.d/homelab-deploy
 ```
 
 Inclua os comandos necessarios para `mkdir`, `cp`, `chmod` e `systemctl`, sempre usando caminhos absolutos e somente os servicos permitidos.
+
+Para o backup manual, inclua tambem a regra restrita ao script instalado:
+
+```sudoers
+dalves ALL=(root) NOPASSWD: /usr/local/bin/finance_backup.sh
+```
 
 
