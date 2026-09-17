@@ -2,6 +2,45 @@
 
 set -Eeuo pipefail
 
+TELEGRAM_CONFIG_FILE="${TELEGRAM_CONFIG_FILE:-/usr/local/bin/telegram.conf}"
+if [ -f "$TELEGRAM_CONFIG_FILE" ]; then
+  # shellcheck source=/dev/null
+  source "$TELEGRAM_CONFIG_FILE"
+fi
+
+send_failure_notification() {
+  local status="$1"
+
+  # A falha ao avisar o Telegram nunca deve ocultar o erro do backup.
+  if ! command -v curl >/dev/null 2>&1 || [ -z "${BOT_TOKEN:-}" ] || [ -z "${CHAT_ID:-}" ]; then
+    return 0
+  fi
+
+  curl --max-time 15 -sS -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+    -d "chat_id=${CHAT_ID}" \
+    --data-urlencode "text=❌ Backup financeiro falhou (codigo ${status}). Veja /var/log/finance-backup.log." \
+    >/dev/null 2>&1 || true
+}
+
+cleanup() {
+  if [ -n "${CONTAINER_NAME:-}" ] && [ -n "${CONTAINER_SNAPSHOT:-}" ]; then
+    docker exec "$CONTAINER_NAME" rm -f "$CONTAINER_SNAPSHOT" >/dev/null 2>&1 || true
+  fi
+  rm -f "${LOCAL_SNAPSHOT:-}" "${ARCHIVE:-}" || true
+}
+
+on_exit() {
+  local status=$?
+  cleanup
+
+  if [ "$status" -ne 0 ]; then
+    send_failure_notification "$status"
+  fi
+
+  exit "$status"
+}
+trap on_exit EXIT
+
 # Impede que uma chamada manual (MCP/Telegram) e o cron executem o mesmo
 # backup ao mesmo tempo.
 LOCK_FILE="${FINANCE_BACKUP_LOCK_FILE:-/var/lock/finance-backup.lock}"
@@ -52,12 +91,6 @@ CONTAINER_SNAPSHOT="/tmp/finance-backup-${DATE}.db"
 LOCAL_SNAPSHOT="$BACKUP_DIR/finance-${DATE}.db"
 ARCHIVE="$LOCAL_SNAPSHOT.gz"
 REMOTE_TARGET="${RCLONE_REMOTE}:${RCLONE_PATH}"
-
-cleanup() {
-  docker exec "$CONTAINER_NAME" rm -f "$CONTAINER_SNAPSHOT" >/dev/null 2>&1 || true
-  rm -f "$LOCAL_SNAPSHOT" "$ARCHIVE"
-}
-trap cleanup EXIT
 
 echo "Criando snapshot SQLite consistente..."
 docker exec -i "$CONTAINER_NAME" python3 - "$CONTAINER_DATABASE" "$CONTAINER_SNAPSHOT" <<'PY'
