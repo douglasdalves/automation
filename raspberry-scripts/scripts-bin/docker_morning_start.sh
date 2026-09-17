@@ -37,35 +37,31 @@ else
 fi
 
 ERRORS=0
-REPORT="📦 *Relatório de Start Containers*%0A"
+FAILED_CONTAINERS=()
 
 for c in "${CONTAINERS[@]}"; do
   if ! docker ps -a --format '{{.Names}}' | grep -q "^${c}$"; then
-    REPORT+="❌ ${c} não existe%0A"
+    FAILED_CONTAINERS+=("$c")
     ((ERRORS++))
     continue
   fi
 
-  OUTPUT=$(docker start "$c" 2>&1)
-  STATUS=$?
-
-  if [ $STATUS -eq 0 ]; then
+  if docker start "$c" >/dev/null 2>&1; then
     sleep 2
     if docker ps --format '{{.Names}}' | grep -q "^${c}$"; then
-      REPORT+="✅ ${c} iniciado com sucesso%0A"
+      continue
     else
-      REPORT+="⚠️ ${c} iniciou mas não está rodando%0A"
+      FAILED_CONTAINERS+=("$c")
       ((ERRORS++))
     fi
   else
-    REPORT+="❌ Erro ao iniciar ${c}%0A${OUTPUT}%0A"
+    FAILED_CONTAINERS+=("$c")
     ((ERRORS++))
   fi
 done
 
 if [ $ERRORS -gt 0 ]; then
-  send_telegram "$REPORT"
+  send_telegram "⚠️ Falha ao iniciar os containers: ${FAILED_CONTAINERS[*]}"
 else
-  REPORT+="🎉 Todos iniciados com sucesso"
-  send_telegram "$REPORT"
+  send_telegram "🎉 Todos os containers foram iniciados com sucesso"
 fi

@@ -37,36 +37,32 @@ else
 fi
 
 ERRORS=0
-REPORT="🛑 Relatório de Stop Containers%0A"
+FAILED_CONTAINERS=()
 
 for c in "${CONTAINERS[@]}"; do
   if ! docker ps -a --format '{{.Names}}' | grep -q "^${c}$"; then
-    REPORT+="❌ ${c} não existe%0A"
+    FAILED_CONTAINERS+=("$c")
     ((ERRORS++))
     continue
   fi
 
-  OUTPUT=$(docker stop "$c" 2>&1)
-  STATUS=$?
-
-  if [ $STATUS -eq 0 ]; then
+  if docker stop "$c" >/dev/null 2>&1; then
     sleep 2
     if ! docker ps --format '{{.Names}}' | grep -q "^${c}$"; then
-      REPORT+="✅ ${c} parado com sucesso%0A"
+      continue
     else
-      REPORT+="⚠️ ${c} ainda está rodando%0A"
+      FAILED_CONTAINERS+=("$c")
       ((ERRORS++))
     fi
   else
-    REPORT+="❌ Erro ao parar ${c}%0A${OUTPUT}%0A"
+    FAILED_CONTAINERS+=("$c")
     ((ERRORS++))
   fi
 done
 
 if [ $ERRORS -gt 0 ]; then
-  send_telegram "$REPORT"
+  send_telegram "⚠️ Falha ao parar os containers: ${FAILED_CONTAINERS[*]}"
 else
-  REPORT+="🎉 Todos parados com sucesso"
-  send_telegram "$REPORT"
+  send_telegram "🎉 Todos os containers foram parados com sucesso"
 fi
 
