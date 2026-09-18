@@ -46,6 +46,11 @@ for c in "${CONTAINERS[@]}"; do
     continue
   fi
 
+  # `docker start` succeeds even if the container is already running.
+  if docker ps --format '{{.Names}}' | grep -q "^${c}$"; then
+    continue
+  fi
+
   if docker start "$c" >/dev/null 2>&1; then
     sleep 2
     if docker ps --format '{{.Names}}' | grep -q "^${c}$"; then
@@ -63,5 +68,5 @@ done
 if [ $ERRORS -gt 0 ]; then
   send_telegram "⚠️ Falha ao iniciar os containers: ${FAILED_CONTAINERS[*]}"
 else
-  send_telegram "🎉 Todos os containers foram iniciados com sucesso"
+  send_telegram "✅ Containers iniciados com sucesso"
 fi
