@@ -46,6 +46,11 @@ for c in "${CONTAINERS[@]}"; do
     continue
   fi
 
+  # `docker stop` succeeds even if the container is already stopped.
+  if ! docker ps --format '{{.Names}}' | grep -q "^${c}$"; then
+    continue
+  fi
+
   if docker stop "$c" >/dev/null 2>&1; then
     sleep 2
     if ! docker ps --format '{{.Names}}' | grep -q "^${c}$"; then
@@ -63,6 +68,6 @@ done
 if [ $ERRORS -gt 0 ]; then
   send_telegram "⚠️ Falha ao parar os containers: ${FAILED_CONTAINERS[*]}"
 else
-  send_telegram "🎉 Todos os containers foram parados com sucesso"
+  send_telegram "✅ Containers parados com sucesso"
 fi
 
