@@ -1,11 +1,9 @@
 import html
 import logging
 
+from mcp_client import call_mcp_tool, is_authorized
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ContextTypes
-
-from mcp_client import call_mcp_tool, is_authorized
-
 
 logger = logging.getLogger(__name__)
 

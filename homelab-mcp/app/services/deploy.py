@@ -2,10 +2,10 @@ import os
 import subprocess
 import threading
 from pathlib import Path
-from typing import Any, Dict
-from dotenv import load_dotenv
+from typing import Any
 
 from app.services.docker import manage_container
+from dotenv import load_dotenv
 
 env_path = Path(__file__).parent.parent.parent.parent / ".env"
 load_dotenv(env_path)
@@ -25,7 +25,7 @@ def _configured_services() -> tuple[str, ...]:
     )
 
 
-def restart_service(service: str) -> Dict[str, Any]:
+def restart_service(service: str) -> dict[str, Any]:
     if service not in _configured_services():
         return {"success": False, "error": f"Serviço não permitido: {service}"}
 
@@ -57,7 +57,7 @@ def _output(result: subprocess.CompletedProcess[str]) -> str:
     return text[-_MAX_OUTPUT_LENGTH:]
 
 
-def _git_pull(repository_dir: Path) -> Dict[str, Any]:
+def _git_pull(repository_dir: Path) -> dict[str, Any]:
     try:
         pull = subprocess.run(
             ["git", "pull", "--ff-only"],
@@ -80,7 +80,7 @@ def _git_pull(repository_dir: Path) -> Dict[str, Any]:
     return {"success": True, "output": _output(pull)}
 
 
-def deploy() -> Dict[str, Any]:
+def deploy() -> dict[str, Any]:
     repository_dir = Path(
         os.getenv("DEPLOY_REPOSITORY_DIR")
     ).expanduser()
@@ -185,7 +185,7 @@ def deploy() -> Dict[str, Any]:
         _deploy_lock.release()
 
 
-def sync_app_configs() -> Dict[str, Any]:
+def sync_app_configs() -> dict[str, Any]:
     """Copies the files configured in app-config-sync without a full deploy."""
     if not _deploy_lock.acquire(blocking=False):
         return {"success": False, "error": "A deploy or sync is already running."}
@@ -214,7 +214,7 @@ def sync_app_configs() -> Dict[str, Any]:
         _deploy_lock.release()
 
 
-def deploy_finance() -> Dict[str, Any]:
+def deploy_finance() -> dict[str, Any]:
     repository_dir = Path(
         os.getenv("DEPLOY_REPOSITORY_DIR")
     ).expanduser()
