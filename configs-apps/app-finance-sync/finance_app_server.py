@@ -464,8 +464,8 @@ class FinanceHandler(BaseHTTPRequestHandler):
 
             try:
                 saved = save_data(payload)
-            except Exception as exc:  # pragma: no cover - defensive path
-                self._send_json({"ok": False, "error": str(exc)}, status=500) # noqa: BLE001
+            except Exception as exc:  # noqa: BLE001 # pragma: no cover - defensive path
+                self._send_json({"ok": False, "error": str(exc)}, status=500)
                 return
 
             self._send_json({"ok": True, "data": saved})
@@ -489,8 +489,8 @@ class FinanceHandler(BaseHTTPRequestHandler):
                 cleared = clear_month_data(month_label)
                 self._send_json({"ok": True, "data": cleared})
                 return
-            except Exception as exc:  # pragma: no cover - defensive path
-                self._send_json({"ok": False, "error": str(exc)}, status=500) # noqa: BLE001
+            except Exception as exc:  # noqa: BLE001 # pragma: no cover - defensive path
+                self._send_json({"ok": False, "error": str(exc)}, status=500)
                 return
 
         if parsed.path in {"/api/clear-category", "/api/clear-category/"}:
@@ -512,8 +512,8 @@ class FinanceHandler(BaseHTTPRequestHandler):
                 cleared = clear_category_data(item_name, month_label)
                 self._send_json({"ok": True, "data": cleared})
                 return
-            except Exception as exc:  # pragma: no cover - defensive path
-                self._send_json({"ok": False, "error": str(exc)}, status=500) # noqa: BLE001
+            except Exception as exc:  # noqa: BLE001 # pragma: no cover - defensive path
+                self._send_json({"ok": False, "error": str(exc)}, status=500)
                 return
 
         self.send_error(404, "Endpoint não encontrado")

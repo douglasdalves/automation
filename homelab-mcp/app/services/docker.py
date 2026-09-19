@@ -21,9 +21,7 @@ def _is_valid_compose_file_name(file_name: str) -> bool:
         return False
     if "/" in file_name or "\\" in file_name:
         return False
-    if not file_name.lower().endswith(".yaml") and not file_name.lower().endswith(".yml"):
-        return False
-    return True
+    return file_name.lower().endswith((".yaml", ".yml"))
 
 
 def list_compose_files() -> dict[str, Any]:
