@@ -2,7 +2,7 @@ import json
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 
 def _get_compose_directory() -> Path:
@@ -26,7 +26,7 @@ def _is_valid_compose_file_name(file_name: str) -> bool:
     return True
 
 
-def list_compose_files() -> Dict[str, Any]:
+def list_compose_files() -> dict[str, Any]:
     compose_dir = _get_compose_directory()
     if not compose_dir.exists():
         return {"success": False, "error": f"Diretório de compose não encontrado: {compose_dir}"}
@@ -39,7 +39,7 @@ def list_compose_files() -> Dict[str, Any]:
     return {"success": True, "files": files}
 
 
-def start_compose_file(file_name: str) -> Dict[str, Any]:
+def start_compose_file(file_name: str) -> dict[str, Any]:
     if not _is_valid_compose_file_name(file_name):
         return {
             "success": False,
@@ -63,7 +63,7 @@ def start_compose_file(file_name: str) -> Dict[str, Any]:
     }
 
 
-def _run_docker_command(args: List[str], cwd: str | None = None) -> Dict[str, Any]:
+def _run_docker_command(args: list[str], cwd: str | None = None) -> dict[str, Any]:
     command = ["docker", *args]
     try:
         result = subprocess.run(
@@ -127,7 +127,7 @@ def _is_docker_permission_error(error_output: str) -> bool:
     return "permission denied" in lowered or "/var/run/docker.sock" in lowered
 
 
-def list_containers(all_containers: bool = False) -> Dict[str, Any]:
+def list_containers(all_containers: bool = False) -> dict[str, Any]:
     args = ["ps", "--format", "{{.ID}}\t{{.Image}}\t{{.Status}}\t{{.Names}}"]
     if all_containers:
         args.append("--all")
@@ -140,7 +140,7 @@ def list_containers(all_containers: bool = False) -> Dict[str, Any]:
     if not lines:
         return {"success": True, "containers": []}
 
-    containers: List[Dict[str, Any]] = []
+    containers: list[dict[str, Any]] = []
     for line in lines:
         parts = line.split("\t")
         if len(parts) < 4:
@@ -159,7 +159,7 @@ def list_containers(all_containers: bool = False) -> Dict[str, Any]:
     return {"success": True, "containers": containers}
 
 
-def inspect_container(container_id: str) -> Dict[str, Any]:
+def inspect_container(container_id: str) -> dict[str, Any]:
     result = _run_docker_command(["inspect", container_id])
     if not result["success"]:
         return result
@@ -183,7 +183,7 @@ def inspect_container(container_id: str) -> Dict[str, Any]:
     }
 
 
-def manage_container(container_id: str, action: str) -> Dict[str, Any]:
+def manage_container(container_id: str, action: str) -> dict[str, Any]:
     allowed_actions = {"start", "stop", "restart", "kill", "remove"}
     if action not in allowed_actions:
         return {"success": False, "error": f"Unsupported action '{action}'. Allowed actions: {', '.join(sorted(allowed_actions))}"}

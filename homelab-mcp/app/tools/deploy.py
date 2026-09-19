@@ -1,4 +1,9 @@
-from app.services.deploy import deploy, deploy_finance, restart_service, sync_app_configs
+from app.services.deploy import (
+    deploy,
+    deploy_finance,
+    restart_service,
+    sync_app_configs,
+)
 
 
 def register_deploy_tools(mcp):

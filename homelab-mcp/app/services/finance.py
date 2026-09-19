@@ -5,9 +5,7 @@ from __future__ import annotations
 from datetime import date
 
 import httpx
-
 from app.config import Config
-
 
 _MONTHS = ("jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez")
 

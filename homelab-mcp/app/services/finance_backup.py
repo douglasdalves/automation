@@ -9,7 +9,6 @@ from typing import Any
 
 from app.config import Config
 
-
 _backup_lock = threading.Lock()
 _MAX_OUTPUT_LENGTH = 2_000
 

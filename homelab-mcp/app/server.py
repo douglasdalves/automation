@@ -1,10 +1,9 @@
-from mcp.server.fastmcp import FastMCP
-
 from app.config import Config
 from app.tools.deploy import register_deploy_tools
 from app.tools.docker import register_docker_tools
-from app.tools.health import register_health_tools
 from app.tools.finance import register_finance_tools
+from app.tools.health import register_health_tools
+from mcp.server.fastmcp import FastMCP
 
 mcp = FastMCP(
     Config.MCP_NAME,

@@ -1,13 +1,8 @@
 import html
 import logging
-import os
-
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 
 import config
 from ai_client import AIProviderError, answer_homelab_question
-
 from handlers.docker_handlers import (
     create_compose_callback,
     create_compose_command,
@@ -16,17 +11,22 @@ from handlers.docker_handlers import (
     start_docker_command,
     stop_docker_command,
 )
-from handlers.restart_handlers import (
-    restart_callback, 
-    restart_command
-)
 from handlers.finance_handlers import (
     deploy_finance_command,
     finance_backup_command,
     finance_command,
 )
-
+from handlers.restart_handlers import restart_callback, restart_command
 from mcp_client import call_mcp_tool, is_authorized
+from telegram import Update
+from telegram.ext import (
+    Application,
+    CallbackQueryHandler,
+    CommandHandler,
+    ContextTypes,
+    MessageHandler,
+    filters,
+)
 
 #-------------------------------- CONFIG ---------------------------------
 

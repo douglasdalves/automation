@@ -1,10 +1,9 @@
 import json
 
+import config
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 from telegram import Update
-
-import config
 
 
 async def call_mcp_tool(tool_name: str, arguments: dict | None = None):
