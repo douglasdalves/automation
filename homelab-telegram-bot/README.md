@@ -51,6 +51,7 @@ python bot.py
 
 - `/status`: mostra CPU, temperatura, memoria, disco, uptime e containers ativos.
 - `/deploy`: atualiza o repositorio e reinicia os servicos configurados.
+- `/deploy_sync`: copia os arquivos definidos no `app-config-sync`, sem atualizar o repositorio ou reiniciar servicos.
 - `/deploy_finance`: atualiza o repositorio e reinicia `dc-finance-api` e `dc-finance-dash`.
 - `/finance_bkp`: executa o mesmo script de backup financeiro usado pelo cron.
 - `/restart_service`: mostra botoes para escolher qual servico reiniciar.
@@ -59,6 +60,7 @@ python bot.py
 - `/stop_docker`: lista os containers Docker e mostra botoes para escolher qual parar.
 
 O `/deploy` executa o fluxo completo no MCP: faz `git pull --ff-only`, atualiza o sincronizador `app-config-sync`, recarrega o systemd, sincroniza os arquivos e reinicia os servicos definidos em `DEPLOY_SERVICES`. Se uma etapa falhar, o bot informa o erro retornado pelo MCP.
+O `/deploy_sync` executa somente o servico `app-config-sync.service`, usando os arquivos e destinos permitidos no `sync.conf` ja instalado.
 
 Somente o usuario cujo ID esta em `TELEGRAM_ALLOWED_USER_ID` pode usar os comandos.
 Mensagens de texto sem comando sao enviadas para a API de IA configurada, que pode consultar e operar o homelab pelas ferramentas MCP.

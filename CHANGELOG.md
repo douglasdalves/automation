@@ -7,6 +7,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 ## [Unreleased]
 
 ### Adicionado
+- Comando Telegram `/deploy_sync` para sincronizar os arquivos definidos no `app-config-sync` sem executar o deploy completo
 - Script de backup consistente do SQLite financeiro com envio via rclone
 - Comando Telegram `/deploy_finance` para atualizar o repositorio e reiniciar o painel financeiro
 - Campo `ganho_extra` com detalhamento por item no cadastro e no painel financeiro
