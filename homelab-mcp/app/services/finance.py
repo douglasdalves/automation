@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timezone
 
 import httpx
 from app.config import Config
@@ -11,8 +11,8 @@ _MONTHS = ("jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out",
 
 
 def _month_label(today: date | None = None) -> str:
-    today = today or date.today()
-    return f"{_MONTHS[today.month - 1].title()}/{today.year % 100:02d}"
+    from datetime import datetime, timezone
+    today = datetime.now(timezone.utc).date()
 
 
 def get_current_month_summary() -> dict:

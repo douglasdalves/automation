@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Serve the finance dashboard and persist manual entries in SQLite."""
 
 from __future__ import annotations
@@ -466,7 +465,7 @@ class FinanceHandler(BaseHTTPRequestHandler):
             try:
                 saved = save_data(payload)
             except Exception as exc:  # pragma: no cover - defensive path
-                self._send_json({"ok": False, "error": str(exc)}, status=500)
+                self._send_json({"ok": False, "error": str(exc)}, status=500) # noqa: BLE001
                 return
 
             self._send_json({"ok": True, "data": saved})
@@ -491,7 +490,7 @@ class FinanceHandler(BaseHTTPRequestHandler):
                 self._send_json({"ok": True, "data": cleared})
                 return
             except Exception as exc:  # pragma: no cover - defensive path
-                self._send_json({"ok": False, "error": str(exc)}, status=500)
+                self._send_json({"ok": False, "error": str(exc)}, status=500) # noqa: BLE001
                 return
 
         if parsed.path in {"/api/clear-category", "/api/clear-category/"}:
@@ -514,7 +513,7 @@ class FinanceHandler(BaseHTTPRequestHandler):
                 self._send_json({"ok": True, "data": cleared})
                 return
             except Exception as exc:  # pragma: no cover - defensive path
-                self._send_json({"ok": False, "error": str(exc)}, status=500)
+                self._send_json({"ok": False, "error": str(exc)}, status=500) # noqa: BLE001
                 return
 
         self.send_error(404, "Endpoint não encontrado")
