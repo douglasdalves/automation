@@ -1,0 +1,30 @@
+name: CI - Validação de Código Python
+
+# O fluxo roda a cada push ou Pull Request nas branches main e develop
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Baixa o código do seu repositório para o servidor do GitHub
+    - name: Checkout do código
+      uses: actions/checkout@v4
+
+    # 2. Configura o ambiente Python atualizado
+    - name: Configurar Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11" # Versão comum e estável no Raspberry Pi
+
+    # 3. Instala e roda o Ruff (Linter extremamente rápido)
+    - name: Rodar Linter (Ruff)
+      run: |
+        pip install ruff
+        # O comando abaixo avisa erros críticos e formatações incorretas
+        ruff check --output-format=github .
