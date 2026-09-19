@@ -17,7 +17,7 @@ def cpu_usage():
     try:
         with open("/proc/loadavg", "r", encoding="utf-8") as handle:
             return round(float(handle.read().split()[0]) * 100, 2)
-    except Exception:
+    except Exception: # noqa: BLE001
         return None
 
 
@@ -33,7 +33,7 @@ def cpu_temperature():
         temp = result.stdout.strip()
         return float(temp.replace("temp=", "").replace("'C", ""))
 
-    except Exception:
+    except Exception: # noqa: BLE001
         return None
 
 
@@ -63,7 +63,7 @@ def memory():
             "used_gb": round(used_kb / (1024**2), 2),
             "percent": percent,
         }
-    except Exception:
+    except Exception: # noqa: BLE001
         return {"total_gb": None, "used_gb": None, "percent": None}
 
 
@@ -95,7 +95,7 @@ def uptime():
         try:
             with open("/proc/uptime", "r", encoding="utf-8") as handle:
                 seconds = int(float(handle.read().split()[0]))
-        except Exception:
+        except Exception: # noqa: BLE001
             return {"days": None, "hours": None, "minutes": None}
 
     days, seconds = divmod(seconds, 86400)
