@@ -7,8 +7,10 @@ from telegram import Update
 
 
 async def call_mcp_tool(tool_name: str, arguments: dict | None = None):
-    async with streamable_http_client(config.MCP_URL) as (read_stream, write_stream, _):
-        async with ClientSession(read_stream, write_stream) as session:
+    async with (
+        streamable_http_client(config.MCP_URL) as (read_stream, write_stream, _),
+        ClientSession(read_stream, write_stream) as session,
+    ):
             await session.initialize()
             result = await session.call_tool(tool_name, arguments or {})
 
@@ -21,11 +23,13 @@ async def call_mcp_tool(tool_name: str, arguments: dict | None = None):
 
 
 async def list_mcp_tools():
-    async with streamable_http_client(config.MCP_URL) as (read_stream, write_stream, _):
-        async with ClientSession(read_stream, write_stream) as session:
-            await session.initialize()
-            result = await session.list_tools()
-            return result.tools
+    async with (
+        streamable_http_client(config.MCP_URL) as (read_stream, write_stream, _),
+        ClientSession(read_stream, write_stream) as session,
+    ):
+        await session.initialize()
+        result = await session.list_tools()
+        return result.tools
 
 
 def is_authorized(update: Update) -> bool:
