@@ -45,6 +45,7 @@ logger = logging.getLogger(__name__)
 BOT_COMMANDS = {
     "status": "status do sistema",
     "deploy": "deploy da aplicação",
+    "deploy_sync": "sincroniza arquivos configurados",
     "deploy_finance": "deploy do painel financeiro",
     "finance": "resumo financeiro do mês atual",
     "finance_bkp": "executa backup financeiro",
@@ -170,6 +171,33 @@ async def deploy_command(
         )
 
 
+async def deploy_sync_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+    if not is_authorized(update):
+        await update.message.reply_text("⛔ Acesso não autorizado.")
+        return
+
+    await update.message.reply_text("🔄 Sincronizando arquivos configurados...")
+
+    try:
+        data = await call_mcp_tool("deploy_sync")
+        if data.get("success"):
+            message = "✅ <b>Arquivos sincronizados</b>"
+        else:
+            error = html.escape(str(data.get("error", "Erro desconhecido")))
+            message = f"❌ <b>Falha ao sincronizar os arquivos</b>\n<code>{error}</code>"
+
+        await update.message.reply_text(message, parse_mode="HTML")
+    except Exception as exc:
+        logger.exception("Erro ao sincronizar os arquivos")
+        await update.message.reply_text(
+            f"❌ Erro ao sincronizar os arquivos:\n<code>{html.escape(str(exc))}</code>",
+            parse_mode="HTML",
+        )
+
+
 #-------------------------------- OPTIONS ---------------------------------
 
 async def options_command(
@@ -240,6 +268,8 @@ def main():
             application.add_handler(CommandHandler("status", status_command))
         elif command_name == "deploy":
             application.add_handler(CommandHandler("deploy", deploy_command))
+        elif command_name == "deploy_sync":
+            application.add_handler(CommandHandler("deploy_sync", deploy_sync_command))
         elif command_name == "deploy_finance":
             application.add_handler(CommandHandler("deploy_finance", deploy_finance_command))
         elif command_name == "finance":

@@ -185,6 +185,35 @@ def deploy() -> Dict[str, Any]:
         _deploy_lock.release()
 
 
+def sync_app_configs() -> Dict[str, Any]:
+    """Copies the files configured in app-config-sync without a full deploy."""
+    if not _deploy_lock.acquire(blocking=False):
+        return {"success": False, "error": "A deploy or sync is already running."}
+
+    try:
+        try:
+            sync = subprocess.run(
+                ["sudo", "systemctl", "start", "app-config-sync.service"],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=_COMMAND_TIMEOUT,
+            )
+        except (FileNotFoundError, subprocess.TimeoutExpired) as exc:
+            return {"success": False, "step": "sync_configs", "error": str(exc)}
+
+        if sync.returncode != 0:
+            return {
+                "success": False,
+                "step": "sync_configs",
+                "error": _output(sync) or "app-config-sync failed",
+            }
+
+        return {"success": True, "step": "sync_configs"}
+    finally:
+        _deploy_lock.release()
+
+
 def deploy_finance() -> Dict[str, Any]:
     repository_dir = Path(
         os.getenv("DEPLOY_REPOSITORY_DIR")
