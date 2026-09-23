@@ -12,9 +12,7 @@ env_path = Path(__file__).parent.parent.parent.parent / ".env"
 load_dotenv(env_path)
 
 _deploy_lock = threading.Lock()
-_COMMAND_TIMEOUT = int(
-    os.getenv("DEPLOY_COMMAND_TIMEOUT")
-)  # nao completar com valor default, para forçar a configuração no .env
+_COMMAND_TIMEOUT = int(os.getenv("DEPLOY_COMMAND_TIMEOUT", "300"))
 _MAX_OUTPUT_LENGTH = 2000
 _DEFAULT_SERVICES = ("homelab-telegram-bot", "homelab-mcp")
 _FINANCE_CONTAINERS = ("dc-finance-api", "dc-finance-dash")
@@ -86,7 +84,7 @@ def _git_pull(repository_dir: Path) -> dict[str, Any]:
 
 
 def deploy() -> dict[str, Any]:
-    repository_dir = Path(os.getenv("DEPLOY_REPOSITORY_DIR")).expanduser()
+    repository_dir = Path(os.getenv("DEPLOY_REPOSITORY_DIR", ".")).expanduser()
 
     if not repository_dir.is_dir():
         return {
@@ -156,7 +154,7 @@ def deploy() -> dict[str, Any]:
                 }
 
         services = _configured_services()
-        restarted_services = []
+        restarted_services: list[str] = []
         for service in services:
             try:
                 restart = subprocess.run(
@@ -226,7 +224,7 @@ def sync_app_configs() -> dict[str, Any]:
 
 
 def deploy_finance() -> dict[str, Any]:
-    repository_dir = Path(os.getenv("DEPLOY_REPOSITORY_DIR")).expanduser()
+    repository_dir = Path(os.getenv("DEPLOY_REPOSITORY_DIR", ".")).expanduser()
 
     if not repository_dir.is_dir():
         return {
@@ -242,7 +240,7 @@ def deploy_finance() -> dict[str, Any]:
         if not pull["success"]:
             return pull
 
-        restarted_containers = []
+        restarted_containers: list[str] = []
         for container in _FINANCE_CONTAINERS:
             restart = manage_container(container, "restart")
             if not restart["success"]:
