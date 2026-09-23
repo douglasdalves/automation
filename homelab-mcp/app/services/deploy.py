@@ -4,14 +4,17 @@ import threading
 from pathlib import Path
 from typing import Any
 
-from app.services.docker import manage_container
 from dotenv import load_dotenv
+
+from app.services.docker import manage_container
 
 env_path = Path(__file__).parent.parent.parent.parent / ".env"
 load_dotenv(env_path)
 
 _deploy_lock = threading.Lock()
-_COMMAND_TIMEOUT = int(os.getenv("DEPLOY_COMMAND_TIMEOUT")) #nao completar com valor default, para forçar a configuração no .env
+_COMMAND_TIMEOUT = int(
+    os.getenv("DEPLOY_COMMAND_TIMEOUT")
+)  # nao completar com valor default, para forçar a configuração no .env
 _MAX_OUTPUT_LENGTH = 2000
 _DEFAULT_SERVICES = ("homelab-telegram-bot", "homelab-mcp")
 _FINANCE_CONTAINERS = ("dc-finance-api", "dc-finance-dash")
@@ -20,7 +23,9 @@ _FINANCE_CONTAINERS = ("dc-finance-api", "dc-finance-dash")
 def _configured_services() -> tuple[str, ...]:
     return tuple(
         service.strip()
-        for service in os.getenv("DEPLOY_SERVICES", ",".join(_DEFAULT_SERVICES)).split(",")
+        for service in os.getenv("DEPLOY_SERVICES", ",".join(_DEFAULT_SERVICES)).split(
+            ","
+        )
         if service.strip()
     )
 
@@ -81,12 +86,13 @@ def _git_pull(repository_dir: Path) -> dict[str, Any]:
 
 
 def deploy() -> dict[str, Any]:
-    repository_dir = Path(
-        os.getenv("DEPLOY_REPOSITORY_DIR")
-    ).expanduser()
+    repository_dir = Path(os.getenv("DEPLOY_REPOSITORY_DIR")).expanduser()
 
     if not repository_dir.is_dir():
-        return {"success": False, "error": f"Repository directory not found: {repository_dir}"}
+        return {
+            "success": False,
+            "error": f"Repository directory not found: {repository_dir}",
+        }
 
     if not _deploy_lock.acquire(blocking=False):
         return {"success": False, "error": "A deploy is already running."}
@@ -134,7 +140,12 @@ def deploy() -> dict[str, Any]:
                     timeout=_COMMAND_TIMEOUT,
                 )
             except (FileNotFoundError, subprocess.TimeoutExpired) as exc:
-                return {"success": False, "step": "sync_setup", "command": command, "error": str(exc)}
+                return {
+                    "success": False,
+                    "step": "sync_setup",
+                    "command": command,
+                    "error": str(exc),
+                }
 
             if sync_setup.returncode != 0:
                 return {
@@ -215,12 +226,13 @@ def sync_app_configs() -> dict[str, Any]:
 
 
 def deploy_finance() -> dict[str, Any]:
-    repository_dir = Path(
-        os.getenv("DEPLOY_REPOSITORY_DIR")
-    ).expanduser()
+    repository_dir = Path(os.getenv("DEPLOY_REPOSITORY_DIR")).expanduser()
 
     if not repository_dir.is_dir():
-        return {"success": False, "error": f"Repository directory not found: {repository_dir}"}
+        return {
+            "success": False,
+            "error": f"Repository directory not found: {repository_dir}",
+        }
 
     if not _deploy_lock.acquire(blocking=False):
         return {"success": False, "error": "A deploy is already running."}
