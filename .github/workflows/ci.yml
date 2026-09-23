@@ -28,3 +28,9 @@ jobs:
         pip install ruff
         # O comando abaixo avisa erros críticos e formatações incorretas
         ruff check --output-format=github .
+        
+    # 4. Instala e roda o mypy (Verificador de tipos)
+    - name: Run mypy
+      run: |
+        pip install mypy
+        mypy . --ignore-missing-imports    
