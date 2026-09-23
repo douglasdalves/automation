@@ -33,4 +33,4 @@ jobs:
     - name: Run mypy
       run: |
         pip install mypy
-        mypy . --ignore-missing-imports    
+        mypy . --explicit-package-bases --ignore-missing-imports  
