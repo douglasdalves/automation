@@ -5,9 +5,23 @@ from __future__ import annotations
 from datetime import date, datetime, timezone
 
 import httpx
+
 from app.config import Config
 
-_MONTHS = ("jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez")
+_MONTHS = (
+    "jan",
+    "fev",
+    "mar",
+    "abr",
+    "mai",
+    "jun",
+    "jul",
+    "ago",
+    "set",
+    "out",
+    "nov",
+    "dez",
+)
 
 
 def _month_label(today: date | None = None) -> str:
@@ -29,23 +43,46 @@ def get_current_month_summary() -> dict:
         response.raise_for_status()
         payload = response.json()
     except (httpx.HTTPError, ValueError) as exc:
-        return {"success": False, "error": f"Não foi possível consultar o painel financeiro: {exc}"}
+        return {
+            "success": False,
+            "error": f"Não foi possível consultar o painel financeiro: {exc}",
+        }
 
     months = payload.get("months", []) if isinstance(payload, dict) else []
     if not isinstance(months, list) or not months:
-        return {"success": False, "error": "O painel financeiro não possui meses cadastrados."}
+        return {
+            "success": False,
+            "error": "O painel financeiro não possui meses cadastrados.",
+        }
 
     current_label = _month_label()
     selected = next(
-        (month for month in months if isinstance(month, dict) and month.get("label") == current_label),
+        (
+            month
+            for month in months
+            if isinstance(month, dict) and month.get("label") == current_label
+        ),
         None,
     )
     if selected is None:
-        selected = next((month for month in reversed(months) if isinstance(month, dict)), None)
+        selected = next(
+            (month for month in reversed(months) if isinstance(month, dict)), None
+        )
     if selected is None:
-        return {"success": False, "error": "Os dados do painel financeiro são inválidos."}
+        return {
+            "success": False,
+            "error": "Os dados do painel financeiro são inválidos.",
+        }
 
-    fields = ("saldo_anterior", "receita", "ganho_extra", "despesas", "extras", "investimentos", "saldo")
+    fields = (
+        "saldo_anterior",
+        "receita",
+        "ganho_extra",
+        "despesas",
+        "extras",
+        "investimentos",
+        "saldo",
+    )
     summary = {field: float(selected.get(field) or 0) for field in fields}
     return {
         "success": True,
