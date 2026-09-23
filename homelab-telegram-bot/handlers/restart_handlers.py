@@ -8,6 +8,7 @@ from telegram.ext import ContextTypes
 
 logger = logging.getLogger(__name__)
 
+
 async def restart_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE,
@@ -16,9 +17,13 @@ async def restart_command(
         await update.message.reply_text("⛔ Acesso não autorizado.")
         return
 
-    services = os.getenv("DEPLOY_SERVICES").split(",")# nao completar com valor default, para forçar a configuração no .env
+    services = os.getenv("DEPLOY_SERVICES", ".").split(",")
     keyboard = [
-        [InlineKeyboardButton(service.strip(), callback_data=f"restart:{service.strip()}")]
+        [
+            InlineKeyboardButton(
+                service.strip(), callback_data=f"restart:{service.strip()}"
+            )
+        ]
         for service in services
         if service.strip()
     ]
