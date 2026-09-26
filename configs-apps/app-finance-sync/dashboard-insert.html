@@ -180,18 +180,26 @@
         </div>
 
         <div class="panel">
-          <h2>Contas Fixas</h2>
-          <div id="categoriaList" class="list"></div>
-          <div class="actions">
-            <button type="button" class="secondary" id="addCategoria">Adicionar conta fixa</button>
-          </div>
-        </div>
-
-        <div class="panel">
           <h2>Ganhos Extras</h2>
           <div id="ganhoExtraList" class="list"></div>
           <div class="actions">
             <button type="button" class="secondary" id="addGanhoExtra">Adicionar ganho extra</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Contas Extras</h2>
+          <div id="extraList" class="list"></div>
+          <div class="actions">
+            <button type="button" class="secondary" id="addExtra">Adicionar conta extra</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Contas Fixas</h2>
+          <div id="categoriaList" class="list"></div>
+          <div class="actions">
+            <button type="button" class="secondary" id="addCategoria">Adicionar conta fixa</button>
           </div>
         </div>
 
@@ -203,13 +211,6 @@
           </div>
         </div>
 
-        <div class="panel">
-          <h2>Contas Extras</h2>
-          <div id="extraList" class="list"></div>
-          <div class="actions">
-            <button type="button" class="secondary" id="addExtra">Adicionar conta extra</button>
-          </div>
-        </div>
 
         <div class="actions">
           <button type="submit">Salvar mês</button>
@@ -618,11 +619,8 @@
         extraList.innerHTML = '';
         ganhoExtraList.innerHTML = '';
 
-        categoriaList.appendChild(createCategoryRow({ item: 'Fatura nu', total: 0 }));
-        categoriaList.appendChild(createCategoryRow({ item: 'Paguei / pagou', total: 0 }));
-
-        investimentoList.appendChild(createInvestmentRow({ item: 'cripto', valor: 0 }));
-        investimentoList.appendChild(createInvestmentRow({ item: 'Invest ações', valor: 0 }));
+        categoriaList.appendChild(createCategoryRow());
+        investimentoList.appendChild(createInvestmentRow());
         extraList.appendChild(createExtraRow());
       }
 
