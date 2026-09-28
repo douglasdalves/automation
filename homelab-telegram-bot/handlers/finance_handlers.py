@@ -1,4 +1,3 @@
-
 import html
 import logging
 
@@ -8,7 +7,8 @@ from telegram.ext import ContextTypes
 
 logger = logging.getLogger(__name__)
 
-#-------------------------------- DEPLOY-FINANCE -----------------------------
+# -------------------------------- DEPLOY-FINANCE -----------------------------
+
 
 async def deploy_finance_command(
     update: Update,
@@ -36,7 +36,9 @@ async def deploy_finance_command(
             parse_mode="HTML",
         )
 
-#-------------------------------- FINANCE ---------------------------------
+
+# -------------------------------- FINANCE ---------------------------------
+
 
 def format_brl(value: float) -> str:
     return f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
@@ -45,7 +47,11 @@ def format_brl(value: float) -> str:
 def format_finance_summary(data: dict) -> str:
     summary = data.get("summary", {})
     month = html.escape(str(data.get("month", "mês atual")))
-    fallback = "" if data.get("is_current_month") else "\n<i>O mês atual ainda não está cadastrado; exibindo o último registro.</i>"
+    fallback = (
+        ""
+        if data.get("is_current_month")
+        else "\n<i>O mês atual ainda não está cadastrado; exibindo o último registro.</i>"
+    )
     rows = (
         ("Saldo anterior", "saldo_anterior"),
         ("Receita", "receita"),
@@ -56,7 +62,10 @@ def format_finance_summary(data: dict) -> str:
         ("Saldo geral", "saldo"),
     )
     lines = [f"📊 <b>Resumo financeiro — {month}</b>", ""]
-    lines.extend(f"• {label}: <b>{format_brl(float(summary.get(key, 0)))}</b>" for label, key in rows)
+    lines.extend(
+        f"• {label}: <b>{format_brl(float(summary.get(key, 0)))}</b>"
+        for label, key in rows
+    )
     return "\n".join(lines) + fallback
 
 
@@ -81,7 +90,46 @@ async def finance_command(
         )
 
 
-#-------------------------------- FINANCE BACKUP --------------------------
+async def finance_invest_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+    if not is_authorized(update):
+        await update.message.reply_text("⛔ Acesso não autorizado.")
+        return
+
+    try:
+        data = await call_mcp_tool("get_current_finance_investments")
+        if not data.get("success"):
+            raise RuntimeError(data.get("error", "Erro desconhecido"))
+
+        month = html.escape(str(data.get("month", "mês atual")))
+        fallback = (
+            ""
+            if data.get("is_current_month")
+            else "\n<i>O mês atual ainda não está cadastrado; exibindo o último registro.</i>"
+        )
+        lines = [f"📈 <b>Investimentos por item — {month}</b>", ""]
+        items = data.get("items", [])
+        if items:
+            lines.extend(
+                f"• {html.escape(str(item.get('item', 'Investimento')))}: <b>{format_brl(float(item.get('valor') or 0))}</b>"
+                for item in items
+            )
+        else:
+            lines.append("Nenhum investimento detalhado cadastrado neste mês.")
+        lines.extend(["", f"Total: <b>{format_brl(float(data.get('total') or 0))}</b>"])
+        await update.message.reply_text("\n".join(lines) + fallback, parse_mode="HTML")
+    except Exception as exc:
+        logger.exception("Erro ao consultar investimentos financeiros")
+        await update.message.reply_text(
+            f"❌ Erro ao consultar investimentos financeiros:\n<code>{html.escape(str(exc))}</code>",
+            parse_mode="HTML",
+        )
+
+
+# -------------------------------- FINANCE BACKUP --------------------------
+
 
 async def finance_backup_command(
     update: Update,

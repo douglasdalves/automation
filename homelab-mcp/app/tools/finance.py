@@ -1,4 +1,7 @@
-from app.services.finance import get_current_month_summary
+from app.services.finance import (
+    get_current_month_investments,
+    get_current_month_summary,
+)
 from app.services.finance_backup import run_finance_backup
 
 
@@ -7,6 +10,11 @@ def register_finance_tools(mcp):
     def get_current_finance_summary() -> dict:
         """Consulta no dashboard financeiro o resumo mensal do mês atual."""
         return get_current_month_summary()
+
+    @mcp.tool()
+    def get_current_finance_investments() -> dict:
+        """Consulta no dashboard financeiro os investimentos do mês atual."""
+        return get_current_month_investments()
 
     @mcp.tool()
     def start_finance_backup() -> dict:
