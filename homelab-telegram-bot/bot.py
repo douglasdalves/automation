@@ -15,6 +15,7 @@ from handlers.finance_handlers import (
     deploy_finance_command,
     finance_backup_command,
     finance_command,
+    finance_invest_command,
 )
 from handlers.restart_handlers import restart_callback, restart_command
 from mcp_client import call_mcp_tool, is_authorized
@@ -28,7 +29,7 @@ from telegram.ext import (
     filters,
 )
 
-#-------------------------------- CONFIG ---------------------------------
+# -------------------------------- CONFIG ---------------------------------
 
 TELEGRAM_BOT_TOKEN = config.TELEGRAM_BOT_TOKEN
 MCP_URL = config.MCP_URL
@@ -48,6 +49,7 @@ BOT_COMMANDS = {
     "deploy_sync": "sincroniza arquivos configurados",
     "deploy_finance": "deploy do painel financeiro",
     "finance": "resumo financeiro do mês atual",
+    "finance_invest": "investimentos do mês atual",
     "finance_bkp": "executa backup financeiro",
     "restart_service": "reinicia serviço do homelab",
     "restart_docker": "reinicia container Docker",
@@ -58,7 +60,8 @@ BOT_COMMANDS = {
 }
 
 
-#-------------------------------- STATUS ---------------------------------
+# -------------------------------- STATUS ---------------------------------
+
 
 def format_health(data: dict) -> str:
     cpu = data.get("cpu", {})
@@ -118,9 +121,7 @@ async def status_command(
     context: ContextTypes.DEFAULT_TYPE,
 ):
     if not is_authorized(update):
-        await update.message.reply_text(
-            "⛔ Acesso não autorizado."
-        )
+        await update.message.reply_text("⛔ Acesso não autorizado.")
         return
 
     try:
@@ -142,7 +143,8 @@ async def status_command(
         )
 
 
-#-------------------------------- DEPLOY ---------------------------------
+# -------------------------------- DEPLOY ---------------------------------
+
 
 async def deploy_command(
     update: Update,
@@ -187,7 +189,9 @@ async def deploy_sync_command(
             message = "✅ <b>Arquivos sincronizados</b>"
         else:
             error = html.escape(str(data.get("error", "Erro desconhecido")))
-            message = f"❌ <b>Falha ao sincronizar os arquivos</b>\n<code>{error}</code>"
+            message = (
+                f"❌ <b>Falha ao sincronizar os arquivos</b>\n<code>{error}</code>"
+            )
 
         await update.message.reply_text(message, parse_mode="HTML")
     except Exception as exc:
@@ -198,7 +202,8 @@ async def deploy_sync_command(
         )
 
 
-#-------------------------------- OPTIONS ---------------------------------
+# -------------------------------- OPTIONS ---------------------------------
+
 
 async def options_command(
     update: Update,
@@ -209,15 +214,16 @@ async def options_command(
         return
 
     commands = "\n".join(
-        f"• /{command} — {description}"
-        for command, description in BOT_COMMANDS.items()
+        f"• /{command} — {description}" for command, description in BOT_COMMANDS.items()
     )
     await update.message.reply_text(
         "<b>Opções disponíveis</b>\n\n" + commands,
         parse_mode="HTML",
     )
 
-#-------------------------------- IA ---------------------------------
+
+# -------------------------------- IA ---------------------------------
+
 
 async def natural_language_command(
     update: Update,
@@ -244,21 +250,17 @@ async def natural_language_command(
                 "Verifique AI_API_URL, AI_API_KEY, AI_MODEL e o provedor configurado. "
                 f"({exc})"
             )
-        await update.message.reply_text(
-            message
-        )
+        await update.message.reply_text(message)
 
-#-------------------------------- BOT ---------------------------------
+
+# -------------------------------- BOT ---------------------------------
+
 
 def main():
     if not TELEGRAM_BOT_TOKEN:
-        raise RuntimeError(
-            "TELEGRAM_BOT_TOKEN não configurado no arquivo .env.token"
-        )
+        raise RuntimeError("TELEGRAM_BOT_TOKEN não configurado no arquivo .env.token")
 
-    application = Application.builder().token(
-        TELEGRAM_BOT_TOKEN
-    ).build()
+    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
     for command_name in BOT_COMMANDS:
         if command_name == "options":
@@ -271,27 +273,43 @@ def main():
         elif command_name == "deploy_sync":
             application.add_handler(CommandHandler("deploy_sync", deploy_sync_command))
         elif command_name == "deploy_finance":
-            application.add_handler(CommandHandler("deploy_finance", deploy_finance_command))
+            application.add_handler(
+                CommandHandler("deploy_finance", deploy_finance_command)
+            )
         elif command_name == "finance":
             application.add_handler(CommandHandler("finance", finance_command))
+        elif command_name == "finance_invest":
+            application.add_handler(
+                CommandHandler("finance_invest", finance_invest_command)
+            )
         elif command_name == "finance_bkp":
-            application.add_handler(CommandHandler("finance_bkp", finance_backup_command))
+            application.add_handler(
+                CommandHandler("finance_bkp", finance_backup_command)
+            )
         elif command_name == "restart_service":
             application.add_handler(CommandHandler("restart_service", restart_command))
         elif command_name == "restart_docker":
-            application.add_handler(CommandHandler("restart_docker", restart_docker_command))
+            application.add_handler(
+                CommandHandler("restart_docker", restart_docker_command)
+            )
         elif command_name == "start_docker":
-            application.add_handler(CommandHandler("start_docker", start_docker_command))
+            application.add_handler(
+                CommandHandler("start_docker", start_docker_command)
+            )
         elif command_name == "stop_docker":
             application.add_handler(CommandHandler("stop_docker", stop_docker_command))
         elif command_name == "create_docker":
-            application.add_handler(CommandHandler("create_docker", create_compose_command))
+            application.add_handler(
+                CommandHandler("create_docker", create_compose_command)
+            )
 
     application.add_handler(
         CallbackQueryHandler(restart_callback, pattern=r"^restart:")
     )
     application.add_handler(
-        CallbackQueryHandler(manage_docker_callback, pattern=r"^docker-(restart|start|stop):")
+        CallbackQueryHandler(
+            manage_docker_callback, pattern=r"^docker-(restart|start|stop):"
+        )
     )
     application.add_handler(
         CallbackQueryHandler(create_compose_callback, pattern=r"^compose:start:")
