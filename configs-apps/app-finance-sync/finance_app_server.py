@@ -92,7 +92,10 @@ def initialize_database() -> None:
         migrated = build_fresh_baseline()
         connection.executemany(
             "INSERT INTO months (label, payload) VALUES (?, ?)",
-            [(month["label"], json.dumps(month, ensure_ascii=False)) for month in migrated["months"]],
+            [
+                (month["label"], json.dumps(month, ensure_ascii=False))
+                for month in migrated["months"]
+            ],
         )
 
 
@@ -102,13 +105,16 @@ def write_database_payload(payload: dict) -> dict:
         connection.execute("DELETE FROM months")
         connection.executemany(
             "INSERT INTO months (label, payload) VALUES (?, ?)",
-            [(month["label"], json.dumps(month, ensure_ascii=False)) for month in cleaned["months"]],
+            [
+                (month["label"], json.dumps(month, ensure_ascii=False))
+                for month in cleaned["months"]
+            ],
         )
     return cleaned
 
 
 def merge_item_lists(previous: list, incoming: list, value_key: str) -> list:
-    items: dict[str, float] = {}
+    items: dict[str, dict] = {}
     for item in previous or []:
         if not isinstance(item, dict):
             continue
@@ -116,15 +122,53 @@ def merge_item_lists(previous: list, incoming: list, value_key: str) -> list:
         value = float(item.get(value_key) or 0)
         if not name or value == 0:
             continue
-        items[name] = value
+        key = " ".join(name.split()).casefold()
+        if key in items:
+            items[key]["value"] += value
+        else:
+            items[key] = {"item": name, "value": value}
+
+    incoming_items: dict[str, dict] = {}
     for item in incoming or []:
         if not isinstance(item, dict):
             continue
         name = str(item.get("item") or "").strip()
         value = float(item.get(value_key) or 0)
-        if name and value != 0:
-            items[name] = value
-    return [{"item": name, value_key: value} for name, value in items.items()]
+        if not name or value == 0:
+            continue
+        key = " ".join(name.split()).casefold()
+        if key in incoming_items:
+            incoming_items[key]["value"] += value
+        else:
+            incoming_items[key] = {"item": name, "value": value}
+
+    for key, incoming_item in incoming_items.items():
+        display_name = items.get(key, incoming_item)["item"]
+        items[key] = {"item": display_name, "value": incoming_item["value"]}
+
+    return [{"item": item["item"], value_key: item["value"]} for item in items.values()]
+
+
+def add_item_amounts(previous: list, contributions: list, value_key: str) -> list:
+    """Add new contributions to matching items while retaining their saved names."""
+    merged = merge_item_lists(previous, [], value_key)
+    values = {
+        " ".join(str(item.get("item") or "").split()).casefold(): item
+        for item in merged
+    }
+    for item in contributions or []:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("item") or "").strip()
+        value = float(item.get(value_key) or 0)
+        if not name or value == 0:
+            continue
+        key = " ".join(name.split()).casefold()
+        if key in values:
+            values[key][value_key] += value
+        else:
+            values[key] = {"item": name, value_key: value}
+    return list(values.values())
 
 
 def ensure_clean_payload(payload: dict | None) -> dict:
@@ -138,7 +182,8 @@ def ensure_clean_payload(payload: dict | None) -> dict:
     filtered = [
         month
         for month in months
-        if isinstance(month, dict) and normalize_month_index(str(month.get("label", ""))) > 0
+        if isinstance(month, dict)
+        and normalize_month_index(str(month.get("label", ""))) > 0
     ]
     filtered.sort(key=lambda month: normalize_month_index(str(month.get("label", ""))))
     if not filtered:
@@ -146,19 +191,38 @@ def ensure_clean_payload(payload: dict | None) -> dict:
 
     legacy_categories = payload.get("categorias", []) or []
     legacy_recent = payload.get("investimentos_recentes", {}) or {}
-    legacy_recent_month = str(legacy_recent.get("mes") or "").strip() if isinstance(legacy_recent, dict) else ""
-    legacy_categories_total = sum(float(item.get("total") or 0) for item in legacy_categories if isinstance(item, dict))
+    legacy_recent_month = (
+        str(legacy_recent.get("mes") or "").strip()
+        if isinstance(legacy_recent, dict)
+        else ""
+    )
+    legacy_categories_total = sum(
+        float(item.get("total") or 0)
+        for item in legacy_categories
+        if isinstance(item, dict)
+    )
     for month in filtered:
-        if "categorias" not in month and legacy_categories_total and float(month.get("contas_mensais") or 0) == legacy_categories_total:
+        if (
+            "categorias" not in month
+            and legacy_categories_total
+            and float(month.get("contas_mensais") or 0) == legacy_categories_total
+        ):
             month["categorias"] = legacy_categories
-        if "investimentos_itens" not in month and isinstance(legacy_recent, dict) and str(month.get("label") or "").strip() == legacy_recent_month:
+        if (
+            "investimentos_itens" not in month
+            and isinstance(legacy_recent, dict)
+            and str(month.get("label") or "").strip() == legacy_recent_month
+        ):
             month["investimentos_itens"] = legacy_recent.get("itens", [])
 
     cleaned = {
         "labels": [month.get("label", "Set/26") for month in filtered],
         "months": filtered,
         "categorias": payload.get("categorias", []),
-        "investimentos_recentes": payload.get("investimentos_recentes", {"mes": filtered[-1].get("label", "Set/26"), "itens": []}),
+        "investimentos_recentes": payload.get(
+            "investimentos_recentes",
+            {"mes": filtered[-1].get("label", "Set/26"), "itens": []},
+        ),
     }
 
     if len(cleaned["months"]) == 1 and legacy_categories:
@@ -244,7 +308,9 @@ def ensure_clean_payload(payload: dict | None) -> dict:
 def load_data() -> dict:
     initialize_database()
     with connect_database() as connection:
-        rows = connection.execute("SELECT label, payload FROM months ORDER BY id").fetchall()
+        rows = connection.execute(
+            "SELECT label, payload FROM months ORDER BY id"
+        ).fetchall()
 
     if not rows:
         return write_database_payload(build_fresh_baseline())
@@ -252,7 +318,9 @@ def load_data() -> dict:
     months = [json.loads(payload) for _, payload in rows]
     # Normalize on read too, so data saved before derived totals were handled
     # server-side is immediately correct for API clients after deployment.
-    return ensure_clean_payload({"labels": [month["label"] for month in months], "months": months})
+    return ensure_clean_payload(
+        {"labels": [month["label"] for month in months], "months": months}
+    )
 
 
 def merge_payload(existing: dict, incoming: dict) -> dict:
@@ -263,7 +331,11 @@ def merge_payload(existing: dict, incoming: dict) -> dict:
     merged = json.loads(json.dumps(base))
     new_months = incoming.get("months") or []
     if isinstance(new_months, list):
-        by_label = {str(item.get("label", "")): item for item in merged.get("months", []) if isinstance(item, dict) and item.get("label")}
+        by_label = {
+            str(item.get("label", "")): item
+            for item in merged.get("months", [])
+            if isinstance(item, dict) and item.get("label")
+        }
         for month in new_months:
             if not isinstance(month, dict):
                 continue
@@ -271,19 +343,42 @@ def merge_payload(existing: dict, incoming: dict) -> dict:
             if not label:
                 continue
             previous = by_label.get(label, {})
-            categorias = merge_item_lists(previous.get("categorias", []), month.get("categorias", []), "total")
-            investimentos_itens = merge_item_lists(previous.get("investimentos_itens", []), month.get("investimentos_itens", []), "valor")
-            extras_itens = merge_item_lists(previous.get("extras_itens", []), month.get("extras_itens", []), "valor")
-            ganho_extra_itens = merge_item_lists(previous.get("ganho_extra_itens", []), month.get("ganho_extra_itens", []), "valor")
+            categorias = merge_item_lists(
+                previous.get("categorias", []), month.get("categorias", []), "total"
+            )
+            investimentos_itens = merge_item_lists(
+                previous.get("investimentos_itens", []),
+                month.get("investimentos_itens", []),
+                "valor",
+            )
+            if "investimentos_aportes" in month:
+                investimentos_itens = add_item_amounts(
+                    investimentos_itens,
+                    month.get("investimentos_aportes", []),
+                    "valor",
+                )
+            extras_itens = merge_item_lists(
+                previous.get("extras_itens", []), month.get("extras_itens", []), "valor"
+            )
+            ganho_extra_itens = merge_item_lists(
+                previous.get("ganho_extra_itens", []),
+                month.get("ganho_extra_itens", []),
+                "valor",
+            )
             normalized = {
                 "label": label,
                 "receita": float(month.get("receita", previous.get("receita", 0)) or 0),
-                "ganho_extra": sum(item["valor"] for item in ganho_extra_itens) or float(month.get("ganho_extra", previous.get("ganho_extra", 0)) or 0),
+                "ganho_extra": sum(item["valor"] for item in ganho_extra_itens)
+                or float(month.get("ganho_extra", previous.get("ganho_extra", 0)) or 0),
                 "ganho_extra_itens": ganho_extra_itens,
-                "saldo_anterior": float(month.get("saldo_anterior", previous.get("saldo_anterior", 0)) or 0),
+                "saldo_anterior": float(
+                    month.get("saldo_anterior", previous.get("saldo_anterior", 0)) or 0
+                ),
                 "contas_mensais": sum(item["total"] for item in categorias),
                 "extras": sum(item["valor"] for item in extras_itens),
-                "despesas": float(month.get("despesas", previous.get("despesas", 0)) or 0),
+                "despesas": float(
+                    month.get("despesas", previous.get("despesas", 0)) or 0
+                ),
                 "saldo": float(month.get("saldo", previous.get("saldo", 0)) or 0),
                 "investimentos": sum(item["valor"] for item in investimentos_itens),
                 "extras_itens": extras_itens,
@@ -297,7 +392,11 @@ def merge_payload(existing: dict, incoming: dict) -> dict:
                 by_label[label] = normalized
 
         merged["months"] = list(by_label.values())
-        merged["labels"] = [item.get("label") for item in merged["months"] if isinstance(item, dict) and item.get("label")]
+        merged["labels"] = [
+            item.get("label")
+            for item in merged["months"]
+            if isinstance(item, dict) and item.get("label")
+        ]
 
     existing_categorias = merged.get("categorias", []) or []
     incoming_categorias = incoming.get("categorias") or []
@@ -316,7 +415,9 @@ def merge_payload(existing: dict, incoming: dict) -> dict:
             continue
         category_map[key] = total
     if "categorias" in incoming:
-        merged["categorias"] = [{"item": key, "total": value} for key, value in category_map.items()]
+        merged["categorias"] = [
+            {"item": key, "total": value} for key, value in category_map.items()
+        ]
 
     recent = merged.get("investimentos_recentes", {"mes": "", "itens": []})
     if "investimentos_recentes" not in incoming:
@@ -346,7 +447,11 @@ def merge_payload(existing: dict, incoming: dict) -> dict:
         if key and value != 0:
             merged_map[key] = value
 
-    recent_month = incoming_recent.get("mes") or recent.get("mes") or (merged.get("months", [])[-1].get("label") if merged.get("months") else "")
+    recent_month = (
+        incoming_recent.get("mes")
+        or recent.get("mes")
+        or (merged.get("months", [])[-1].get("label") if merged.get("months") else "")
+    )
     merged["investimentos_recentes"] = {
         "mes": recent_month,
         "itens": [{"item": key, "valor": value} for key, value in merged_map.items()],
@@ -383,11 +488,18 @@ def clear_category_data(category_name: str, month_label: str = "") -> dict:
     months = []
     for month in current.get("months", []):
         updated = json.loads(json.dumps(month))
-        is_selected_month = not selected_month or str(updated.get("label") or "").strip() == selected_month
+        is_selected_month = (
+            not selected_month
+            or str(updated.get("label") or "").strip() == selected_month
+        )
         if is_selected_month:
             updated["categorias"] = [
-                item for item in (updated.get("categorias") or [])
-                if not (isinstance(item, dict) and str(item.get("item") or "").strip() == target)
+                item
+                for item in (updated.get("categorias") or [])
+                if not (
+                    isinstance(item, dict)
+                    and str(item.get("item") or "").strip() == target
+                )
             ]
             updated["contas_mensais"] = sum(
                 float(item.get("total") or 0)

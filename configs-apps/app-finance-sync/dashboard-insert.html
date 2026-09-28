@@ -153,7 +153,8 @@
           <div class="grid">
             <div class="field">
               <label for="monthLabel">Mês</label>
-              <input id="monthLabel" name="monthLabel" type="text" placeholder="Ex.: Set/26" required />
+              <input id="monthLabel" name="monthLabel" type="text" list="savedMonths" placeholder="Ex.: Set/26" required />
+              <datalist id="savedMonths"></datalist>
             </div>
 
             <div class="field">
@@ -205,6 +206,7 @@
 
         <div class="panel">
           <h2>Carteira de Investimentos</h2>
+          <p class="deck">Os valores salvos aparecem como total atual. Para registrar mais um aporte, adicione outra linha com o mesmo item e informe o valor do novo aporte; ao salvar o mês, os valores serão somados.</p>
           <div id="investimentoList" class="list"></div>
           <div class="actions">
             <button type="button" class="secondary" id="addInvestimento">Adicionar investimento</button>
@@ -274,7 +276,7 @@
         return row;
       }
 
-      function createInvestmentRow(data = EMPTY_INVESTIMENTO) {
+      function createInvestmentRow(data = EMPTY_INVESTIMENTO, existing = false) {
         const row = document.createElement('div');
         row.className = 'list-row';
         row.innerHTML = `
@@ -283,14 +285,14 @@
             <input type="text" class="item" value="${(data.item || '').replace(/"/g, '&quot;')}" placeholder="Ex.: cripto" />
           </div>
           <div class="field">
-            <label>Valor</label>
+            <label>${existing ? 'Total atual' : 'Novo aporte'}</label>
             <input type="number" class="valor" step="0.01" value="${Number(data.valor || 0)}" />
           </div>
-          <button type="button" class="small secondary save-row">Salvar item</button>
+          ${existing ? '' : '<button type="button" class="small secondary save-row">Salvar aporte</button>'}
           <button type="button" class="small secondary remove-row">Remover</button>
         `;
         row.querySelector('.remove-row').addEventListener('click', () => row.remove());
-        row.querySelector('.save-row').addEventListener('click', () => saveQuickInvestmentRow(row));
+        row.querySelector('.save-row')?.addEventListener('click', () => saveQuickInvestmentRow(row));
         return row;
       }
 
@@ -322,17 +324,176 @@
 
       function readRows(container, type) {
         const rows = Array.from(container.querySelectorAll('.list-row'));
-        return rows.map((row) => {
+        const itemMap = new Map();
+        rows.forEach((row) => {
           const item = row.querySelector('.item')?.value?.trim() || '';
           const totalInput = row.querySelector('.total');
           const valorInput = row.querySelector('.valor');
-
-          if (type === 'categoria') {
-            return { item, total: Number(totalInput?.value || 0) };
+          const value = type === 'categoria'
+            ? Number(totalInput?.value || 0)
+            : Number(valorInput?.value || 0);
+          const key = item.replace(/\s+/g, ' ').toLocaleLowerCase('pt-BR');
+          if (!key || value === 0) {
+            return;
           }
+          const existing = itemMap.get(key);
+          if (type === 'categoria') {
+            itemMap.set(key, { item: existing?.item || item, total: (existing?.total || 0) + value });
+          } else {
+            itemMap.set(key, { item: existing?.item || item, valor: (existing?.valor || 0) + value });
+          }
+        });
+        return Array.from(itemMap.values());
+      }
 
-          return { item, valor: Number(valorInput?.value || 0) };
-        }).filter((entry) => entry.item !== '' && Number(entry.total || entry.valor || 0) !== 0);
+      function normalizeItemName(value) {
+        return String(value || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('pt-BR');
+      }
+
+      function formatCurrency(value) {
+        return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      }
+
+      function normalizeMonthLabel(value) {
+        return String(value || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('pt-BR');
+      }
+
+      function normalizeItemRows(items, valueKey) {
+        const itemMap = new Map();
+        (Array.isArray(items) ? items : []).forEach((item) => {
+          if (!item || typeof item !== 'object') {
+            return;
+          }
+          const name = String(item.item || '').trim();
+          const key = normalizeItemName(name);
+          const value = Number(item[valueKey] || 0);
+          if (!key) {
+            return;
+          }
+          const existing = itemMap.get(key);
+          itemMap.set(key, {
+            item: existing?.item || name,
+            [valueKey]: (existing?.[valueKey] || 0) + value,
+          });
+        });
+        return Array.from(itemMap.values());
+      }
+
+      function monthToFormEntry(month) {
+        return {
+          label: month.label,
+          receita: Number(month.receita || 0),
+          ganho_extra: Number(month.ganho_extra || 0),
+          ganho_extra_itens: normalizeItemRows(month.ganho_extra_itens, 'valor'),
+          saldo_anterior: Number(month.saldo_anterior || 0),
+          extras_itens: normalizeItemRows(month.extras_itens, 'valor'),
+          categorias: normalizeItemRows(month.categorias, 'total'),
+          investimentos_recentes: normalizeItemRows(month.investimentos_itens, 'valor'),
+        };
+      }
+
+      function renderMonthItems(entry) {
+        document.getElementById('ganhoExtraList').innerHTML = '';
+        document.getElementById('extraList').innerHTML = '';
+        document.getElementById('categoriaList').innerHTML = '';
+        document.getElementById('investimentoList').innerHTML = '';
+        (entry?.ganho_extra_itens || []).forEach((item) => {
+          document.getElementById('ganhoExtraList').appendChild(createGanhoExtraRow(item));
+        });
+        (entry?.extras_itens || []).forEach((item) => {
+          document.getElementById('extraList').appendChild(createExtraRow(item));
+        });
+        (entry?.categorias || []).forEach((item) => {
+          document.getElementById('categoriaList').appendChild(createCategoryRow(item));
+        });
+        (entry?.investimentos_recentes || []).forEach((item) => {
+          document.getElementById('investimentoList').appendChild(createInvestmentRow(item, true));
+        });
+      }
+
+      function hydrateFormWithMonth(monthLabel) {
+        const requestedLabel = String(monthLabel || '').trim();
+        const entry = readStore().entries.find(
+          (item) => normalizeMonthLabel(item.label) === normalizeMonthLabel(requestedLabel),
+        );
+        const label = entry?.label || requestedLabel;
+        document.getElementById('monthLabel').value = label;
+        document.getElementById('sourceNote').value = entry?.source || 'Cadastro manual';
+        document.getElementById('receita').value = Number(entry?.receita || 0);
+        document.getElementById('ganhoExtra').value = Number(entry?.ganho_extra || 0);
+        document.getElementById('saldoAnterior').value = Number(entry?.saldo_anterior || 0);
+        renderMonthItems(entry);
+        showStatus(entry ? `Dados de ${entry.label} carregados para edição.` : `Novo mês: ${label || 'informe o mês'}.`);
+      }
+
+      async function loadSavedMonths() {
+        const response = await fetch('/api/data');
+        if (!response.ok) {
+          throw new Error('Não foi possível carregar os dados já salvos.');
+        }
+        const payload = await response.json();
+        const entries = Array.isArray(payload.months) ? payload.months.map(monthToFormEntry) : [];
+        writeStore({ entries });
+        renderSavedMonthOptions(entries);
+        hydrateFormWithMonth(document.getElementById('monthLabel').value);
+      }
+
+      function renderSavedMonthOptions(entries) {
+        const options = document.getElementById('savedMonths');
+        options.replaceChildren();
+        entries.forEach((entry) => {
+          const option = document.createElement('option');
+          option.value = entry.label;
+          options.appendChild(option);
+        });
+      }
+
+      function updateRowsFromSave(payload, monthLabel, entryKey, sourceKey, valueKey, listId, createRow) {
+        const month = (payload.months || []).find(
+          (item) => normalizeMonthLabel(item.label) === normalizeMonthLabel(monthLabel),
+        );
+        if (!month) {
+          return [];
+        }
+        const rows = normalizeItemRows(month[sourceKey], valueKey);
+        const store = readStore();
+        let entry = store.entries.find(
+          (item) => normalizeMonthLabel(item.label) === normalizeMonthLabel(monthLabel),
+        );
+        if (!entry) {
+          entry = monthToFormEntry(month);
+          store.entries.push(entry);
+        }
+        entry[entryKey] = rows;
+        writeStore(store);
+        renderSavedMonthOptions(store.entries);
+
+        const list = document.getElementById(listId);
+        list.replaceChildren();
+        rows.forEach((item) => list.appendChild(createRow(item)));
+        return rows;
+      }
+
+      function updateInvestmentsFromSave(payload, monthLabel, contribution) {
+        const month = (payload.months || []).find(
+          (item) => normalizeMonthLabel(item.label) === normalizeMonthLabel(monthLabel),
+        );
+        if (!month) {
+          return;
+        }
+        const investments = updateRowsFromSave(
+          payload,
+          monthLabel,
+          'investimentos_recentes',
+          'investimentos_itens',
+          'valor',
+          'investimentoList',
+          (item) => createInvestmentRow(item, true),
+        );
+        const item = investments.find(
+          (investment) => normalizeItemName(investment.item) === normalizeItemName(contribution.item),
+        );
+        showStatus(`Aporte de ${formatCurrency(contribution.valor)} salvo. Total de ${contribution.item}: ${formatCurrency(item?.valor || 0)}.`);
       }
 
       function buildPayload() {
@@ -400,7 +561,7 @@
         }
         return {
           labels: [monthLabel],
-          months: [{ ...baseMonth, investimentos: valor, investimentos_itens: [{ item, valor }] }],
+          months: [{ ...baseMonth, investimentos_aportes: [{ item, valor }] }],
         };
       }
 
@@ -419,9 +580,9 @@
           .then((response) => response.json())
           .then((result) => {
             if (result && result.ok) {
-              showStatus(`Categoria adicionada em ${document.getElementById('monthLabel').value.trim() || 'Set/26'} com sucesso.`);
-              row.querySelector('.save-row').textContent = 'Salvo';
-              row.querySelector('.save-row').disabled = true;
+              const monthLabel = document.getElementById('monthLabel').value.trim() || 'Set/26';
+              updateRowsFromSave(result.data, monthLabel, 'categorias', 'categorias', 'total', 'categoriaList', createCategoryRow);
+              showStatus(`Categoria salva em ${monthLabel} com sucesso.`);
               return;
             }
             throw new Error(result && result.error ? result.error : 'Erro ao salvar categoria');
@@ -447,9 +608,12 @@
           .then((response) => response.json())
           .then((result) => {
             if (result && result.ok) {
-              showStatus(`Investimento adicionado em ${document.getElementById('monthLabel').value.trim() || 'Set/26'} com sucesso.`);
-              row.querySelector('.save-row').textContent = 'Salvo';
-              row.querySelector('.save-row').disabled = true;
+              const contribution = payload.months[0].investimentos_aportes[0];
+              updateInvestmentsFromSave(
+                result.data,
+                document.getElementById('monthLabel').value.trim() || 'Set/26',
+                contribution,
+              );
               return;
             }
             throw new Error(result && result.error ? result.error : 'Erro ao salvar investimento');
@@ -475,9 +639,9 @@
           .then((response) => response.json())
           .then((result) => {
             if (result && result.ok) {
-              showStatus(`Conta extra adicionada em ${document.getElementById('monthLabel').value.trim() || 'Set/26'} com sucesso.`);
-              row.querySelector('.save-row').textContent = 'Salvo';
-              row.querySelector('.save-row').disabled = true;
+              const monthLabel = document.getElementById('monthLabel').value.trim() || 'Set/26';
+              updateRowsFromSave(result.data, monthLabel, 'extras_itens', 'extras_itens', 'valor', 'extraList', createExtraRow);
+              showStatus(`Conta extra salva em ${monthLabel} com sucesso.`);
               return;
             }
             throw new Error(result && result.error ? result.error : 'Erro ao salvar conta extra');
@@ -503,9 +667,9 @@
           .then((response) => response.json())
           .then((result) => {
             if (result && result.ok) {
-              showStatus(`Ganho extra adicionado em ${document.getElementById('monthLabel').value.trim() || 'Set/26'} com sucesso.`);
-              row.querySelector('.save-row').textContent = 'Salvo';
-              row.querySelector('.save-row').disabled = true;
+              const monthLabel = document.getElementById('monthLabel').value.trim() || 'Set/26';
+              updateRowsFromSave(result.data, monthLabel, 'ganho_extra_itens', 'ganho_extra_itens', 'valor', 'ganhoExtraList', createGanhoExtraRow);
+              showStatus(`Ganho extra salvo em ${monthLabel} com sucesso.`);
               return;
             }
             throw new Error(result && result.error ? result.error : 'Erro ao salvar ganho extra');
@@ -564,7 +728,9 @@
           investimentos_recentes: readRows(document.getElementById('investimentoList'), 'investimento'),
         };
 
-        const existingIndex = store.entries.findIndex((item) => item.label === monthLabel);
+        const existingIndex = store.entries.findIndex(
+          (item) => normalizeMonthLabel(item.label) === normalizeMonthLabel(monthLabel),
+        );
         if (existingIndex >= 0) {
           store.entries[existingIndex] = entry;
         } else {
@@ -589,6 +755,7 @@
           .then((result) => {
             if (result && result.ok) {
               showStatus(`Mês ${monthLabel} salvo com sucesso no arquivo persistente.`);
+              loadSavedMonths().catch((error) => console.warn('Falha ao atualizar a lista de meses:', error));
               return;
             }
             throw new Error(result && result.error ? result.error : 'Erro ao salvar');
@@ -603,8 +770,8 @@
         window.location.href = './index.html';
       });
 
-      function hydrateFormWithDefaultData() {
-        document.getElementById('monthLabel').value = 'Set/26';
+      function hydrateFormWithDefaultData(monthLabel = 'Set/26') {
+        document.getElementById('monthLabel').value = monthLabel;
         document.getElementById('sourceNote').value = 'Cadastro manual';
         document.getElementById('receita').value = 0;
         document.getElementById('ganhoExtra').value = 0;
@@ -621,12 +788,24 @@
       }
 
       function resetManualData() {
-        fetch('/api/reset');
-        hydrateFormWithDefaultData();
-        showStatus('Histórico limpo. Começando em Set/26.');
+        fetch('/api/reset')
+          .then((response) => response.json())
+          .then(() => {
+            writeStore({ entries: [] });
+            renderSavedMonthOptions([]);
+            hydrateFormWithDefaultData();
+            showStatus('Histórico limpo. Começando em Set/26.');
+          })
+          .catch((error) => {
+            console.warn('Falha ao limpar o histórico:', error);
+            showStatus('Não foi possível limpar o histórico no servidor.', true);
+          });
       }
 
       document.getElementById('resetDashboard').addEventListener('click', resetManualData);
+      document.getElementById('monthLabel').addEventListener('change', (event) => {
+        hydrateFormWithMonth(event.target.value);
+      });
 
       document.getElementById('clearMonthBtn').addEventListener('click', async () => {
         const month = document.getElementById('clearMonthInput').value.trim();
@@ -673,6 +852,10 @@
       });
 
       hydrateFormWithDefaultData();
+      loadSavedMonths().catch((error) => {
+        console.warn('Falha ao carregar meses salvos:', error);
+        showStatus('Não foi possível carregar os dados já salvos.', true);
+      });
     </script>
   </body>
 </html>
