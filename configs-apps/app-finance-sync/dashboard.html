@@ -274,6 +274,7 @@
         <div class="chart-box">
           <table id="contasFixasTable"></table>
         </div>
+        <hr>
         <h2>Contas Extras Mensais</h2>
         <p class="deck">Consulte quanto foi gasto em cada conta extra por mês.</p>
         <div class="chart-box">
@@ -286,6 +287,7 @@
         <div class="chart-box">
           <table id="investimentosTable"></table>
         </div>
+        <hr>
         <h2>Ganhos Extras Mensais</h2>
         <p class="deck">Consulte quanto foi recebido em cada ganho extra por mês.</p>
         <div class="chart-box">
@@ -297,7 +299,7 @@
 
   <section>
     <div class="section-title">Detalhamento</div>
-    <h2>Resumo mensal</h2>
+    <h2>Resumo Mensal</h2>
     <p class="deck">Todos os valores registrados, mês a mês.</p>
     <div class="chart-box" style="overflow-x:auto;">
       <table id="resumoTable"></table>
@@ -844,7 +846,7 @@ function renderDashboard() {
     mes: currentMonth.label,
     itens: currentMonth.investimentos_itens || [],
   };
-  document.getElementById('investTitle').textContent = 'Carteira de investimentos · ' + ir.mes;
+  document.getElementById('investTitle').textContent = 'Carteira de Investimentos · ' + ir.mes;
   document.getElementById('investDeck').textContent = 'Distribuição por classe em ' + ir.mes + ', o mês atual selecionado automaticamente.';
   donutChart(document.getElementById('carteiraChart'), document.getElementById('carteiraLegend'), ir.itens, [TEAL, GOLD, RUST, INK, MUTED]);
   renderMonthSelector(data.months, currentMonth.label);
