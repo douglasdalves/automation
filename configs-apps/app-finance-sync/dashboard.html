@@ -150,6 +150,10 @@
     font-weight:600;
     font-size:0.72rem;
   }
+  table tfoot th{
+    color:var(--ink);
+    font-size:inherit;
+  }
   table th.num{text-align:right;}
   table td.num{text-align:right; font-variant-numeric:tabular-nums;}
   #contasFixasTable, #extrasTable, #investimentosTable, #ganhosExtrasTable{
@@ -771,18 +775,17 @@ function renderDashboard() {
       }
     });
 
-    if (!itemMap.size) {
-      container.innerHTML = '<tr><th>Item</th><th class="num">Valor</th></tr><tr><td colspan="2">Nenhum item registrado.</td></tr>';
-      return;
-    }
-
     const entries = Array.from(itemMap, ([name, value]) => ({ name, value }))
       .sort((first, second) => second.value - first.value);
     const thead = '<tr><th>Item</th><th class="num">Valor</th></tr>';
-    const body = entries
-      .map((entry) => `<tr><td>${entry.name}</td><td class="num">${brl(entry.value)}</td></tr>`)
-      .join('');
-    container.innerHTML = thead + body;
+    const body = entries.length
+      ? entries
+        .map((entry) => `<tr><td>${entry.name}</td><td class="num">${brl(entry.value)}</td></tr>`)
+        .join('')
+      : '<tr><td colspan="2">Nenhum item registrado.</td></tr>';
+    const total = entries.reduce((sum, entry) => sum + entry.value, 0);
+    const footer = `<tfoot><tr><th>Total</th><th class="num">${brl(total)}</th></tr></tfoot>`;
+    container.innerHTML = thead + body + footer;
   }
 
   function renderItemDetails(month) {
