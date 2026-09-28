@@ -1,4 +1,5 @@
 from app.services.finance import (
+    get_current_month_accounts,
     get_current_month_investments,
     get_current_month_summary,
 )
@@ -15,6 +16,11 @@ def register_finance_tools(mcp):
     def get_current_finance_investments() -> dict:
         """Consulta no dashboard financeiro os investimentos do mês atual."""
         return get_current_month_investments()
+
+    @mcp.tool()
+    def get_current_finance_accounts() -> dict:
+        """Consulta no dashboard as contas fixas e extras do mês atual."""
+        return get_current_month_accounts()
 
     @mcp.tool()
     def start_finance_backup() -> dict:

@@ -61,6 +61,7 @@ http://localhost:5080/mcp
 - `deploy_finance_app`: executa `git pull` e reinicia os containers `dc-finance-api` e `dc-finance-dash`.
 - `get_current_finance_summary`: consulta na API do dashboard o resumo do mês atual.
 - `get_current_finance_investments`: consulta na API do dashboard os investimentos do mês atual.
+- `get_current_finance_accounts`: consulta na API do dashboard as contas fixas e extras do mês atual.
 - `start_finance_backup`: executa, como root e sem argumentos, o script definido em `FINANCE_BACKUP_SCRIPT`.
 - `restart_homelab_service`: reinicia um servico listado em `DEPLOY_SERVICES`.
 
@@ -90,6 +91,7 @@ O `/deploy_sync` sincroniza somente os arquivos ja definidos em `/etc/app-config
 O `/deploy_finance` do bot aguarda o `git pull` terminar com sucesso e entao reinicia os dois containers do painel financeiro.
 O `/finance` consulta `get_current_finance_summary` pelo MCP e exibe os valores mensais publicados pelo dashboard. Configure `FINANCE_DASHBOARD_DATA_URL` com a URL acessível pelo servidor MCP; no Compose local padrão, use `http://127.0.0.1:8085/api/data`.
 O `/finance_invest` consulta `get_current_finance_investments` pelo MCP e exibe os itens e o total de investimentos do mês atual.
+O `/finance_contas` consulta `get_current_finance_accounts` pelo MCP e detalha cada conta fixa e conta extra com seu valor.
 
 ## systemd
 
