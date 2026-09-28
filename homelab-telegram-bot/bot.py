@@ -15,6 +15,7 @@ from handlers.finance_handlers import (
     deploy_finance_command,
     finance_backup_command,
     finance_command,
+    finance_contas_command,
     finance_invest_command,
 )
 from handlers.restart_handlers import restart_callback, restart_command
@@ -50,6 +51,7 @@ BOT_COMMANDS = {
     "deploy_finance": "deploy do painel financeiro",
     "finance": "resumo financeiro do mês atual",
     "finance_invest": "investimentos do mês atual",
+    "finance_contas": "contas fixas e extras do mês atual",
     "finance_bkp": "executa backup financeiro",
     "restart_service": "reinicia serviço do homelab",
     "restart_docker": "reinicia container Docker",
@@ -281,6 +283,10 @@ def main():
         elif command_name == "finance_invest":
             application.add_handler(
                 CommandHandler("finance_invest", finance_invest_command)
+            )
+        elif command_name == "finance_contas":
+            application.add_handler(
+                CommandHandler("finance_contas", finance_contas_command)
             )
         elif command_name == "finance_bkp":
             application.add_handler(

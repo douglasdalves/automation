@@ -128,6 +128,57 @@ async def finance_invest_command(
         )
 
 
+async def finance_contas_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+    if not is_authorized(update):
+        await update.message.reply_text("⛔ Acesso não autorizado.")
+        return
+
+    try:
+        data = await call_mcp_tool("get_current_finance_accounts")
+        if not data.get("success"):
+            raise RuntimeError(data.get("error", "Erro desconhecido"))
+
+        month = html.escape(str(data.get("month", "mês atual")))
+        fallback = (
+            ""
+            if data.get("is_current_month")
+            else "\n<i>O mês atual ainda não está cadastrado; exibindo o último registro.</i>"
+        )
+        lines = [f"🧾 <b>Contas mensais — {month}</b>", ""]
+
+        sections = (
+            ("Contas fixas", "fixed_items", "fixed_total"),
+            ("Contas extras", "extra_items", "extras_total"),
+        )
+        for title, items_key, total_key in sections:
+            lines.append(f"<b>{title}</b>")
+            items = data.get(items_key, [])
+            if items:
+                lines.extend(
+                    f"• {html.escape(str(item.get('item', 'Conta')))}: <b>{format_brl(float(item.get('valor') or 0))}</b>"
+                    for item in items
+                )
+            else:
+                lines.append("Nenhum item cadastrado.")
+            lines.append(
+                f"Subtotal: <b>{format_brl(float(data.get(total_key) or 0))}</b>"
+            )
+            lines.append("")
+
+        await update.message.reply_text(
+            "\n".join(lines).rstrip() + fallback, parse_mode="HTML"
+        )
+    except Exception as exc:
+        logger.exception("Erro ao consultar contas financeiras")
+        await update.message.reply_text(
+            f"❌ Erro ao consultar contas financeiras:\n<code>{html.escape(str(exc))}</code>",
+            parse_mode="HTML",
+        )
+
+
 # -------------------------------- FINANCE BACKUP --------------------------
 
 

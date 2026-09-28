@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 import httpx
 
@@ -27,7 +27,7 @@ _MONTHS = (
 
 def _month_label(today: date | None = None) -> str:
     if today is None:
-        today = datetime.datetime.now(tz=...).date()
+        today = datetime.now(tz=timezone.utc).date()
     return f"{_MONTHS[today.month - 1]}/{today.year % 100:02d}"
 
 
@@ -73,7 +73,7 @@ def get_current_month_summary() -> dict:
             "error": "O painel financeiro não possui meses cadastrados.",
         }
 
-    today = datetime.datetime.now(tz=...).date()
+    today = datetime.now(tz=timezone.utc).date()
     current_label = _month_label(today)
     current_index = today.year * 12 + today.month
     selected = next(
@@ -139,7 +139,7 @@ def get_current_month_investments() -> dict:
             "error": "O painel financeiro não possui meses cadastrados.",
         }
 
-    today = datetime.datetime.now(tz=...).date()
+    today = datetime.now(tz=timezone.utc).date()
     current_index = today.year * 12 + today.month
     selected = next(
         (
@@ -177,4 +177,77 @@ def get_current_month_investments() -> dict:
             for item in items
             if isinstance(item, dict)
         ],
+    }
+
+
+def get_current_month_accounts() -> dict:
+    """Return fixed and extra bill items shown for the current dashboard month."""
+    if not Config.FINANCE_DASHBOARD_DATA_URL:
+        return {
+            "success": False,
+            "error": "FINANCE_DASHBOARD_DATA_URL não está configurada no arquivo .env.",
+        }
+
+    try:
+        response = httpx.get(Config.FINANCE_DASHBOARD_DATA_URL, timeout=10.0)
+        response.raise_for_status()
+        payload = response.json()
+    except (httpx.HTTPError, ValueError) as exc:
+        return {
+            "success": False,
+            "error": f"Não foi possível consultar o painel financeiro: {exc}",
+        }
+
+    months = payload.get("months", []) if isinstance(payload, dict) else []
+    if not isinstance(months, list) or not months:
+        return {
+            "success": False,
+            "error": "O painel financeiro não possui meses cadastrados.",
+        }
+
+    today = datetime.now(tz=timezone.utc).date()
+    current_index = today.year * 12 + today.month
+    selected = next(
+        (
+            month
+            for month in months
+            if isinstance(month, dict)
+            and _month_index(month.get("label", "")) == current_index
+        ),
+        None,
+    )
+    is_current_month = selected is not None
+    if selected is None:
+        selected = next(
+            (month for month in reversed(months) if isinstance(month, dict)), None
+        )
+    if selected is None:
+        return {
+            "success": False,
+            "error": "Os dados do painel financeiro são inválidos.",
+        }
+
+    def normalize_items(key: str, value_key: str) -> list[dict]:
+        items = selected.get(key, [])
+        if not isinstance(items, list):
+            return []
+        return [
+            {
+                "item": str(item.get("item") or "Conta"),
+                "valor": float(item.get(value_key) or 0),
+            }
+            for item in items
+            if isinstance(item, dict)
+        ]
+
+    fixed = normalize_items("categorias", "total")
+    extras = normalize_items("extras_itens", "valor")
+    return {
+        "success": True,
+        "month": selected.get("label", _month_label(today)),
+        "is_current_month": is_current_month,
+        "fixed_total": sum(item["valor"] for item in fixed),
+        "fixed_items": fixed,
+        "extras_total": sum(item["valor"] for item in extras),
+        "extra_items": extras,
     }
