@@ -478,12 +478,26 @@ def clear_month_data(month_label: str) -> dict:
     return write_database_payload(payload)
 
 
-def clear_category_data(category_name: str, month_label: str = "") -> dict:
+def clear_category_data(
+    category_name: str, month_label: str = "", item_type: str = "categoria"
+) -> dict:
     current = load_data()
     target = str(category_name or "").strip()
     selected_month = str(month_label or "").strip()
     if not target:
         return current
+
+    item_fields = {
+        "categoria": ("categorias", "total"),
+        "extra": ("extras_itens", "valor"),
+        "ganho_extra": ("ganho_extra_itens", "valor"),
+        "investimento": ("investimentos_itens", "valor"),
+    }
+    normalized_type = str(item_type or "categoria").strip().lower()
+    field = item_fields.get(normalized_type)
+    if not field:
+        raise ValueError("Tipo de item invÃ¡lido")
+    items_key, value_key = field
 
     months = []
     for month in current.get("months", []):
@@ -493,19 +507,27 @@ def clear_category_data(category_name: str, month_label: str = "") -> dict:
             or str(updated.get("label") or "").strip() == selected_month
         )
         if is_selected_month:
-            updated["categorias"] = [
+            updated[items_key] = [
                 item
-                for item in (updated.get("categorias") or [])
+                for item in (updated.get(items_key) or [])
                 if not (
                     isinstance(item, dict)
-                    and str(item.get("item") or "").strip() == target
+                    and str(item.get("item") or "").strip().casefold()
+                    == target.casefold()
                 )
             ]
-            updated["contas_mensais"] = sum(
-                float(item.get("total") or 0)
-                for item in updated["categorias"]
+            total = sum(
+                float(item.get(value_key) or 0)
+                for item in updated[items_key]
                 if isinstance(item, dict)
             )
+            total_fields = {
+                "categoria": "contas_mensais",
+                "extra": "extras",
+                "ganho_extra": "ganho_extra",
+                "investimento": "investimentos",
+            }
+            updated[total_fields[normalized_type]] = total
         months.append(updated)
     return write_database_payload({"months": months})
 
@@ -621,7 +643,10 @@ class FinanceHandler(BaseHTTPRequestHandler):
             try:
                 item_name = payload.get("item") or payload.get("category") or ""
                 month_label = payload.get("month") or payload.get("month_label") or ""
-                cleared = clear_category_data(item_name, month_label)
+                item_type = (
+                    payload.get("type") or payload.get("item_type") or "categoria"
+                )
+                cleared = clear_category_data(item_name, month_label, item_type)
                 self._send_json({"ok": True, "data": cleared})
                 return
             except Exception as exc:  # noqa: BLE001 # pragma: no cover - defensive path
