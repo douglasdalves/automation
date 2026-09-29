@@ -70,11 +70,11 @@
         letter-spacing: 0.06em;
       }
 
-      input, button {
+      input, button, select {
         font: inherit;
       }
 
-      input {
+      input, select {
         width: 100%;
         border: 1px solid var(--line);
         background: #fff;
@@ -228,7 +228,16 @@
               <input id="clearMonthInput" type="text" placeholder="Ex.: Set/26" />
             </div>
             <div class="field">
-              <label for="clearCategoryInput">Item da conta fixa</label>
+              <label for="clearItemType">Tipo de item</label>
+              <select id="clearItemType">
+                <option value="categoria">Conta fixa</option>
+                <option value="extra">Conta extra</option>
+                <option value="ganho_extra">Ganho extra</option>
+                <option value="investimento">Investimento</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="clearCategoryInput">Nome do item</label>
               <input id="clearCategoryInput" type="text" placeholder="Ex.: Fatura Nu" />
             </div>
           </div>
@@ -832,14 +841,14 @@
         const month = document.getElementById('clearMonthInput').value.trim();
         const item = document.getElementById('clearCategoryInput').value.trim();
         if (!item) {
-          showStatus('Informe o item da conta fixa para remover.', true);
+          showStatus('Informe o nome do item para remover.', true);
           return;
         }
 
         const response = await fetch('/api/clear-category', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ item, month }),
+          body: JSON.stringify({ item, month, type: document.getElementById('clearItemType').value }),
         });
         const result = await response.json();
         if (result && result.ok) {
