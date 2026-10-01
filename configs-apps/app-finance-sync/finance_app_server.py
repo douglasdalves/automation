@@ -29,7 +29,7 @@ MONTH_ABBREVIATIONS = (
     "Nov",
     "Dez",
 )
-CURRENT_DATE = datetime.timezone(0)
+CURRENT_DATE = datetime.now().astimezone()
 CURRENT_MONTH_LABEL = f"{MONTH_ABBREVIATIONS[CURRENT_DATE.month - 1]}/{CURRENT_DATE:%y}"
 
 DEFAULT_PAYLOAD = {
@@ -76,7 +76,11 @@ def normalize_month_index(label: str) -> int:
             import re
 
             year_match = re.search(r"(19|20)\d{2}|\d{2}", text)
-            year = int(year_match.group(0)) if year_match else datetime.timezone(0).year
+            year = (
+                int(year_match.group(0))
+                if year_match
+                else datetime.now().astimezone().year
+            )
             year = 2000 + year if year < 100 else year
             return (year * 12) + month_no
     return 0
