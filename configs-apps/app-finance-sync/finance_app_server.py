@@ -6,6 +6,7 @@ import json
 import mimetypes
 import os
 import sqlite3
+from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
@@ -14,11 +15,28 @@ ROOT = Path(__file__).resolve().parent
 DATABASE_FILE = Path(os.environ.get("FINANCE_DB_PATH", str(ROOT / "finance.db")))
 PORT = 8001
 
+MONTH_ABBREVIATIONS = (
+    "Jan",
+    "Fev",
+    "Mar",
+    "Abr",
+    "Mai",
+    "Jun",
+    "Jul",
+    "Ago",
+    "Set",
+    "Out",
+    "Nov",
+    "Dez",
+)
+CURRENT_DATE = datetime.timezone(0)
+CURRENT_MONTH_LABEL = f"{MONTH_ABBREVIATIONS[CURRENT_DATE.month - 1]}/{CURRENT_DATE:%y}"
+
 DEFAULT_PAYLOAD = {
-    "labels": ["Set/26"],
+    "labels": [CURRENT_MONTH_LABEL],
     "months": [
         {
-            "label": "Set/26",
+            "label": CURRENT_MONTH_LABEL,
             "receita": 0,
             "ganho_extra": 0,
             "ganho_extra_itens": [],
@@ -32,7 +50,7 @@ DEFAULT_PAYLOAD = {
         }
     ],
     "categorias": [],
-    "investimentos_recentes": {"mes": "Set/26", "itens": []},
+    "investimentos_recentes": {"mes": CURRENT_MONTH_LABEL, "itens": []},
 }
 
 
@@ -58,7 +76,7 @@ def normalize_month_index(label: str) -> int:
             import re
 
             year_match = re.search(r"(19|20)\d{2}|\d{2}", text)
-            year = int(year_match.group(0)) if year_match else 2026
+            year = int(year_match.group(0)) if year_match else datetime.timezone(0).year
             year = 2000 + year if year < 100 else year
             return (year * 12) + month_no
     return 0
@@ -216,12 +234,12 @@ def ensure_clean_payload(payload: dict | None) -> dict:
             month["investimentos_itens"] = legacy_recent.get("itens", [])
 
     cleaned = {
-        "labels": [month.get("label", "Set/26") for month in filtered],
+        "labels": [month.get("label", CURRENT_MONTH_LABEL) for month in filtered],
         "months": filtered,
         "categorias": payload.get("categorias", []),
         "investimentos_recentes": payload.get(
             "investimentos_recentes",
-            {"mes": filtered[-1].get("label", "Set/26"), "itens": []},
+            {"mes": filtered[-1].get("label", CURRENT_MONTH_LABEL), "itens": []},
         ),
     }
 
