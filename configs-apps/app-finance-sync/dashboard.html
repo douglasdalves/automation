@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Painel Financeiro · 2026</title>
+<title>Painel Financeiro</title>
 <style>
   :root{
     --ink:#1E2A38;
@@ -45,6 +45,17 @@
     color:var(--muted);
     text-align:right;
   }
+  .header-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+  .action-link{
+    display:inline-block;
+    padding:10px 14px;
+    border:1px solid var(--ink);
+    color:var(--ink);
+    font-family:Arial,Helvetica,sans-serif;
+    font-size:0.8rem;
+    text-decoration:none;
+  }
+  .action-link:hover{background:var(--ink);color:var(--paper);}
 
   .kpis{
     display:grid;
@@ -209,7 +220,10 @@
 
   <header>
     <h1>Financial Dashboard</h1>
-    <div class="period">Dados do Ano 2026</div>
+    <div class="header-actions">
+      <a class="action-link" href="./dashboard-insert.html">Open Registration</a>
+      <div class="period" id="dashboardPeriod"></div>
+    </div>
   </header>
 
   <div class="kpis" id="kpiRow"></div>
@@ -319,7 +333,11 @@
 <div class="tooltip" id="tooltip"></div>
 
 <script>
-const RESET_MONTH = 'Set/26';
+const MONTH_NAMES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+const CURRENT_MONTH_LABEL = `${MONTH_NAMES[new Date().getMonth()]}/${String(new Date().getFullYear()).slice(-2)}`;
+const RESET_MONTH = CURRENT_MONTH_LABEL;
+document.getElementById('dashboardPeriod').textContent = `Dados do Ano ${new Date().getFullYear()}`;
+document.title = `Painel Financeiro · ${new Date().getFullYear()}`;
 let data = { labels: [], months: [], categorias: [], investimentos_recentes: { mes: '', itens: [] } };
 
 function buildFreshBaseline() {
@@ -355,7 +373,7 @@ function parseMonthIndex(label) {
   for (const [name, number] of Object.entries(monthMap)) {
     if (text.includes(name)) {
       const yearMatch = text.match(/(19|20)\d{2}|\d{2}/);
-      const year = yearMatch ? Number(yearMatch[0]) : 2026;
+      const year = yearMatch ? Number(yearMatch[0]) : new Date().getFullYear();
       const normalizedYear = year < 100 ? 2000 + year : year;
       return (normalizedYear * 12) + number;
     }
