@@ -367,6 +367,11 @@
         return String(value || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('pt-BR');
       }
 
+      function currentMonthLabel(date = new Date()) {
+        const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        return `${monthNames[date.getMonth()]}/${String(date.getFullYear()).slice(-2)}`;
+      }
+
       function normalizeItemRows(items, valueKey) {
         const itemMap = new Map();
         (Array.isArray(items) ? items : []).forEach((item) => {
@@ -535,7 +540,7 @@
       }
 
       function buildQuickPayload(type, row) {
-        const monthLabel = document.getElementById('monthLabel').value.trim() || 'Set/26';
+        const monthLabel = document.getElementById('monthLabel').value.trim() || currentMonthLabel();
         const baseMonth = { label: monthLabel };
 
         if (type === 'categoria') {
@@ -589,7 +594,7 @@
           .then((response) => response.json())
           .then((result) => {
             if (result && result.ok) {
-              const monthLabel = document.getElementById('monthLabel').value.trim() || 'Set/26';
+              const monthLabel = document.getElementById('monthLabel').value.trim() || currentMonthLabel();
               updateRowsFromSave(result.data, monthLabel, 'categorias', 'categorias', 'total', 'categoriaList', createCategoryRow);
               showStatus(`Categoria salva em ${monthLabel} com sucesso.`);
               return;
@@ -620,7 +625,7 @@
               const contribution = payload.months[0].investimentos_aportes[0];
               updateInvestmentsFromSave(
                 result.data,
-                document.getElementById('monthLabel').value.trim() || 'Set/26',
+                document.getElementById('monthLabel').value.trim() || currentMonthLabel(),
                 contribution,
               );
               return;
@@ -648,7 +653,7 @@
           .then((response) => response.json())
           .then((result) => {
             if (result && result.ok) {
-              const monthLabel = document.getElementById('monthLabel').value.trim() || 'Set/26';
+              const monthLabel = document.getElementById('monthLabel').value.trim() || currentMonthLabel();
               updateRowsFromSave(result.data, monthLabel, 'extras_itens', 'extras_itens', 'valor', 'extraList', createExtraRow);
               showStatus(`Conta extra salva em ${monthLabel} com sucesso.`);
               return;
@@ -676,7 +681,7 @@
           .then((response) => response.json())
           .then((result) => {
             if (result && result.ok) {
-              const monthLabel = document.getElementById('monthLabel').value.trim() || 'Set/26';
+              const monthLabel = document.getElementById('monthLabel').value.trim() || currentMonthLabel();
               updateRowsFromSave(result.data, monthLabel, 'ganho_extra_itens', 'ganho_extra_itens', 'valor', 'ganhoExtraList', createGanhoExtraRow);
               showStatus(`Ganho extra salvo em ${monthLabel} com sucesso.`);
               return;
@@ -779,7 +784,7 @@
         window.location.href = './index.html';
       });
 
-      function hydrateFormWithDefaultData(monthLabel = 'Set/26') {
+      function hydrateFormWithDefaultData(monthLabel = currentMonthLabel()) {
         document.getElementById('monthLabel').value = monthLabel;
         document.getElementById('sourceNote').value = 'Cadastro manual';
         document.getElementById('receita').value = 0;
