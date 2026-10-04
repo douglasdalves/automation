@@ -23,3 +23,7 @@ layout:
   Armazenamento:
     style: row
     columns: 2
+  
+  Financeiro:
+    style: row
+    columns: 2
