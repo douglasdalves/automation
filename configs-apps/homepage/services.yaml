@@ -9,7 +9,7 @@
 
     - Portainer:
         icon: portainer.svg
-        href: https://aphome201.local:9443
+        href: https://portainer.aphome201.local:9000
         description: Gerenciamento Docker
         server: local
         container: dc-portainer
@@ -17,7 +17,7 @@
 - Infraestrutura:
     - Dozzle:
         icon: dozzle.svg
-        href: http://aphome201.local:8888
+        href: http://log.aphome201.local:8888
         description: Logs dos containers Docker
         server: local
         container: dc-dozzle
@@ -46,7 +46,7 @@
 
     - MySpeed:
         icon: myspeed.svg
-        href: http://aphome201.local:5216
+        href: http://myspeed.aphome201.local:5216
         description: Monitoramento da velocidade da Internet
         server: local
         container: dc-myspeed
@@ -54,14 +54,29 @@
 - Armazenamento:
     - File Browser:
         icon: filebrowser.svg
-        href: http://aphome201.local:10180
+        href: http://file.aphome201.local:10180/
         description: Gerenciamento de arquivos
         server: local
         container: dc-filebrowser
 
     - SFTPGo:
         icon: sftpgo.svg
-        href: http://aphome201.local:8080
+        href: http://sftp.aphome201.local:8080
         description: Transferência e gerenciamento de arquivos
         server: local
         container: dc-sftpgo
+
+- Financeiro:
+    - Finance Dashboard:
+        icon: homebank.svg
+        href: http://dashboard.aphome201:8085/dashboard.html
+        description: Gerenciamento financeiro pessoal
+        server: local
+        container: dc-finance-dash
+    
+    - Finance Insert:
+        icon: homebank.svg
+        href: http://cadastro.aphome201:8085/insert.html
+        description: Inserção de dados financeiros
+        server: local
+        container: dc-finance-api
