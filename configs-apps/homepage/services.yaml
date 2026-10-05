@@ -76,7 +76,7 @@
     
     - Finance Insert:
         icon: homebank.svg
-        href: http://cadastro.aphome201:8085/insert.html
+        href: http://dashboard.aphome201:8085/insert.html
         description: Inserção de dados financeiros
         server: local
         container: dc-finance-api

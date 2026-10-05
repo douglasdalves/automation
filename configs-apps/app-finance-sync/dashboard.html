@@ -46,6 +46,20 @@
     text-align:right;
   }
   .header-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+  .year-filter{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color:var(--muted);
+    font:0.8rem Arial,Helvetica,sans-serif;
+  }
+  .year-filter select{
+    border:1px solid var(--ink);
+    background:#fff;
+    color:var(--ink);
+    padding:9px 10px;
+    font:600 0.8rem Arial,Helvetica,sans-serif;
+  }
   .action-link{
     display:inline-block;
     padding:10px 14px;
@@ -221,6 +235,9 @@
   <header>
     <h1>Financial Dashboard</h1>
     <div class="header-actions">
+      <label class="year-filter" for="yearFilter">Ano
+        <select id="yearFilter" aria-label="Selecionar ano"></select>
+      </label>
       <a class="action-link" href="./dashboard-insert.html">Open Registration</a>
       <div class="period" id="dashboardPeriod"></div>
     </div>
@@ -336,9 +353,8 @@
 const MONTH_NAMES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 const CURRENT_MONTH_LABEL = `${MONTH_NAMES[new Date().getMonth()]}/${String(new Date().getFullYear()).slice(-2)}`;
 const RESET_MONTH = CURRENT_MONTH_LABEL;
-document.getElementById('dashboardPeriod').textContent = `Dados do Ano ${new Date().getFullYear()}`;
-document.title = `Painel Financeiro · ${new Date().getFullYear()}`;
 let data = { labels: [], months: [], categorias: [], investimentos_recentes: { mes: '', itens: [] } };
+let selectedDashboardYear = null;
 
 function buildFreshBaseline() {
   return {
@@ -382,9 +398,9 @@ function parseMonthIndex(label) {
   return 0;
 }
 
-function getCurrentMonthIndex() {
-  const today = new Date();
-  return (today.getFullYear() * 12) + today.getMonth() + 1;
+function getYearFromMonth(month) {
+  const monthIndex = parseMonthIndex(month.label);
+  return monthIndex ? Math.floor((monthIndex - 1) / 12) : null;
 }
 
 function sanitizePayload(payload) {
@@ -835,11 +851,32 @@ function renderDashboard() {
   }
 
   const sourceMonths = Array.isArray(data.months) ? data.months : [];
-  const lastMonth = sourceMonths.reduce((latest, month) =>
+  const availableYears = [...new Set(sourceMonths.map(getYearFromMonth).filter(Boolean))].sort((a, b) => a - b);
+  const currentYear = new Date().getFullYear();
+  if (!availableYears.includes(selectedDashboardYear)) {
+    selectedDashboardYear = availableYears.includes(currentYear)
+      ? currentYear
+      : (availableYears[availableYears.length - 1] || currentYear);
+  }
+
+  const yearFilter = document.getElementById('yearFilter');
+  yearFilter.innerHTML = availableYears.map((year) => (
+    `<option value="${year}" ${year === selectedDashboardYear ? 'selected' : ''}>${year}</option>`
+  )).join('');
+  yearFilter.onchange = () => {
+    selectedDashboardYear = Number(yearFilter.value);
+    renderDashboard();
+  };
+
+  document.getElementById('dashboardPeriod').textContent = `Dados do Ano ${selectedDashboardYear}`;
+  document.title = `Painel Financeiro · ${selectedDashboardYear}`;
+
+  const selectedMonths = sourceMonths.filter((month) => getYearFromMonth(month) === selectedDashboardYear);
+  const lastMonth = selectedMonths.reduce((latest, month) =>
     parseMonthIndex(month.label) > parseMonthIndex(latest.label) ? month : latest,
-    sourceMonths[0] || buildFreshBaseline().months[0],
+    selectedMonths[0] || buildFreshBaseline().months[0],
   );
-  const currentMonth = sourceMonths.find((month) => parseMonthIndex(month.label) === getCurrentMonthIndex()) || lastMonth;
+  const currentMonth = lastMonth;
 
   const kpis = [
     { label: 'Saldo geral · ' + currentMonth.label, value: brl(Number(currentMonth.saldo || 0)), cls: 'up' },
@@ -852,12 +889,12 @@ function renderDashboard() {
     .map((kpi) => `<div class="kpi"><div class="label">${kpi.label}</div><div class="value ${kpi.cls}">${kpi.value}</div></div>`)
     .join('');
 
-  groupedBarChart(document.getElementById('fluxoChart'), data.labels, data.months.map((month) => month.receita + month.ganho_extra), data.months.map((month) => month.despesas), TEAL, RUST);
+  groupedBarChart(document.getElementById('fluxoChart'), selectedMonths.map((month) => month.label), selectedMonths.map((month) => month.receita + month.ganho_extra), selectedMonths.map((month) => month.despesas), TEAL, RUST);
   const extras = (currentMonth.extras_itens || [])
     .map((item) => ({ item: item.item, total: Number(item.valor || 0) }))
     .sort((a, b) => b.total - a.total);
   hBarChart(document.getElementById('extrasChart'), extras.map((item) => item.item), extras.map((item) => item.total), RUST);
-  barChart(document.getElementById('investChart'), data.labels, data.months.map((month) => month.investimentos), TEAL);
+  barChart(document.getElementById('investChart'), selectedMonths.map((month) => month.label), selectedMonths.map((month) => month.investimentos), TEAL);
   const categories = (currentMonth.categorias || [])
     .map((item) => ({ item: item.item, total: Number(item.total || 0) }))
     .sort((a, b) => b.total - a.total);
@@ -868,9 +905,9 @@ function renderDashboard() {
     itens: currentMonth.investimentos_itens || [],
   };
   document.getElementById('investTitle').textContent = 'Carteira de Investimentos · ' + ir.mes;
-  document.getElementById('investDeck').textContent = 'Distribuição por classe em ' + ir.mes + ', o mês atual selecionado automaticamente.';
+  document.getElementById('investDeck').textContent = 'Distribuição por classe em ' + ir.mes + ', último mês registrado do ano selecionado.';
   donutChart(document.getElementById('carteiraChart'), document.getElementById('carteiraLegend'), ir.itens, [TEAL, GOLD, RUST, INK, MUTED]);
-  renderMonthSelector(data.months, currentMonth.label);
+  renderMonthSelector(selectedMonths, currentMonth.label);
   renderItemDetails(currentMonth);
 
   const cols = [
@@ -885,7 +922,7 @@ function renderDashboard() {
   ];
 
   const thead = '<tr>' + cols.map(([key, label]) => `<th class="${key === 'label' ? '' : 'num'}">${label}</th>`).join('') + '</tr>';
-  const rows = data.months.map((month) =>
+  const rows = selectedMonths.map((month) =>
     '<tr>' + cols.map(([key, label]) => {
       if (key === 'label') {
         return `<td>${month[key]}</td>`;
