@@ -9,7 +9,7 @@
 
     - Portainer:
         icon: portainer.svg
-        href: https://portainer.aphome201.local:9000
+        href: http://portainer.aphome201:9000
         description: Gerenciamento Docker
         server: local
         container: dc-portainer
@@ -17,14 +17,14 @@
 - Infraestrutura:
     - Dozzle:
         icon: dozzle.svg
-        href: http://log.aphome201.local:8888
+        href: http://log.aphome201:8888
         description: Logs dos containers Docker
         server: local
         container: dc-dozzle
 
     - Beszel:
         icon: beszel.svg
-        href: http://aphome201.local:8090
+        href: http://aphome201:8090
         description: Monitoramento do Raspberry Pi
         server: local
         container: dc-beszel
@@ -46,7 +46,7 @@
 
     - MySpeed:
         icon: myspeed.svg
-        href: http://myspeed.aphome201.local:5216
+        href: http://myspeed.aphome201:5216
         description: Monitoramento da velocidade da Internet
         server: local
         container: dc-myspeed
@@ -54,14 +54,14 @@
 - Armazenamento:
     - File Browser:
         icon: filebrowser.svg
-        href: http://file.aphome201.local:10180/
+        href: http://file.aphome201:10180/
         description: Gerenciamento de arquivos
         server: local
         container: dc-filebrowser
 
     - SFTPGo:
         icon: sftpgo.svg
-        href: http://sftp.aphome201.local:8080
+        href: http://sftp.aphome201:8080
         description: Transferência e gerenciamento de arquivos
         server: local
         container: dc-sftpgo
