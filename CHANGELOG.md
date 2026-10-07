@@ -7,6 +7,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 ## [Unreleased]
 
 ### Adicionado
+- Workflow manual do GitHub Actions para deploy no servidor via runner self-hosted
 - Gráfico de evolução mensal do saldo geral, saldo anterior e investimentos no resumo do painel financeiro
 - Comando Telegram `/deploy_sync` para sincronizar os arquivos definidos no `app-config-sync` sem executar o deploy completo
 - Script de backup consistente do SQLite financeiro com envio via rclone
