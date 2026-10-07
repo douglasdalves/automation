@@ -1,0 +1,32 @@
+name: Deploy homelab
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: homelab-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, linux, homelab]
+    timeout-minutes: 15
+    env:
+      HOMELAB_REPOSITORY_DIR: ${{ vars.HOMELAB_REPOSITORY_DIR }}
+      DEPLOY_REPOSITORY_DIR: ${{ vars.HOMELAB_REPOSITORY_DIR }}
+    steps:
+      - name: Validate runner configuration
+        run: |
+          set -euo pipefail
+          test -n "$HOMELAB_REPOSITORY_DIR"
+          git -C "$HOMELAB_REPOSITORY_DIR" rev-parse --is-inside-work-tree
+          test -x "$HOMELAB_REPOSITORY_DIR/homelab-mcp/.venv/bin/python"
+          test -f "$HOMELAB_REPOSITORY_DIR/homelab-mcp/run_deploy.py"
+
+      - name: Deploy homelab
+        run: |
+          "$HOMELAB_REPOSITORY_DIR/homelab-mcp/.venv/bin/python" \
+            "$HOMELAB_REPOSITORY_DIR/homelab-mcp/run_deploy.py"
