@@ -340,8 +340,9 @@
       <div class="legend">
         <span><i style="background:#3E7C74"></i>Saldo geral</span>
         <span><i style="background:#7A7266"></i>Saldo anterior</span>
+        <span><i style="background:#C08A2E"></i>Investimentos</span>
       </div>
-      <div id="saldoChart" aria-label="Evolução mensal do saldo geral e do saldo anterior"></div>
+      <div id="saldoChart" aria-label="Evolução mensal do saldo geral, do saldo anterior e dos investimentos"></div>
     </div>
     <div class="chart-box" style="overflow-x:auto;">
       <table id="resumoTable"></table>
@@ -911,6 +912,7 @@ function renderDashboard() {
   lineChart(document.getElementById('saldoChart'), selectedMonths.map((month) => month.label), [
     { name: 'Saldo geral', data: selectedMonths.map((month) => Number(month.saldo || 0)), color: TEAL },
     { name: 'Saldo anterior', data: selectedMonths.map((month) => Number(month.saldo_anterior || 0)), color: MUTED, dash: true },
+    { name: 'Investimentos', data: selectedMonths.map((month) => Number(month.investimentos || 0)), color: GOLD },
   ]);
   const extras = (currentMonth.extras_itens || [])
     .map((item) => ({ item: item.item, total: Number(item.valor || 0) }))
