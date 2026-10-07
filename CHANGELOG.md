@@ -7,6 +7,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 ## [Unreleased]
 
 ### Adicionado
+- Gráfico de evolução mensal do saldo geral e do saldo anterior no resumo do painel financeiro
 - Comando Telegram `/deploy_sync` para sincronizar os arquivos definidos no `app-config-sync` sem executar o deploy completo
 - Script de backup consistente do SQLite financeiro com envio via rclone
 - Comando Telegram `/deploy_finance` para atualizar o repositorio e reiniciar o painel financeiro
@@ -59,4 +60,3 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 ### Documentado
 - Guia de uso do projeto em [README.md](README.md)
 - Descrição dos comandos do bot e da arquitetura do sistema
-
