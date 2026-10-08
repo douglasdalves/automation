@@ -73,9 +73,16 @@ O workflow manual [Deploy homelab](.github/workflows/deploy-homelab.yml) oferece
 Para habilitá-lo:
 
 1. Instale no servidor um runner self-hosted Linux registrado neste repositório, com o rótulo adicional `homelab`.
-2. Execute o serviço do runner com um usuário que possa atravessar e atualizar o checkout, executar o Python virtual do MCP e usar as permissões `sudo` já necessárias ao deploy do MCP.
+2. Execute o serviço do runner com um usuário que possa atravessar e atualizar o checkout, executar o Python virtual do MCP e usar as permissões `sudo` já necessárias ao deploy do MCP. O `git pull` precisa gravar em `.git` (incluindo `FETCH_HEAD`) e atualizar os arquivos do checkout. Preferencialmente, use como runner o mesmo usuário dono do checkout.
 3. Em **Settings → Secrets and variables → Actions → Variables**, crie `HOMELAB_REPOSITORY_DIR` com o caminho absoluto do checkout no servidor, por exemplo `/home/dalves/automation`.
 4. No GitHub, abra **Actions → Deploy homelab → Run workflow** e selecione `main`.
+
+Se o runner dedicado `githubrunner` não for o dono do checkout, conceda a ele acesso de escrita persistente usando ACLs (instale `acl` antes, se necessário; substitua o caminho pelo checkout real):
+
+```bash
+sudo setfacl -R -m u:githubrunner:rwX /home/dalves/automation
+sudo find /home/dalves/automation -type d -exec setfacl -m d:u:githubrunner:rwx {} +
+```
 
 Se o checkout pertencer a outro usuário e o Git bloquear o acesso por segurança, marque-o como confiável para o usuário do runner, ajustando os nomes conforme sua instalação:
 
