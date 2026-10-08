@@ -7,6 +7,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 ## [Unreleased]
 
 ### Adicionado
+- Workflow manual do GitHub Actions para deploy no servidor via runner self-hosted
 - Gráfico de evolução mensal do saldo geral, saldo anterior e investimentos no resumo do painel financeiro
 - Comando Telegram `/deploy_sync` para sincronizar os arquivos definidos no `app-config-sync` sem executar o deploy completo
 - Script de backup consistente do SQLite financeiro com envio via rclone
@@ -23,6 +24,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 - Compose de dashboard financeiro em [dc-local/dc-finan-dashboard.yaml](dc-local/dc-finan-dashboard.yaml)
 
 ### Ajustado
+- Validação de permissão de escrita do runner self-hosted no Git checkout antes do deploy, com instruções de configuração de acesso
 - Detalhamento por item do painel financeiro passa a exibir tabelas de contas extras e ganhos extras
 - Resumo mensal do painel financeiro passa a exibir investimentos antes do saldo geral e descontá-los no cálculo do saldo
 - Handlers do bot Telegram organizados na pasta `homelab-telegram-bot/handlers`

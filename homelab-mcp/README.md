@@ -93,6 +93,8 @@ O `/finance` consulta `get_current_finance_summary` pelo MCP e exibe os valores 
 O `/finance_invest` consulta `get_current_finance_investments` pelo MCP e exibe os itens e o total de investimentos do mês atual.
 O `/finance_contas` consulta `get_current_finance_accounts` pelo MCP e detalha cada conta fixa e conta extra com seu valor.
 
+O workflow manual do GitHub Actions importa a rotina `deploy()` do MCP usando o Python do ambiente virtual e o checkout configurado em `DEPLOY_REPOSITORY_DIR`. Assim, a rotina executa o `git pull` antes de aplicar as alterações, sem depender de um script novo já existir no checkout local.
+
 ## systemd
 
 ```bash
@@ -124,4 +126,3 @@ Para o backup manual, inclua tambem a regra restrita ao script instalado:
 ```sudoers
 dalves ALL=(root) NOPASSWD: /usr/local/bin/finance_backup.sh
 ```
-

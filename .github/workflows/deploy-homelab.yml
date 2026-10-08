@@ -1,0 +1,59 @@
+name: Deploy homelab
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: homelab-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, linux, homelab]
+    timeout-minutes: 15
+    env:
+      HOMELAB_REPOSITORY_DIR: ${{ vars.HOMELAB_REPOSITORY_DIR }}
+      DEPLOY_REPOSITORY_DIR: ${{ vars.HOMELAB_REPOSITORY_DIR }}
+    steps:
+      - name: Validate runner configuration
+        run: |
+          set -euo pipefail
+          if [[ -z "$HOMELAB_REPOSITORY_DIR" ]]; then
+            echo "::error::Configure the HOMELAB_REPOSITORY_DIR Actions variable."
+            exit 1
+          fi
+          if ! git -C "$HOMELAB_REPOSITORY_DIR" rev-parse --is-inside-work-tree; then
+            echo "::error::HOMELAB_REPOSITORY_DIR is not an accessible Git checkout: $HOMELAB_REPOSITORY_DIR"
+            exit 1
+          fi
+          GIT_DIR="$(git -C "$HOMELAB_REPOSITORY_DIR" rev-parse --absolute-git-dir)"
+          if [[ ! -w "$GIT_DIR" || ( -e "$GIT_DIR/FETCH_HEAD" && ! -w "$GIT_DIR/FETCH_HEAD" ) ]]; then
+            echo "::error::Runner user '$(id -un)' cannot write Git metadata in $GIT_DIR."
+            echo "::error::Run the runner as the checkout owner or grant it write access to the checkout."
+            ls -ld "$GIT_DIR" "$GIT_DIR/FETCH_HEAD" 2>/dev/null || true
+            exit 1
+          fi
+          DEPLOY_PYTHON="$HOMELAB_REPOSITORY_DIR/homelab-mcp/.venv/bin/python"
+          if [[ ! -x "$DEPLOY_PYTHON" ]]; then
+            echo "::error::The MCP virtualenv Python is missing or not executable by the runner: $DEPLOY_PYTHON"
+            ls -ld "$HOMELAB_REPOSITORY_DIR" "$HOMELAB_REPOSITORY_DIR/homelab-mcp" \
+              "$HOMELAB_REPOSITORY_DIR/homelab-mcp/.venv" \
+              "$HOMELAB_REPOSITORY_DIR/homelab-mcp/.venv/bin" || true
+            exit 1
+          fi
+
+      - name: Deploy homelab
+        run: |
+          cd "$HOMELAB_REPOSITORY_DIR/homelab-mcp"
+          "$HOMELAB_REPOSITORY_DIR/homelab-mcp/.venv/bin/python" -c '
+          import json
+          import sys
+          from app.services.deploy import deploy
+
+          result = deploy()
+          print(json.dumps(result, ensure_ascii=False))
+          sys.exit(0 if result.get("success") else 1)
+          '
