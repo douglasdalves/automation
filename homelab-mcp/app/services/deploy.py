@@ -62,8 +62,31 @@ def _output(result: subprocess.CompletedProcess[str]) -> str:
 
 def _git_pull(repository_dir: Path) -> dict[str, Any]:
     try:
+        branch = subprocess.run(
+            ["git", "branch", "--show-current"],
+            cwd=repository_dir,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=_COMMAND_TIMEOUT,
+        )
+        if branch.returncode != 0:
+            return {
+                "success": False,
+                "step": "git_pull",
+                "error": _output(branch) or "failed to determine current branch",
+            }
+
+        branch_name = branch.stdout.strip()
+        if not branch_name:
+            return {
+                "success": False,
+                "step": "git_pull",
+                "error": "Cannot pull while HEAD is detached.",
+            }
+
         pull = subprocess.run(
-            ["git", "pull", "--ff-only"],
+            ["git", "pull", "--ff-only", "origin", branch_name],
             cwd=repository_dir,
             capture_output=True,
             text=True,
