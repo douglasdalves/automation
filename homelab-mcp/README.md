@@ -70,7 +70,7 @@ http://localhost:5080/mcp
 Quando `deploy_homelab` e chamado, as etapas sao executadas nesta ordem:
 
 1. Verifica se `DEPLOY_REPOSITORY_DIR` existe.
-2. Executa `git pull --ff-only` nesse repositorio. O modo `--ff-only` evita criar merge automatico.
+2. Executa `git pull --ff-only origin <branch-atual>` nesse repositorio, sem depender de upstream configurado. O modo `--ff-only` evita criar merge automatico.
 3. Copia `sync.conf` para `/etc/app-config-sync/`.
 4. Copia `sync-configs.sh` para `/usr/local/bin/` e garante permissao de execucao.
 5. Copia as unidades `app-config-sync.service` e `app-config-sync.path` para o systemd.
@@ -92,8 +92,6 @@ O `/deploy_finance` do bot aguarda o `git pull` terminar com sucesso e entao rei
 O `/finance` consulta `get_current_finance_summary` pelo MCP e exibe os valores mensais publicados pelo dashboard. Configure `FINANCE_DASHBOARD_DATA_URL` com a URL acessível pelo servidor MCP; no Compose local padrão, use `http://127.0.0.1:8085/api/data`.
 O `/finance_invest` consulta `get_current_finance_investments` pelo MCP e exibe os itens e o total de investimentos do mês atual.
 O `/finance_contas` consulta `get_current_finance_accounts` pelo MCP e detalha cada conta fixa e conta extra com seu valor.
-
-O workflow manual do GitHub Actions importa a rotina `deploy()` do MCP usando o Python do ambiente virtual e o checkout configurado em `DEPLOY_REPOSITORY_DIR`. Assim, a rotina executa o `git pull` antes de aplicar as alterações, sem depender de um script novo já existir no checkout local.
 
 ## systemd
 
@@ -126,3 +124,4 @@ Para o backup manual, inclua tambem a regra restrita ao script instalado:
 ```sudoers
 dalves ALL=(root) NOPASSWD: /usr/local/bin/finance_backup.sh
 ```
+
