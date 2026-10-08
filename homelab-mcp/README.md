@@ -70,7 +70,7 @@ http://localhost:5080/mcp
 Quando `deploy_homelab` e chamado, as etapas sao executadas nesta ordem:
 
 1. Verifica se `DEPLOY_REPOSITORY_DIR` existe.
-2. Executa `git pull --ff-only` nesse repositorio. O modo `--ff-only` evita criar merge automatico.
+2. Executa `git pull --ff-only origin <branch-atual>` nesse repositorio, sem depender de upstream configurado. O modo `--ff-only` evita criar merge automatico.
 3. Copia `sync.conf` para `/etc/app-config-sync/`.
 4. Copia `sync-configs.sh` para `/usr/local/bin/` e garante permissao de execucao.
 5. Copia as unidades `app-config-sync.service` e `app-config-sync.path` para o systemd.
@@ -124,5 +124,4 @@ Para o backup manual, inclua tambem a regra restrita ao script instalado:
 ```sudoers
 dalves ALL=(root) NOPASSWD: /usr/local/bin/finance_backup.sh
 ```
-
 

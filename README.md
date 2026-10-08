@@ -60,7 +60,7 @@ O bot está em [homelab-telegram-bot](homelab-telegram-bot). O servidor MCP em [
 
 ### O que cada ação de deploy faz
 
-- **`/deploy`:** executa `git pull --ff-only`, aplica a configuração do serviço de sincronização, atualiza o systemd e reinicia os serviços permitidos (por padrão, bot e MCP).
+- **`/deploy`:** atualiza a branch atual de `origin` com `git pull --ff-only`, aplica a configuração do serviço de sincronização, atualiza o systemd e reinicia os serviços permitidos (por padrão, bot e MCP).
 - **`/deploy_sync`:** inicia `app-config-sync.service` para copiar os arquivos definidos, sem atualizar o repositório nem reiniciar todos os serviços.
 - **`/deploy_finance`:** atualiza o repositório e reinicia os containers financeiros configurados.
 
