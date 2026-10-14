@@ -24,7 +24,9 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 - Compose de dashboard financeiro em [dc-local/dc-finan-dashboard.yaml](dc-local/dc-finan-dashboard.yaml)
 
 ### Ajustado
+- Estilos do painel e da tela de cadastro financeiro separados em arquivos CSS próprios
 - Validação de permissão de escrita do runner self-hosted no Git checkout antes do deploy, com instruções de configuração de acesso
+- Validação de correspondência entre a branch do checkout do servidor e a branch selecionada no workflow de deploy
 - Detalhamento por item do painel financeiro passa a exibir tabelas de contas extras e ganhos extras
 - Resumo mensal do painel financeiro passa a exibir investimentos antes do saldo geral e descontá-los no cálculo do saldo
 - Handlers do bot Telegram organizados na pasta `homelab-telegram-bot/handlers`
@@ -43,6 +45,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 - Exclusão das pastas de testes e dos artefatos de cache do projeto, sem impacto na execução principal do homelab
 
 ### Corrigido
+- Deploy do homelab atualiza a branch atual de `origin` mesmo quando o checkout não tem upstream configurado
 - Preservação de receita e saldo anterior ao cadastrar itens pelo dashboard de inserção
 - Ordenação cronológica dos meses no gráfico de receitas e despesas do painel financeiro
 - Soma dos itens de `investimentos_recentes` no campo mensal `investimentos`

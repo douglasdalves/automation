@@ -29,6 +29,12 @@ jobs:
             echo "::error::HOMELAB_REPOSITORY_DIR is not an accessible Git checkout: $HOMELAB_REPOSITORY_DIR"
             exit 1
           fi
+          CHECKOUT_BRANCH="$(git -C "$HOMELAB_REPOSITORY_DIR" branch --show-current)"
+          if [[ "$CHECKOUT_BRANCH" != "$GITHUB_REF_NAME" ]]; then
+            echo "::error::The server checkout is on '$CHECKOUT_BRANCH', but this workflow was started for '$GITHUB_REF_NAME'."
+            echo "::error::Switch the server checkout to '$GITHUB_REF_NAME' before deploying."
+            exit 1
+          fi
           GIT_DIR="$(git -C "$HOMELAB_REPOSITORY_DIR" rev-parse --absolute-git-dir)"
           if [[ ! -w "$GIT_DIR" || ( -e "$GIT_DIR/FETCH_HEAD" && ! -w "$GIT_DIR/FETCH_HEAD" ) ]]; then
             echo "::error::Runner user '$(id -un)' cannot write Git metadata in $GIT_DIR."
