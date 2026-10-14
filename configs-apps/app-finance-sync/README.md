@@ -6,6 +6,7 @@ Este diretório reúne o painel financeiro local, a interface de lançamentos e 
 
 - `dashboard.html`: painel estático em HTML/SVG
 - `dashboard-insert.html`: interface para inserir dados sem planilhas
+- `dashboard.css` e `dashboard-insert.css`: estilos separados para cada interface
 - `finance.db`: banco SQLite local, ignorado pelo Git
 - `finance.db-wal` e `finance.db-shm`: arquivos auxiliares do modo WAL, também ignorados pelo Git
 
