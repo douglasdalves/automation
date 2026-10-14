@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import shutil
 import subprocess
@@ -27,7 +29,10 @@ def _is_valid_compose_file_name(file_name: str) -> bool:
 def list_compose_files() -> dict[str, Any]:
     compose_dir = _get_compose_directory()
     if not compose_dir.exists():
-        return {"success": False, "error": f"Diretório de compose não encontrado: {compose_dir}"}
+        return {
+            "success": False,
+            "error": f"Diretório de compose não encontrado: {compose_dir}",
+        }
 
     files = []
     for path in sorted(compose_dir.iterdir(), key=lambda item: item.name.lower()):
@@ -49,7 +54,9 @@ def start_compose_file(file_name: str) -> dict[str, Any]:
     if not compose_path.is_file():
         return {"success": False, "error": f"Arquivo não encontrado: {file_name}"}
 
-    result = _run_docker_command(["compose", "-f", str(compose_path), "up", "-d"], cwd=str(compose_dir))
+    result = _run_docker_command(
+        ["compose", "-f", str(compose_path), "up", "-d"], cwd=str(compose_dir)
+    )
     if not result["success"]:
         return result
 
@@ -112,7 +119,9 @@ def _run_docker_command(args: list[str], cwd: str | None = None) -> dict[str, An
             "stdout": elevated_result.stdout,
         }
 
-    fallback_error = (elevated_result.stderr or elevated_result.stdout or "Unknown Docker error").strip()
+    fallback_error = (
+        elevated_result.stderr or elevated_result.stdout or "Unknown Docker error"
+    ).strip()
     return {
         "success": False,
         "error": "Docker access denied. Check Docker permissions or run with sufficient privileges.",
@@ -165,7 +174,10 @@ def inspect_container(container_id: str) -> dict[str, Any]:
     try:
         payload = json.loads(result["stdout"])
     except json.JSONDecodeError as exc:
-        return {"success": False, "error": f"Unable to parse Docker inspect output: {exc}"}
+        return {
+            "success": False,
+            "error": f"Unable to parse Docker inspect output: {exc}",
+        }
 
     if not payload:
         return {"success": False, "error": "Container not found."}
@@ -176,7 +188,7 @@ def inspect_container(container_id: str) -> dict[str, Any]:
         "container": {
             "name": data.get("Name", "").lstrip("/"),
             "image": data.get("Config", {}).get("Image", ""),
-            "status": data.get("State", {}).get("Status", "")
+            "status": data.get("State", {}).get("Status", ""),
         },
     }
 
@@ -184,7 +196,10 @@ def inspect_container(container_id: str) -> dict[str, Any]:
 def manage_container(container_id: str, action: str) -> dict[str, Any]:
     allowed_actions = {"start", "stop", "restart", "kill", "remove"}
     if action not in allowed_actions:
-        return {"success": False, "error": f"Unsupported action '{action}'. Allowed actions: {', '.join(sorted(allowed_actions))}"}
+        return {
+            "success": False,
+            "error": f"Unsupported action '{action}'. Allowed actions: {', '.join(sorted(allowed_actions))}",
+        }
 
     result = _run_docker_command([action, container_id])
     if not result["success"]:
