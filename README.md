@@ -84,6 +84,8 @@ sudo setfacl -R -m u:githubrunner:rwX /home/dalves/automation
 sudo find /home/dalves/automation -type d -exec setfacl -m d:u:githubrunner:rwx {} +
 ```
 
+O checkout no servidor deve estar na mesma branch selecionada ao iniciar o workflow (atualmente, `main`). Se o Git informar que as branches divergiram, verifique `git status`, `git branch -vv` e os commits locais antes de integrar ou descartar qualquer alteração; não use `reset --hard` sem confirmar que os commits locais podem ser perdidos.
+
 Se o checkout pertencer a outro usuário e o Git bloquear o acesso por segurança, marque-o como confiável para o usuário do runner, ajustando os nomes conforme sua instalação:
 
 ```bash
