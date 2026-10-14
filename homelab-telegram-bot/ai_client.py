@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import json
 import logging
@@ -15,6 +17,7 @@ class AIProviderError(RuntimeError):
     def __init__(self, status_code: int, detail: str):
         super().__init__(detail)
         self.status_code = status_code
+
 
 SYSTEM_PROMPT = """Voce e o assistente do homelab. Responda em portugues, de forma curta e objetiva.
 Use as ferramentas MCP quando a pergunta envolver o estado ou uma acao no homelab.
