@@ -24,6 +24,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 - Compose de dashboard financeiro em [dc-local/dc-finan-dashboard.yaml](dc-local/dc-finan-dashboard.yaml)
 
 ### Ajustado
+- Ruff configurado para Python 3.8 para preservar APIs compatíveis com a versão mínima suportada
 - Estilos do painel e da tela de cadastro financeiro separados em arquivos CSS próprios
 - Validação de permissão de escrita do runner self-hosted no Git checkout antes do deploy, com instruções de configuração de acesso
 - Validação de correspondência entre a branch do checkout do servidor e a branch selecionada no workflow de deploy
