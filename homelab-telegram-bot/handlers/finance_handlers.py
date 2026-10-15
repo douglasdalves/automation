@@ -222,7 +222,7 @@ def parse_fixed_account_amount(value: str) -> Decimal:
 def parse_fixed_account_month(value: str) -> str:
     match = _FINANCE_MONTH_PATTERN.fullmatch(value)
     if not match or match.group(1).lower() not in _FINANCE_MONTHS:
-        raise ValueError("Use o mês no formato mmm/aa, por exemplo nov/26.")
+        raise ValueError("Use o mês no formato Mmm/aa, por exemplo Nov/26.")
 
     month_name, year_text = match.groups()
     year = int(year_text)
@@ -230,7 +230,7 @@ def parse_fixed_account_month(value: str) -> str:
         year += 2000
     if year < 2000 or year > 2099:
         raise ValueError("O ano deve estar entre 2000 e 2099.")
-    return f"{month_name.lower()}/{year % 100:02d}"
+    return f"{month_name.lower().capitalize()}/{year % 100:02d}"
 
 
 async def finance_fixed_account_command(
@@ -252,13 +252,13 @@ async def finance_fixed_account_command(
             "Use /conta_fixa <nome> <valor> [mês/ano]\n"
             "Exemplos:\n"
             "• /conta_fixa luz 120,50\n"
-            "• /conta_fixa luz 120,50 nov/26"
+            "• /conta_fixa luz 120,50 Nov/26"
         )
         return
 
     args = list(context.args)
     today = datetime.now().astimezone()
-    month = f"{_FINANCE_MONTHS[today.month - 1]}/{today:%y}"
+    month = f"{_FINANCE_MONTHS[today.month - 1].capitalize()}/{today:%y}"
     if "/" in args[-1]:
         try:
             month = parse_fixed_account_month(args.pop())

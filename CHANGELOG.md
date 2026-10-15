@@ -25,6 +25,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 - Compose de dashboard financeiro em [dc-local/dc-finan-dashboard.yaml](dc-local/dc-finan-dashboard.yaml)
 
 ### Ajustado
+- Comando `/conta_fixa` passa a gravar o mês com a inicial maiúscula, como `Nov/26`
 - Carregamento de segredos do arquivo privado `.env.token` pelo servidor MCP
 - Compatibilidade com Python 3.8 nas anotações e nos context managers do cliente MCP
 - Ruff configurado para Python 3.8 para preservar APIs compatíveis com a versão mínima suportada
