@@ -16,6 +16,7 @@ MCP_URL = os.getenv("MCP_URL", "http://127.0.0.1:5080/mcp")
 TELEGRAM_ALLOWED_USER_ID = int(
     os.getenv("TELEGRAM_ALLOWED_USER_ID", "")
 )  # nao completar com valor default, para forçar a configuração no .env
+FINANCE_WRITE_TOKEN = os.getenv("FINANCE_WRITE_TOKEN", "")
 AI_API_URL = os.getenv("AI_API_URL", "https://api.groq.com/openai/v1")
 AI_API_KEY = os.getenv("AI_API_KEY", "")
 AI_MODEL = os.getenv("AI_MODEL", "openai/gpt-oss-120b")

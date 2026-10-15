@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 from datetime import date, datetime, timezone
 
@@ -250,4 +251,88 @@ def get_current_month_accounts() -> dict:
         "fixed_items": fixed,
         "extras_total": sum(item["valor"] for item in extras),
         "extra_items": extras,
+    }
+
+
+def set_month_fixed_account(item: str, amount: float, month: str = "") -> dict:
+    """Set one fixed-account amount for the selected calendar month."""
+    item = " ".join(str(item or "").split())
+    try:
+        amount = float(amount)
+    except (TypeError, ValueError):
+        return {"success": False, "error": "O valor informado é inválido."}
+
+    if not item or len(item) > 100:
+        return {
+            "success": False,
+            "error": "O nome da conta deve ter entre 1 e 100 caracteres.",
+        }
+    if not math.isfinite(amount) or amount <= 0:
+        return {"success": False, "error": "O valor deve ser maior que zero."}
+    if round(amount, 2) != amount:
+        return {
+            "success": False,
+            "error": "O valor deve ter no máximo duas casas decimais.",
+        }
+    if not Config.FINANCE_DASHBOARD_SAVE_URL:
+        return {
+            "success": False,
+            "error": "FINANCE_DASHBOARD_SAVE_URL não está configurada no arquivo .env.",
+        }
+
+    if month:
+        match = re.fullmatch(r"([a-z]{3})/(\d{2}|\d{4})", month.strip(), re.IGNORECASE)
+        if not match or match.group(1).lower() not in _MONTHS:
+            return {
+                "success": False,
+                "error": "Mês inválido. Use o formato mmm/aa, por exemplo nov/26.",
+            }
+        month_name, year_text = match.groups()
+        year = int(year_text)
+        if len(year_text) == 2:
+            year += 2000
+        if year < 2000 or year > 2099:
+            return {
+                "success": False,
+                "error": "O ano deve estar entre 2000 e 2099.",
+            }
+        month_label = f"{month_name.lower()}/{year % 100:02d}"
+    else:
+        month_label = _month_label(datetime.now().astimezone().date())
+
+    payload = {
+        "months": [
+            {
+                "label": month_label,
+                "categorias": [{"item": item, "total": round(amount, 2)}],
+            }
+        ]
+    }
+    try:
+        response = httpx.post(
+            Config.FINANCE_DASHBOARD_SAVE_URL,
+            json=payload,
+            timeout=10.0,
+        )
+        response.raise_for_status()
+        result = response.json()
+    except (httpx.HTTPError, ValueError) as exc:
+        return {
+            "success": False,
+            "error": f"Não foi possível salvar a conta fixa no painel financeiro: {exc}",
+        }
+
+    if not isinstance(result, dict) or not result.get("ok"):
+        error = (
+            result.get("error", "Resposta inválida do painel financeiro.")
+            if isinstance(result, dict)
+            else "Resposta inválida do painel financeiro."
+        )
+        return {"success": False, "error": str(error)}
+
+    return {
+        "success": True,
+        "month": month_label,
+        "item": item,
+        "amount": round(amount, 2),
     }

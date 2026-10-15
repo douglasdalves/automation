@@ -77,7 +77,12 @@ async def _chat(messages: list[dict], tools: list[dict]) -> dict:
 
 async def answer_homelab_question(question: str) -> str:
     mcp_tools = await list_mcp_tools()
-    tools = [_tool_definition(tool) for tool in mcp_tools]
+    tools = [
+        _tool_definition(tool)
+        for tool in mcp_tools
+        # Writes are only available through explicit, confirmed Telegram commands.
+        if tool.name != "set_current_finance_fixed_account"
+    ]
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": question},
