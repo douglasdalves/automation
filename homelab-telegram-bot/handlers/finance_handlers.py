@@ -74,7 +74,7 @@ def format_finance_summary(data: dict) -> str:
     fallback = (
         ""
         if data.get("is_current_month")
-        else "\n<i>O mês atual ainda não está cadastrado; exibindo o último registro.</i>"
+        else "\n<i>O mês atual ainda não está cadastrado; exibindo o último registro até o mês atual.</i>"
     )
     rows = (
         ("Saldo anterior", "saldo_anterior"),
@@ -131,7 +131,7 @@ async def finance_invest_command(
         fallback = (
             ""
             if data.get("is_current_month")
-            else "\n<i>O mês atual ainda não está cadastrado; exibindo o último registro.</i>"
+            else "\n<i>O mês atual ainda não está cadastrado; exibindo o último registro até o mês atual.</i>"
         )
         lines = [f"📈 <b>Investimentos por item — {month}</b>", ""]
         items = data.get("items", [])
@@ -169,7 +169,7 @@ async def finance_contas_command(
         fallback = (
             ""
             if data.get("is_current_month")
-            else "\n<i>O mês atual ainda não está cadastrado; exibindo o último registro.</i>"
+            else "\n<i>O mês atual ainda não está cadastrado; exibindo o último registro até o mês atual.</i>"
         )
         lines = [f"🧾 <b>Contas mensais — {month}</b>", ""]
 
