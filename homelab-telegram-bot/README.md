@@ -54,6 +54,7 @@ python bot.py
 - `/deploy_sync`: copia os arquivos definidos no `app-config-sync`, sem atualizar o repositorio ou reiniciar servicos.
 - `/deploy_finance`: atualiza o repositorio e reinicia `dc-finance-api` e `dc-finance-dash`.
 - `/finance_bkp`: executa o mesmo script de backup financeiro usado pelo cron.
+- `/conta_fixa <nome> <valor> [mês/ano]`: pede confirmação e define o valor mensal de uma conta fixa. Sem mês, usa o atual; para outra competência, informe-a no formato `mmm/aa`. Exemplo: `/conta_fixa luz 120,50 nov/26`.
 - `/restart_service`: mostra botoes para escolher qual servico reiniciar.
 - `/restart_docker`: lista os containers Docker ativos e mostra botoes para escolher qual reiniciar.
 - `/start_docker`: lista os containers Docker e mostra botoes para escolher qual iniciar.
@@ -63,6 +64,7 @@ O `/deploy` executa o fluxo completo no MCP: faz `git pull --ff-only`, atualiza 
 O `/deploy_sync` executa somente o servico `app-config-sync.service`, usando os arquivos e destinos permitidos no `sync.conf` ja instalado.
 
 Somente o usuario cujo ID esta em `TELEGRAM_ALLOWED_USER_ID` pode usar os comandos.
+Para habilitar `/conta_fixa`, configure o mesmo valor aleatório longo em `FINANCE_WRITE_TOKEN` no `.env` compartilhado, lido pelo bot e pelo MCP. O comando substitui o valor do item no mês selecionado; a confirmação evita lançamentos acidentais.
 Mensagens de texto sem comando sao enviadas para a API de IA configurada, que pode consultar e operar o homelab pelas ferramentas MCP.
 
 Para usar um provedor compativel com a API da OpenAI, configure `AI_API_URL`, `AI_API_KEY` e `AI_MODEL`. Exemplos:
