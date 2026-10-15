@@ -284,7 +284,7 @@ def set_month_fixed_account(item: str, amount: float, month: str = "") -> dict:
         if not match or match.group(1).lower() not in _MONTHS:
             return {
                 "success": False,
-                "error": "Mês inválido. Use o formato mmm/aa, por exemplo nov/26.",
+                "error": "Mês inválido. Use o formato Mmm/aa, por exemplo Nov/26.",
             }
         month_name, year_text = match.groups()
         year = int(year_text)
@@ -295,9 +295,9 @@ def set_month_fixed_account(item: str, amount: float, month: str = "") -> dict:
                 "success": False,
                 "error": "O ano deve estar entre 2000 e 2099.",
             }
-        month_label = f"{month_name.lower()}/{year % 100:02d}"
+        month_label = f"{month_name.lower().capitalize()}/{year % 100:02d}"
     else:
-        month_label = _month_label(datetime.now().astimezone().date())
+        month_label = _month_label(datetime.now().astimezone().date()).capitalize()
 
     payload = {
         "months": [

@@ -54,7 +54,7 @@ python bot.py
 - `/deploy_sync`: copia os arquivos definidos no `app-config-sync`, sem atualizar o repositorio ou reiniciar servicos.
 - `/deploy_finance`: atualiza o repositorio e reinicia `dc-finance-api` e `dc-finance-dash`.
 - `/finance_bkp`: executa o mesmo script de backup financeiro usado pelo cron.
-- `/conta_fixa <nome> <valor> [mês/ano]`: pede confirmação e define o valor mensal de uma conta fixa. Sem mês, usa o atual; para outra competência, informe-a no formato `mmm/aa`. Exemplo: `/conta_fixa luz 120,50 nov/26`.
+- `/conta_fixa <nome> <valor> [mês/ano]`: pede confirmação e define o valor mensal de uma conta fixa. Sem mês, usa o atual; para outra competência, informe-a no formato `Mmm/aa`. Exemplo: `/conta_fixa luz 120,50 Nov/26`.
 - `/restart_service`: mostra botoes para escolher qual servico reiniciar.
 - `/restart_docker`: lista os containers Docker ativos e mostra botoes para escolher qual reiniciar.
 - `/start_docker`: lista os containers Docker e mostra botoes para escolher qual iniciar.
