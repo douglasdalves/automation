@@ -27,7 +27,10 @@ FINANCE_BACKUP_SCRIPT=/usr/local/bin/finance_backup.sh
 FINANCE_BACKUP_COMMAND_TIMEOUT=900
 ```
 
-O arquivo e carregado por `app/config.py` e pelo servico de deploy.
+O `.env` e carregado por `app/config.py` e pelo servico de deploy. Segredos
+podem ficar no arquivo privado `../.env.token`, que tambem e carregado pelo
+MCP com prioridade sobre `.env`; mantenha `FINANCE_WRITE_TOKEN` igual ao valor
+usado pelo bot.
 
 ## Instalacao
 
