@@ -18,6 +18,8 @@ MCP_HOST=host
 MCP_PORT=port
 ENVIRONMENT=ambiente
 FINANCE_DASHBOARD_DATA_URL=http://127.0.0.1:8085/api/data
+FINANCE_DASHBOARD_SAVE_URL=http://127.0.0.1:8085/api/save
+FINANCE_WRITE_TOKEN=gere_um_token_longo_e_aleatorio
 DEPLOY_REPOSITORY_DIR=path
 DEPLOY_COMMAND_TIMEOUT=number
 DEPLOY_SERVICES=service_value
@@ -62,6 +64,7 @@ http://localhost:5080/mcp
 - `get_current_finance_summary`: consulta na API do dashboard o resumo do mês atual.
 - `get_current_finance_investments`: consulta na API do dashboard os investimentos do mês atual.
 - `get_current_finance_accounts`: consulta na API do dashboard as contas fixas e extras do mês atual.
+- `set_current_finance_fixed_account`: define/substitui o valor de uma conta fixa no mês indicado (atual se omitido); exige `FINANCE_WRITE_TOKEN`.
 - `start_finance_backup`: executa, como root e sem argumentos, o script definido em `FINANCE_BACKUP_SCRIPT`.
 - `restart_homelab_service`: reinicia um servico listado em `DEPLOY_SERVICES`.
 
@@ -92,6 +95,7 @@ O `/deploy_finance` do bot aguarda o `git pull` terminar com sucesso e entao rei
 O `/finance` consulta `get_current_finance_summary` pelo MCP e exibe os valores mensais publicados pelo dashboard. Configure `FINANCE_DASHBOARD_DATA_URL` com a URL acessível pelo servidor MCP; no Compose local padrão, use `http://127.0.0.1:8085/api/data`.
 O `/finance_invest` consulta `get_current_finance_investments` pelo MCP e exibe os itens e o total de investimentos do mês atual.
 O `/finance_contas` consulta `get_current_finance_accounts` pelo MCP e detalha cada conta fixa e conta extra com seu valor.
+O `/conta_fixa <nome> <valor> [mês/ano]` pede confirmação e então define o valor mensal do item usando `set_current_finance_fixed_account`. Se o mês for omitido, usa o atual; para contas recebidas antecipadamente, informe por exemplo `nov/26`. A ferramenta de escrita exige o mesmo `FINANCE_WRITE_TOKEN` configurado no bot e no MCP; a IA não recebe essa ferramenta em linguagem natural.
 
 ## systemd
 
@@ -124,4 +128,3 @@ Para o backup manual, inclua tambem a regra restrita ao script instalado:
 ```sudoers
 dalves ALL=(root) NOPASSWD: /usr/local/bin/finance_backup.sh
 ```
-

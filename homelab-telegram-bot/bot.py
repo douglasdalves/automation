@@ -16,6 +16,8 @@ from handlers.finance_handlers import (
     finance_backup_command,
     finance_command,
     finance_contas_command,
+    finance_fixed_account_callback,
+    finance_fixed_account_command,
     finance_invest_command,
 )
 from handlers.restart_handlers import restart_callback, restart_command
@@ -52,6 +54,7 @@ BOT_COMMANDS = {
     "finance": "resumo financeiro do mês atual",
     "finance_invest": "investimentos do mês atual",
     "finance_contas": "contas fixas e extras do mês atual",
+    "conta_fixa": "lança ou atualiza o valor mensal de uma conta fixa",
     "finance_bkp": "executa backup financeiro",
     "restart_service": "reinicia serviço do homelab",
     "restart_docker": "reinicia container Docker",
@@ -288,6 +291,10 @@ def main():
             application.add_handler(
                 CommandHandler("finance_contas", finance_contas_command)
             )
+        elif command_name == "conta_fixa":
+            application.add_handler(
+                CommandHandler("conta_fixa", finance_fixed_account_command)
+            )
         elif command_name == "finance_bkp":
             application.add_handler(
                 CommandHandler("finance_bkp", finance_backup_command)
@@ -319,6 +326,12 @@ def main():
     )
     application.add_handler(
         CallbackQueryHandler(create_compose_callback, pattern=r"^compose:start:")
+    )
+    application.add_handler(
+        CallbackQueryHandler(
+            finance_fixed_account_callback,
+            pattern=r"^finance-fixed:(confirm|cancel):[a-f0-9]{16}$",
+        )
     )
     application.add_handler(
         MessageHandler(filters.TEXT & ~filters.COMMAND, natural_language_command)
