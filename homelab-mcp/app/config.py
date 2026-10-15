@@ -3,9 +3,10 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Carregar .env compartilhado em automation/.env
-env_path = Path(__file__).parent.parent.parent / ".env"
-load_dotenv(env_path)
+# Carregar configuracoes compartilhadas e segredos privados.
+project_root = Path(__file__).parent.parent.parent
+load_dotenv(project_root / ".env")
+load_dotenv(project_root / ".env.token", override=True)
 
 
 class Config:
