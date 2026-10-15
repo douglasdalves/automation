@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 import re
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 
 import httpx
 
@@ -28,7 +28,7 @@ _MONTHS = (
 
 def _month_label(today: date | None = None) -> str:
     if today is None:
-        today = datetime.now(tz=timezone.utc).date()
+        today = datetime.now().astimezone().date()
     return f"{_MONTHS[today.month - 1]}/{today.year % 100:02d}"
 
 
@@ -47,6 +47,46 @@ def _month_index(label: str) -> int:
     if year < 100:
         year += 2000
     return year * 12 + month
+
+
+def _select_current_or_previous_month(
+    months: list, current_index: int
+) -> tuple[dict | None, bool]:
+    valid_months = [
+        month
+        for month in months
+        if isinstance(month, dict) and _month_index(month.get("label", "")) > 0
+    ]
+    selected = next(
+        (
+            month
+            for month in valid_months
+            if _month_index(month.get("label", "")) == current_index
+        ),
+        None,
+    )
+    if selected is not None:
+        return selected, True
+
+    previous_months = [
+        month
+        for month in valid_months
+        if _month_index(month.get("label", "")) < current_index
+    ]
+    if not previous_months:
+        return None, False
+    selected = max(
+        previous_months,
+        key=lambda month: _month_index(month.get("label", "")),
+    )
+    return selected, False
+
+
+def _current_month_missing_error() -> dict:
+    return {
+        "success": False,
+        "error": "Não há mês cadastrado até o mês atual; registros futuros não serão usados.",
+    }
 
 
 def get_current_month_summary() -> dict:
@@ -74,27 +114,14 @@ def get_current_month_summary() -> dict:
             "error": "O painel financeiro não possui meses cadastrados.",
         }
 
-    today = datetime.now(tz=timezone.utc).date()
+    today = datetime.now().astimezone().date()
     current_label = _month_label(today)
     current_index = today.year * 12 + today.month
-    selected = next(
-        (
-            month
-            for month in months
-            if isinstance(month, dict)
-            and _month_index(month.get("label", "")) == current_index
-        ),
-        None,
+    selected, is_current_month = _select_current_or_previous_month(
+        months, current_index
     )
     if selected is None:
-        selected = next(
-            (month for month in reversed(months) if isinstance(month, dict)), None
-        )
-    if selected is None:
-        return {
-            "success": False,
-            "error": "Os dados do painel financeiro são inválidos.",
-        }
+        return _current_month_missing_error()
 
     fields = (
         "saldo_anterior",
@@ -110,7 +137,7 @@ def get_current_month_summary() -> dict:
         "success": True,
         "requested_month": current_label,
         "month": selected.get("label", current_label),
-        "is_current_month": _month_index(selected.get("label", "")) == current_index,
+        "is_current_month": is_current_month,
         "summary": summary,
     }
 
@@ -140,27 +167,13 @@ def get_current_month_investments() -> dict:
             "error": "O painel financeiro não possui meses cadastrados.",
         }
 
-    today = datetime.now(tz=timezone.utc).date()
+    today = datetime.now().astimezone().date()
     current_index = today.year * 12 + today.month
-    selected = next(
-        (
-            month
-            for month in months
-            if isinstance(month, dict)
-            and _month_index(month.get("label", "")) == current_index
-        ),
-        None,
+    selected, is_current_month = _select_current_or_previous_month(
+        months, current_index
     )
-    is_current_month = selected is not None
     if selected is None:
-        selected = next(
-            (month for month in reversed(months) if isinstance(month, dict)), None
-        )
-    if selected is None:
-        return {
-            "success": False,
-            "error": "Os dados do painel financeiro são inválidos.",
-        }
+        return _current_month_missing_error()
 
     items = selected.get("investimentos_itens", [])
     if not isinstance(items, list):
@@ -206,27 +219,13 @@ def get_current_month_accounts() -> dict:
             "error": "O painel financeiro não possui meses cadastrados.",
         }
 
-    today = datetime.now(tz=timezone.utc).date()
+    today = datetime.now().astimezone().date()
     current_index = today.year * 12 + today.month
-    selected = next(
-        (
-            month
-            for month in months
-            if isinstance(month, dict)
-            and _month_index(month.get("label", "")) == current_index
-        ),
-        None,
+    selected, is_current_month = _select_current_or_previous_month(
+        months, current_index
     )
-    is_current_month = selected is not None
     if selected is None:
-        selected = next(
-            (month for month in reversed(months) if isinstance(month, dict)), None
-        )
-    if selected is None:
-        return {
-            "success": False,
-            "error": "Os dados do painel financeiro são inválidos.",
-        }
+        return _current_month_missing_error()
 
     def normalize_items(key: str, value_key: str) -> list[dict]:
         items = selected.get(key, [])

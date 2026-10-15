@@ -49,6 +49,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 - Exclusão das pastas de testes e dos artefatos de cache do projeto, sem impacto na execução principal do homelab
 
 ### Corrigido
+- Painel e respostas financeiras do bot mantêm o mês atual (ou o registro anterior) como referência mesmo com meses futuros cadastrados
 - Deploy do homelab atualiza a branch atual de `origin` mesmo quando o checkout não tem upstream configurado
 - Preservação de receita e saldo anterior ao cadastrar itens pelo dashboard de inserção
 - Ordenação cronológica dos meses no gráfico de receitas e despesas do painel financeiro
