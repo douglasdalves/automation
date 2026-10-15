@@ -16,6 +16,10 @@ class Config:
     FINANCE_DASHBOARD_DATA_URL = os.getenv(
         "FINANCE_DASHBOARD_DATA_URL", "http://127.0.0.1:8085/api/data"
     )
+    FINANCE_DASHBOARD_SAVE_URL = os.getenv(
+        "FINANCE_DASHBOARD_SAVE_URL", "http://127.0.0.1:8085/api/save"
+    )
+    FINANCE_WRITE_TOKEN = os.getenv("FINANCE_WRITE_TOKEN", "")
     FINANCE_BACKUP_SCRIPT = os.getenv(
         "FINANCE_BACKUP_SCRIPT", "/usr/local/bin/finance_backup.sh"
     )

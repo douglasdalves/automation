@@ -34,7 +34,7 @@ Para texto livre, a IA pode solicitar ferramentas MCP e usar as respostas reais 
 | Atualizar o repositório e aplicar o deploy geral | `/deploy` |
 | Sincronizar somente os arquivos de configuração | `/deploy_sync` |
 | Publicar/reiniciar a aplicação financeira | `/deploy_finance` |
-| Consultar dados financeiros ou iniciar backup | `/finance`, `/finance_invest`, `/finance_contas`, `/finance_bkp` |
+| Consultar dados financeiros, lançar uma conta fixa ou iniciar backup | `/finance`, `/finance_invest`, `/finance_contas`, `/conta_fixa`, `/finance_bkp` |
 | Reiniciar um serviço permitido | `/restart_service` |
 | Iniciar, parar ou reiniciar um container Docker | `/start_docker`, `/stop_docker`, `/restart_docker` |
 | Criar/iniciar um container via Compose | `/create_docker` |
