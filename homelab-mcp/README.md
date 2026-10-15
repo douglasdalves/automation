@@ -98,7 +98,7 @@ O `/deploy_finance` do bot aguarda o `git pull` terminar com sucesso e entao rei
 O `/finance` consulta `get_current_finance_summary` pelo MCP e exibe os valores mensais publicados pelo dashboard. Configure `FINANCE_DASHBOARD_DATA_URL` com a URL acessível pelo servidor MCP; no Compose local padrão, use `http://127.0.0.1:8085/api/data`.
 O `/finance_invest` consulta `get_current_finance_investments` pelo MCP e exibe os itens e o total de investimentos do mês atual.
 O `/finance_contas` consulta `get_current_finance_accounts` pelo MCP e detalha cada conta fixa e conta extra com seu valor.
-O `/conta_fixa <nome> <valor> [mês/ano]` pede confirmação e então define o valor mensal do item usando `set_current_finance_fixed_account`. Se o mês for omitido, usa o atual; para contas recebidas antecipadamente, informe por exemplo `nov/26`. A ferramenta de escrita exige o mesmo `FINANCE_WRITE_TOKEN` configurado no bot e no MCP; a IA não recebe essa ferramenta em linguagem natural.
+O `/conta_fixa <nome> <valor> [mês/ano]` pede confirmação e então define o valor mensal do item usando `set_current_finance_fixed_account`. Se o mês for omitido, usa o atual; para contas recebidas antecipadamente, informe por exemplo `Nov/26`. A ferramenta de escrita exige o mesmo `FINANCE_WRITE_TOKEN` configurado no bot e no MCP; a IA não recebe essa ferramenta em linguagem natural.
 
 ## systemd
 
