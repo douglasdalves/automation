@@ -668,9 +668,13 @@ function renderDashboard() {
   document.title = `Painel Financeiro · ${selectedDashboardYear}`;
 
   const selectedMonths = sourceMonths.filter((month) => getYearFromMonth(month) === selectedDashboardYear);
-  const lastMonth = selectedMonths.reduce((latest, month) =>
+  const currentMonthIndex = parseMonthIndex(CURRENT_MONTH_LABEL);
+  const monthsForCurrentView = selectedDashboardYear === currentYear
+    ? selectedMonths.filter((month) => parseMonthIndex(month.label) <= currentMonthIndex)
+    : selectedMonths;
+  const lastMonth = monthsForCurrentView.reduce((latest, month) =>
     parseMonthIndex(month.label) > parseMonthIndex(latest.label) ? month : latest,
-    selectedMonths[0] || buildFreshBaseline().months[0],
+    monthsForCurrentView[0] || buildFreshBaseline().months[0],
   );
   const currentMonth = lastMonth;
 
@@ -706,7 +710,7 @@ function renderDashboard() {
     itens: currentMonth.investimentos_itens || [],
   };
   document.getElementById('investTitle').textContent = 'Carteira de Investimentos · ' + ir.mes;
-  document.getElementById('investDeck').textContent = 'Distribuição por classe em ' + ir.mes + ', último mês registrado do ano selecionado.';
+  document.getElementById('investDeck').textContent = 'Distribuição por classe em ' + ir.mes + '.';
   donutChart(document.getElementById('carteiraChart'), document.getElementById('carteiraLegend'), ir.itens, [TEAL, GOLD, RUST, INK, MUTED]);
   renderMonthSelector(selectedMonths, currentMonth.label);
   renderItemDetails(currentMonth);
