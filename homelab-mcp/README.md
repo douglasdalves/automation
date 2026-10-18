@@ -24,6 +24,7 @@ DEPLOY_REPOSITORY_DIR=path
 DEPLOY_COMMAND_TIMEOUT=number
 DEPLOY_SERVICES=service_value
 FINANCE_BACKUP_SCRIPT=/usr/local/bin/finance_backup.sh
+FINANCE_BACKUP_DIR=/var/backups/finance
 FINANCE_BACKUP_COMMAND_TIMEOUT=900
 ```
 
@@ -60,6 +61,7 @@ http://localhost:5080/mcp
 ## Ferramentas
 
 - `get_health`: consulta CPU, memoria, disco, uptime e containers.
+- `get_homelab_diagnostics`: verifica configurações relevantes, serviços configurados, estado de todos os containers e o backup financeiro local mais recente.
 - Ferramentas Docker: consulta e gerencia containers conforme os tools registrados.
 - `deploy_homelab`: executa `git pull`, instala o app-config-sync e reinicia os servicos configurados.
 - `deploy_sync`: executa o `app-config-sync` instalado para copiar os arquivos definidos em `sync.conf`, sem `git pull` ou reinicio de servicos.
@@ -70,6 +72,13 @@ http://localhost:5080/mcp
 - `set_current_finance_fixed_account`: define/substitui o valor de uma conta fixa no mês indicado (atual se omitido); exige `FINANCE_WRITE_TOKEN`.
 - `start_finance_backup`: executa, como root e sem argumentos, o script definido em `FINANCE_BACKUP_SCRIPT`.
 - `restart_homelab_service`: reinicia um servico listado em `DEPLOY_SERVICES`.
+
+O `/diagnostico` mostra a presença de configurações sem expor seus valores e verifica
+o último arquivo `finance-*.db.gz` no diretório `FINANCE_BACKUP_DIR`. Configure
+`FINANCE_BACKUP_DIR` com o mesmo valor de `BACKUP_DIR` em
+`/etc/finance-backup.conf`. Um backup com mais de 36 horas é sinalizado como antigo.
+O estado dos serviços é consultado sem reiniciá-los; containers parados são listados
+como aviso para que possam ser avaliados conforme o uso esperado.
 
 ## O que o deploy faz
 

@@ -48,6 +48,7 @@ logger = logging.getLogger(__name__)
 
 BOT_COMMANDS = {
     "status": "status do sistema",
+    "diagnostico": "diagnóstico de serviços, containers, configurações e backup",
     "deploy": "deploy da aplicação",
     "deploy_sync": "sincroniza arquivos configurados",
     "deploy_finance": "deploy do painel financeiro",
@@ -144,6 +145,125 @@ async def status_command(
 
         await update.message.reply_text(
             f"❌ Erro ao consultar o MCP:\n<code>{exc}</code>",
+            parse_mode="HTML",
+        )
+
+
+async def diagnostic_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+):
+    if not is_authorized(update):
+        await update.message.reply_text("⛔ Acesso não autorizado.")
+        return
+
+    await update.message.reply_text("🔎 Verificando o homelab...")
+    try:
+        data = await call_mcp_tool("get_homelab_diagnostics")
+        status_icons = {"ok": "✅", "warning": "⚠️", "error": "❌", "unknown": "❔"}
+        overall_status = data.get("status", "unknown")
+        bot_config = [
+            ("TELEGRAM_BOT_TOKEN", bool(config.TELEGRAM_BOT_TOKEN)),
+            ("TELEGRAM_ALLOWED_USER_ID", config.TELEGRAM_ALLOWED_USER_ID > 0),
+            ("MCP_URL", bool(config.MCP_URL)),
+        ]
+        if not all(configured for _, configured in bot_config):
+            overall_status = "error"
+
+        lines = [
+            (
+                f"{status_icons.get(overall_status, '❔')} "
+                f"<b>Diagnóstico do homelab</b> — {html.escape(overall_status)}"
+            ),
+            "",
+            "<b>Configurações MCP</b>",
+        ]
+        for item in data.get("configuration", []):
+            status = item.get("status", "unknown")
+            detail = html.escape(str(item.get("detail", "")))
+            name = html.escape(str(item.get("name", "configuração")))
+            lines.append(
+                f"• {status_icons.get(status, '❔')} <code>{name}</code>: {detail}"
+            )
+
+        lines.extend(["", "<b>Serviços</b>"])
+        services = data.get("services", [])
+        if services:
+            for item in services:
+                status = item.get("status", "unknown")
+                name = html.escape(str(item.get("name", "serviço")))
+                detail = html.escape(str(item.get("detail", "")))
+                lines.append(
+                    f"• {status_icons.get(status, '❔')} <code>{name}</code>: {detail}"
+                )
+        else:
+            lines.append("• ⚠️ Nenhum serviço configurado para deploy.")
+
+        docker = data.get("docker", {})
+        docker_status = docker.get("status", "unknown")
+        lines.extend(
+            [
+                "",
+                "<b>Containers Docker</b>",
+                (
+                    f"• {status_icons.get(docker_status, '❔')} "
+                    f"{docker.get('running', 0)} ativos, "
+                    f"{docker.get('stopped', 0)} parados"
+                ),
+            ]
+        )
+        if docker_status == "error":
+            lines.append(
+                "• "
+                f"{html.escape(str(docker.get('detail', 'Falha ao consultar Docker.')))}"
+            )
+        for container in docker.get("containers", []):
+            name = html.escape(str(container.get("name", "desconhecido")))
+            state = html.escape(str(container.get("status", "desconhecido")))
+            lines.append(f"  - <code>{name}</code>: {state}")
+
+        backup = data.get("backup", {})
+        backup_status = backup.get("status", "unknown")
+        lines.extend(
+            [
+                "",
+                "<b>Backup financeiro</b>",
+                (
+                    f"• {status_icons.get(backup_status, '❔')} "
+                    f"{html.escape(str(backup.get('detail', 'Sem informação.')))}"
+                ),
+            ]
+        )
+        if backup.get("timestamp"):
+            lines.append(
+                f"• Último arquivo: <code>{html.escape(str(backup.get('last_file', '')))}</code>"
+            )
+            lines.append(
+                f"• Data (UTC): {html.escape(str(backup['timestamp']))} "
+                f"({backup.get('age_hours')} h)"
+            )
+
+        lines.extend(["", "<b>Configurações do bot</b>"])
+        for name, configured in bot_config:
+            icon = "✅" if configured else "❌"
+            lines.append(
+                f"• {icon} <code>{name}</code>: "
+                f"{'configurada' if configured else 'ausente'}"
+            )
+        ai_configured = bool(
+            config.AI_API_URL and config.AI_API_KEY and config.AI_MODEL
+        )
+        lines.append(
+            f"• {'✅' if ai_configured else 'ℹ️'} <code>IA</code>: "
+            f"{'configurada' if ai_configured else 'não configurada (opcional)'}"
+        )
+
+        await update.message.reply_text("\n".join(lines), parse_mode="HTML")
+    except Exception as exc:
+        logger.exception("Erro ao executar diagnóstico do homelab")
+        await update.message.reply_text(
+            "❌ Não foi possível concluir o diagnóstico:\n"
+            f"<code>{html.escape(str(exc))}</code>",
             parse_mode="HTML",
         )
 
@@ -273,6 +393,8 @@ def main():
             continue
         if command_name == "status":
             application.add_handler(CommandHandler("status", status_command))
+        elif command_name == "diagnostico":
+            application.add_handler(CommandHandler("diagnostico", diagnostic_command))
         elif command_name == "deploy":
             application.add_handler(CommandHandler("deploy", deploy_command))
         elif command_name == "deploy_sync":
