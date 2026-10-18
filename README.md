@@ -31,6 +31,7 @@ Para texto livre, a IA pode solicitar ferramentas MCP e usar as respostas reais 
 | Preciso... | Use |
 | --- | --- |
 | Consultar CPU, memória, disco, uptime e containers ativos | `/status` |
+| Verificar serviços, containers, configurações e último backup financeiro | `/diagnostico` |
 | Atualizar o repositório e aplicar o deploy geral | `/deploy` |
 | Sincronizar somente os arquivos de configuração | `/deploy_sync` |
 | Publicar/reiniciar a aplicação financeira | `/deploy_finance` |
