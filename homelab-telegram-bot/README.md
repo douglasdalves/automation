@@ -50,6 +50,7 @@ python bot.py
 ## Comandos do bot
 
 - `/status`: mostra CPU, temperatura, memoria, disco, uptime e containers ativos.
+- `/diagnostico`: verifica configuração do bot e do MCP, estado dos serviços e containers, e data do backup financeiro mais recente.
 - `/deploy`: atualiza o repositorio e reinicia os servicos configurados.
 - `/deploy_sync`: copia os arquivos definidos no `app-config-sync`, sem atualizar o repositorio ou reiniciar servicos.
 - `/deploy_finance`: atualiza o repositorio e reinicia `dc-finance-api` e `dc-finance-dash`.

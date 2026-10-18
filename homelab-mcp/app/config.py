@@ -24,6 +24,7 @@ class Config:
     FINANCE_BACKUP_SCRIPT = os.getenv(
         "FINANCE_BACKUP_SCRIPT", "/usr/local/bin/finance_backup.sh"
     )
+    FINANCE_BACKUP_DIR = os.getenv("FINANCE_BACKUP_DIR", "/var/backups/finance")
     FINANCE_BACKUP_COMMAND_TIMEOUT = int(
         os.getenv("FINANCE_BACKUP_COMMAND_TIMEOUT", "900")
     )

@@ -7,6 +7,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 ## [Unreleased]
 
 ### Adicionado
+- Comando Telegram `/diagnostico` para verificar configurações, serviços, containers e a data do último backup financeiro
 - Comando Telegram `/conta_fixa` para registrar valores de contas fixas em mês selecionado, com confirmação e token de escrita no MCP
 - Workflow manual do GitHub Actions para deploy no servidor via runner self-hosted
 - Gráfico de evolução mensal do saldo geral, saldo anterior e investimentos no resumo do painel financeiro

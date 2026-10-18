@@ -20,7 +20,7 @@ _DEFAULT_SERVICES = ("homelab-telegram-bot", "homelab-mcp")
 _FINANCE_CONTAINERS = ("dc-finance-api", "dc-finance-dash")
 
 
-def _configured_services() -> tuple[str, ...]:
+def configured_services() -> tuple[str, ...]:
     return tuple(
         service.strip()
         for service in os.getenv("DEPLOY_SERVICES", ",".join(_DEFAULT_SERVICES)).split(
@@ -31,7 +31,7 @@ def _configured_services() -> tuple[str, ...]:
 
 
 def restart_service(service: str) -> dict[str, Any]:
-    if service not in _configured_services():
+    if service not in configured_services():
         return {"success": False, "error": f"Serviço não permitido: {service}"}
 
     try:
@@ -178,7 +178,7 @@ def deploy() -> dict[str, Any]:
                     "error": _output(sync_setup) or "app-config-sync setup failed",
                 }
 
-        services = _configured_services()
+        services = configured_services()
         restarted_services: list[str] = []
         for service in services:
             try:
