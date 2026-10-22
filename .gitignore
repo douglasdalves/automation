@@ -15,3 +15,5 @@ configs-apps/app-config-sync/__pycache__
 configs-apps/app-finance-sync/finance.db
 configs-apps/app-finance-sync/finance.db-wal
 configs-apps/app-finance-sync/finance.db-shm
+configs-apps/app-finance-sync/investments.json
+configs-apps/app-finance-sync/.investments-*.tmp
