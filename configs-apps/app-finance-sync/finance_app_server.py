@@ -3,16 +3,22 @@
 from __future__ import annotations
 
 import json
+import math
 import mimetypes
 import os
+import re
 import sqlite3
-from datetime import datetime
+import tempfile
+from datetime import date, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent
 DATABASE_FILE = Path(os.environ.get("FINANCE_DB_PATH", str(ROOT / "finance.db")))
+INVESTMENTS_FILE = ROOT / "investments.json"
+MAX_INVESTMENT_IMPORT_BYTES = 10 * 1024 * 1024
+MAX_INVESTMENT_RECORDS = 100_000
 PORT = 8001
 
 MONTH_ABBREVIATIONS = (
@@ -560,12 +566,102 @@ def save_data(payload: dict) -> dict:
     return write_database_payload(merged)
 
 
+def validate_investment_records(payload: object) -> list:
+    if not isinstance(payload, list) or not payload:
+        raise ValueError("A importação deve conter uma lista de operações.")
+    if len(payload) > MAX_INVESTMENT_RECORDS:
+        raise ValueError("A importação excede o limite de operações.")
+
+    records = []
+    for index, item in enumerate(payload, start=1):
+        if not isinstance(item, dict):
+            raise TypeError(f"Operação {index} inválida.")
+
+        date_value = item.get("d")
+        if not isinstance(date_value, str) or not re.fullmatch(
+            r"\d{4}-\d{2}-\d{2}", date_value
+        ):
+            raise ValueError(f"Data inválida na operação {index}.")
+        try:
+            date.fromisoformat(date_value)
+        except ValueError as exc:
+            raise ValueError(f"Data inválida na operação {index}.") from exc
+
+        category = item.get("c")
+        asset = item.get("a")
+        broker = item.get("b", "")
+        operation = item.get("t")
+        if not isinstance(category, str) or not category.strip() or len(category) > 120:
+            raise ValueError(f"Categoria inválida na operação {index}.")
+        if not isinstance(asset, str) or not asset.strip() or len(asset) > 120:
+            raise ValueError(f"Ativo inválido na operação {index}.")
+        if not isinstance(broker, str) or len(broker) > 200:
+            raise ValueError(f"Corretora inválida na operação {index}.")
+        if not isinstance(operation, str) or operation not in {"C", "V"}:
+            raise ValueError(f"Tipo de operação inválido na operação {index}.")
+
+        values = {}
+        for key in ("q", "p", "f"):
+            value = item.get(key, 0 if key == "f" else None)
+            try:
+                is_finite = (
+                    math.isfinite(value) if isinstance(value, (int, float)) else False
+                )
+            except OverflowError:
+                is_finite = False
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not is_finite
+                or value < 0
+                or (key == "q" and value == 0)
+            ):
+                raise ValueError(f"Valor numérico inválido na operação {index}.")
+            values[key] = value
+
+        records.append(
+            {
+                "d": date_value,
+                "c": category.strip(),
+                "a": asset.strip(),
+                "t": operation,
+                "q": values["q"],
+                "p": values["p"],
+                "b": broker.strip(),
+                "f": values["f"],
+            }
+        )
+    return records
+
+
 class FinanceHandler(BaseHTTPRequestHandler):
     server_version = "FinanceAppServer/1.0"
 
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path
+
+        if path in {"/api/investments", "/api/investments/"}:
+            try:
+                investments = validate_investment_records(
+                    json.loads(INVESTMENTS_FILE.read_text(encoding="utf-8"))
+                )
+            except FileNotFoundError:
+                self._send_json({"ok": True, "configured": False, "data": []})
+                return
+            except (OSError, json.JSONDecodeError, TypeError, ValueError) as exc:
+                self.log_error("Could not load investment data: %s", exc)
+                self._send_json(
+                    {
+                        "ok": False,
+                        "error": "Não foi possível carregar os dados da carteira.",
+                    },
+                    status=500,
+                )
+                return
+
+            self._send_json({"ok": True, "configured": True, "data": investments})
+            return
 
         if path in {"/api/data", "/api/data/"}:
             self._send_json(load_data())
@@ -605,6 +701,73 @@ class FinanceHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path)
+        if parsed.path in {"/api/investments", "/api/investments/"}:
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+            except ValueError:
+                self._send_json(
+                    {"ok": False, "error": "Tamanho da importação inválido."},
+                    status=400,
+                )
+                return
+            if length <= 0:
+                self._send_json(
+                    {"ok": False, "error": "A importação está vazia."}, status=400
+                )
+                return
+            if length > MAX_INVESTMENT_IMPORT_BYTES:
+                self._send_json(
+                    {"ok": False, "error": "A importação excede o limite de tamanho."},
+                    status=413,
+                )
+                return
+
+            body = self.rfile.read(length)
+            try:
+                payload = json.loads(body.decode("utf-8"))
+                records = validate_investment_records(payload)
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                self._send_json({"ok": False, "error": "JSON inválido."}, status=400)
+                return
+            except (TypeError, ValueError) as exc:
+                self._send_json({"ok": False, "error": str(exc)}, status=400)
+                return
+
+            temporary_path = None
+            try:
+                with tempfile.NamedTemporaryFile(
+                    mode="w",
+                    encoding="utf-8",
+                    dir=ROOT,
+                    prefix=".investments-",
+                    suffix=".tmp",
+                    delete=False,
+                ) as temporary_file:
+                    temporary_path = Path(temporary_file.name)
+                    json.dump(records, temporary_file, ensure_ascii=False, indent=2)
+                    temporary_file.write("\n")
+                os.replace(temporary_path, INVESTMENTS_FILE)
+            except OSError as exc:
+                self.log_error("Could not save investment data: %s", exc)
+                if temporary_path is not None:
+                    try:
+                        temporary_path.unlink(missing_ok=True)
+                    except OSError as cleanup_exc:
+                        self.log_error(
+                            "Could not clean temporary investment data: %s", cleanup_exc
+                        )
+                self._send_json(
+                    {
+                        "ok": False,
+                        "error": "Não foi possível salvar os dados da carteira no servidor.",
+                    },
+                    status=500,
+                )
+                return
+
+            self._send_json({"ok": True, "count": len(records)})
+            return
+
         if parsed.path in {"/api/save", "/api/save/"}:
             try:
                 length = int(self.headers.get("Content-Length", "0"))
@@ -681,6 +844,11 @@ class FinanceHandler(BaseHTTPRequestHandler):
         body = json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header(
+            "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"
+        )
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)

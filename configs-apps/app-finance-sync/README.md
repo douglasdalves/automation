@@ -6,14 +6,19 @@ Este diretório reúne o painel financeiro local, a interface de lançamentos e 
 
 - `dashboard.html`: painel estático em HTML/SVG
 - `dashboard-insert.html`: interface para inserir dados sem planilhas
-- `dashboard.css` e `dashboard-insert.css`: estilos separados para cada interface
+- `cart-invest.html`: carteira de investimentos, acessível pelo painel principal
+- `dashboard.css`, `dashboard-insert.css` e `cart-invest.css`: estilos separados para cada interface
 - `finance.db`: banco SQLite local, ignorado pelo Git
 - `finance.db-wal` e `finance.db-shm`: arquivos auxiliares do modo WAL, também ignorados pelo Git
+- `investments.json`: operações importadas, salvo localmente e ignorado pelo Git
 
 ## Persistência
 
 O servidor usa SQLite como fonte principal. No Compose, o banco fica no volume persistente `finance_data`.
 O `dashboard-insert.html` grava os lançamentos pela API e o `dashboard.html` consulta os mesmos dados.
+O `cart-invest.html` importa planilhas `.xlsx` ou `.csv` pela API, que salva os dados em
+`investments.json` no servidor. A carteira lê esse arquivo pela API com cache desativado;
+o arquivo não é servido diretamente pelo Nginx e não deve ser versionado.
 
 ## Uso no Raspberry
 
