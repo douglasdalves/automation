@@ -11,6 +11,8 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 - Comando Telegram `/conta_fixa` para registrar valores de contas fixas em mês selecionado, com confirmação e token de escrita no MCP
 - Workflow manual do GitHub Actions para deploy no servidor via runner self-hosted
 - Gráfico de evolução mensal do saldo geral, saldo anterior e investimentos no resumo do painel financeiro
+- Carteira de investimentos integrada ao painel, com importação persistente no servidor e dados privados ignorados pelo Git
+- Estilos da carteira de investimentos separados em `cart-invest.css`
 - Comando Telegram `/deploy_sync` para sincronizar os arquivos definidos no `app-config-sync` sem executar o deploy completo
 - Script de backup consistente do SQLite financeiro com envio via rclone
 - Comando Telegram `/deploy_finance` para atualizar o repositorio e reiniciar o painel financeiro
@@ -37,6 +39,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 - Resumo mensal do painel financeiro passa a exibir investimentos antes do saldo geral e descontá-los no cálculo do saldo
 - Handlers do bot Telegram organizados na pasta `homelab-telegram-bot/handlers`
 - Arquivos locais do SQLite financeiro (`finance.db`, `finance.db-wal` e `finance.db-shm`) passam a ser ignorados pelo Git
+- Dados importados da carteira de investimentos passam a ser persistidos localmente, sem cache HTTP e sem versionamento no Git
 - Reorganização das seções do painel financeiro entre evolução de contas e composição de investimentos
 - Tela de cadastro financeiro permite remover uma conta fixa por item e por mês
 - Melhor organização da documentação e arquitetura do homelab

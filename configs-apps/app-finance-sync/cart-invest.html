@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carteira de investimentos</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap">
+<link rel="stylesheet" href="./cart-invest.css">
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+<h1>Carteira</h1>
+<div class="tools">
+<label class="fx">Dólar em R$ <input id="fx" inputmode="decimal"></label>
+<label class="btn">Importar planilha<input class="sr" id="file" type="file" accept=".xlsx,.xls,.csv"></label>
+</div>
+</header>
+<nav id="tabs" role="tablist" aria-label="Anos"></nav>
+<main id="view"></main>
+<p class="foot" id="foot"></p>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const DATA=[];let SRC='servidor';
+const $=s=>document.querySelector(s);
+const nf=o=>new Intl.NumberFormat('pt-BR',o);
+const R=v=>nf({style:'currency',currency:'BRL'}).format(v);
+const U=v=>nf({style:'currency',currency:'USD'}).format(v);
+const Q=v=>nf({maximumFractionDigits:6}).format(v);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sum=(a,f)=>a.reduce((s,o)=>s+f(o),0);
+const cp=v=>v>=1000?(v/1000).toFixed(1).replace('.',',')+'k':String(Math.round(v));
+const MES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const COL={'Ações':'#2F6FDE','Fundos imobiliários':'#E08A1E','ETF':'#7A5AF8','ETF Exterior':'#0E9AA7','Criptomoedas':'#D9467E','Tesouro direto':'#3F9B4B','BDR':'#9B6B3D','Stocks':'#C2452D','FIAGRO':'#8FA31E','Fundos de Investimento':'#6B7A8F'};
+const colr=c=>COL[c]||'#8A94A0';
+const nm=a=>{let s=String(a);if(s.length>16&&s.includes('-')){s=s.replace(/-/g,' ');s=s[0].toUpperCase()+s.slice(1);if(s.length>34)s=s.slice(0,33)+'…'}return s};
+const num=v=>{if(v==null||v==='')return 0;if(typeof v==='number')return v;let s=String(v).trim();if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');return parseFloat(s)||0};
+let RAW=DATA,fx=5.5,cur='';
+try{fx=parseFloat(localStorage.getItem('fx'))||5.5}catch(_){}
+const prep=a=>a.map(o=>{const v=o.q*o.p,usd=/nomad/i.test(o.b||''),k=usd?fx:1;return{...o,v,usd,r:v*k,fr:(o.f||0)*k,y:o.d.slice(0,4),m:+o.d.slice(5,7)-1}});
+const plural=(n,a,b)=>n+' '+(n===1?a:b);
+
+function render(){
+const ops=prep(RAW),years=[...new Set(ops.map(o=>o.y))].sort();
+if(cur!=='Geral'&&!years.includes(cur))cur=years[years.length-1]||'Geral';
+$('#tabs').innerHTML=['Geral',...years].map(t=>`<button role="tab" aria-selected="${t===cur}" data-t="${t}">${t}</button>`).join('');
+$('#foot').textContent=`Fonte: ${SRC}, ${RAW.length} operações. Para atualizar, carregue uma planilha .xlsx ou .csv com as colunas Data operação, Categoria, Código Ativo, Operação C/V, Quantidade, Preço unitário, Corretora, Corretagem e Taxas. Operações da corretora Nomad são tratadas como dólar.`;
+if(!ops.length){$('#view').innerHTML='<p class="sub">Nenhuma operação encontrada. Carregue uma planilha para começar.</p>';return}
+const all=cur==='Geral',set=all?ops:ops.filter(o=>o.y===cur);
+const B=set.filter(o=>o.t==='C'),S=set.filter(o=>o.t==='V');
+const buy=sum(B,o=>o.r),sell=sum(S,o=>o.r),fees=sum(set,o=>o.fr),usdB=sum(B.filter(o=>o.usd),o=>o.v);
+const head=`${all?'Desde '+years[0]:'Em '+cur} você aportou ${R(buy)} em ${plural(B.length,'compra','compras')}.`;
+const sub=[S.length?`Vendeu ${R(sell)} em ${plural(S.length,'operação','operações')}.`:'Nenhuma venda no período.',fees?`Corretagem e taxas somaram ${R(fees)}.`:'',usdB?`O total inclui ${U(usdB)} na Nomad, convertidos a ${R(fx)} por dólar.`:''].filter(Boolean).join(' ');
+const keys=all?years:MES.map((_,i)=>i),lab=all?k=>k:k=>MES[k]+'/'+cur,kf=all?o=>o.y:o=>o.m;
+const cats=[...new Set(B.map(o=>o.c))].map(c=>({c,x:sum(B.filter(o=>o.c===c),o=>o.r)})).sort((a,b)=>b.x-a.x);
+const tt=keys.map(k=>sum(B.filter(o=>kf(o)===k),o=>o.r)),mx=Math.max(1,...tt);
+const cols=keys.map((k,i)=>{const bo=B.filter(o=>kf(o)===k),t=tt[i];
+const segs=cats.map(({c})=>{const x=sum(bo.filter(o=>o.c===c),o=>o.r);return x>0?`<i class="seg" style="height:${x/t*100}%;background:${colr(c)}" title="${lab(k)} — ${esc(c)}: ${R(x)}"></i>`:''}).join('');
+return `<div class="col"><div class="stack" style="height:${t/mx*100}%">${t>0?`<b class="val">${cp(t)}</b>`:''}${segs}</div></div>`}).join('');
+const labs=keys.map(k=>`<span>${all?k:MES[k]}</span>`).join('');
+const cl=cats.map(({c,x})=>{const p=buy?x/buy*100:0;return `<li><span class="sw" style="background:${colr(c)}"></span><span>${esc(c)}</span><span>${R(x)}</span><span class="pc">${p.toFixed(0)}%</span><span class="trk"><span style="width:${p}%;background:${colr(c)}"></span></span></li>`}).join('');
+const mp={};
+set.forEach(o=>{const m=mp[o.a]??={a:o.a,c:o.c,usd:o.usd,bq:0,bv:0,br:0,sr:0,q:0};if(o.t==='C'){m.bq+=o.q;m.bv+=o.v;m.br+=o.r;m.q+=o.q}else{m.sr+=o.r;m.q-=o.q}});
+const pos=Object.values(mp).sort((a,b)=>b.br-a.br||b.sr-a.sr).map(m=>`<tr><td title="${esc(m.a)} — ${esc(m.c)}"><span class="sw" style="background:${colr(m.c)}"></span>${esc(nm(m.a))}</td><td class="n">${m.br?R(m.br):'–'}</td><td class="n">${m.sr?R(m.sr):'–'}</td><td class="n">${Q(m.q)}</td><td class="n">${m.bq?(m.usd?U:R)(m.bv/m.bq):'–'}</td></tr>`).join('');
+const rows=t=>[...set].sort((a,b)=>b.d.localeCompare(a.d)).filter(o=>!t||(o.a+' '+o.c+' '+o.b).toLowerCase().includes(t)).map(o=>{const f=o.usd?U:R;return `<tr><td>${o.d.split('-').reverse().join('/')}</td><td class="${o.t==='V'?'sell':''}">${o.t==='V'?'Venda':'Compra'}</td><td title="${esc(o.a)} — ${esc(o.c)}"><span class="sw" style="background:${colr(o.c)}"></span>${esc(nm(o.a))}</td><td class="n">${Q(o.q)}</td><td class="n">${f(o.p)}</td><td class="n">${f(o.v)}</td><td class="hs">${esc(o.b)}</td></tr>`}).join('');
+$('#view').innerHTML=`<h2 class="hero">${head}</h2><p class="sub">${sub}</p>
+<div class="grid"><section><h3>Aportes por ${all?'ano':'mês'}, em reais</h3><div class="plot">${cols}</div><div class="labs">${labs}</div></section>
+<section><h3>Por categoria</h3><ul class="cats">${cl}</ul></section></div>
+<h3>Por ativo</h3><div class="tw"><table><thead><tr><th>Ativo</th><th class="n">Compras</th><th class="n">Vendas</th><th class="n">Qtd. líquida</th><th class="n">Preço médio</th></tr></thead><tbody>${pos}</tbody></table></div>
+${all?'':`<h3>Operações</h3><input id="q" type="search" placeholder="Filtrar por ativo, categoria ou corretora" aria-label="Filtrar operações"><div class="tw"><table><thead><tr><th>Data</th><th>Operação</th><th>Ativo</th><th class="n">Qtd.</th><th class="n">Preço</th><th class="n">Total</th><th class="hs">Corretora</th></tr></thead><tbody id="tb">${rows('')}</tbody></table></div>`}`;
+if(!all)$('#q').oninput=e=>{$('#tb').innerHTML=rows(e.target.value.trim().toLowerCase())};
+}
+
+function isoDate(v){
+if(v instanceof Date)return new Date(v.getTime()+432e5).toISOString().slice(0,10);
+const s=String(v??'').trim();let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+if(m)return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+m=s.match(/^\d{4}-\d{2}-\d{2}/);return m?m[0]:null}
+
+async function readFile(f){
+if(typeof XLSX==='undefined')throw new Error('a biblioteca de leitura não carregou');
+let wb;
+if(/\.csv$/i.test(f.name)){const t=await f.text(),l=t.split('\n')[0];const sep=(l.match(/;/g)||[]).length>(l.match(/,/g)||[]).length?';':',';wb=XLSX.read(t,{type:'string',FS:sep,raw:true})}
+else wb=XLSX.read(await f.arrayBuffer(),{type:'array',cellDates:true});
+const out=[];
+for(const n of wb.SheetNames){
+const rows=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:null});
+if(!rows.length)continue;
+const h=rows[0].map(x=>String(x??'').trim().toLowerCase()),ix=k=>h.indexOf(k),iD=ix('data operação');
+if(iD<0)continue;
+for(const r of rows.slice(1)){
+const d=isoDate(r[iD]);if(!d)continue;
+const g=k=>ix(k)<0?0:num(r[ix(k)]);
+out.push({d,c:r[ix('categoria')]||'Outros',a:r[ix('código ativo')]||'?',t:String(r[ix('operação c/v')]||'C').trim().toUpperCase(),q:g('quantidade'),p:g('preço unitário'),b:r[ix('corretora')]||'',f:g('corretagem')+g('taxas')+g('impostos')})}}
+return out.sort((a,b)=>a.d.localeCompare(b.d))}
+
+$('#tabs').onclick=e=>{const b=e.target.closest('button');if(b){cur=b.dataset.t;render()}};
+$('#fx').value=String(fx).replace('.',',');
+$('#fx').oninput=e=>{const v=parseFloat(e.target.value.replace(',','.'));if(v>0){fx=v;try{localStorage.setItem('fx',v)}catch(_){}render()}};
+$('#file').onchange=async e=>{const f=e.target.files[0];if(!f)return;
+try{
+const ops=await readFile(f);
+if(!ops.length)throw new Error('nenhuma operação encontrada');
+const response=await fetch('/api/investments',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify(ops)});
+const result=await response.json();
+if(!response.ok||!result.ok)throw new Error(result.error||`falha ao salvar no servidor (HTTP ${response.status})`);
+RAW=ops;SRC='servidor';cur='';render();
+}catch(err){$('#foot').textContent='Não foi possível importar '+f.name+': '+err.message}
+e.target.value=''};
+async function loadInvestments(){
+try{
+const response=await fetch('/api/investments',{cache:'no-store'});
+const result=await response.json();
+if(!response.ok||!result.ok)throw new Error(result.error||`falha ao carregar do servidor (HTTP ${response.status})`);
+RAW=result.data;SRC=result.configured?'servidor':'sem dados no servidor';cur='';render();
+}catch(err){
+$('#foot').textContent='Não foi possível carregar a carteira: '+err.message;
+$('#view').innerHTML='<p class="sub">Verifique a conexão com o servidor e tente novamente.</p>';
+}
+}
+loadInvestments();
+</script>
+</body>
+</html>
