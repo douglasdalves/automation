@@ -7,6 +7,8 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 ## [Unreleased]
 
 ### Adicionado
+- Importação local de PDFs consolidados do BTG com posições de renda fixa BTG/Nubank e histórico mensal persistente na carteira
+- Inclusão opcional de CDB/RDB do PDF no gráfico e nas métricas anuais, com data estimada pelo vencimento menos dois anos
 - Comando Telegram `/diagnostico` para verificar configurações, serviços, containers e a data do último backup financeiro
 - Comando Telegram `/conta_fixa` para registrar valores de contas fixas em mês selecionado, com confirmação e token de escrita no MCP
 - Workflow manual do GitHub Actions para deploy no servidor via runner self-hosted
