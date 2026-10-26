@@ -17,3 +17,5 @@ configs-apps/app-finance-sync/finance.db-wal
 configs-apps/app-finance-sync/finance.db-shm
 configs-apps/app-finance-sync/investments.json
 configs-apps/app-finance-sync/.investments-*.tmp
+configs-apps/app-finance-sync/fixed_income.json
+configs-apps/app-finance-sync/.fixed-income-*.tmp
