@@ -17,8 +17,12 @@ from urllib.parse import urlparse
 ROOT = Path(__file__).resolve().parent
 DATABASE_FILE = Path(os.environ.get("FINANCE_DB_PATH", str(ROOT / "finance.db")))
 INVESTMENTS_FILE = ROOT / "investments.json"
+FIXED_INCOME_FILE = ROOT / "fixed_income.json"
 MAX_INVESTMENT_IMPORT_BYTES = 10 * 1024 * 1024
 MAX_INVESTMENT_RECORDS = 100_000
+MAX_FIXED_INCOME_IMPORT_BYTES = 10 * 1024 * 1024
+MAX_FIXED_INCOME_SNAPSHOTS = 1_000
+MAX_FIXED_INCOME_ITEMS = 10_000
 PORT = 8001
 
 MONTH_ABBREVIATIONS = (
@@ -634,6 +638,99 @@ def validate_investment_records(payload: object) -> list:
     return records
 
 
+def validate_fixed_income_snapshots(payload: object) -> list:
+    if not isinstance(payload, list) or not payload:
+        raise ValueError("A importação deve conter snapshots de renda fixa.")
+    if len(payload) > MAX_FIXED_INCOME_SNAPSHOTS:
+        raise ValueError("A importação excede o limite de snapshots.")
+
+    snapshots = []
+    for snapshot_index, snapshot in enumerate(payload, start=1):
+        if not isinstance(snapshot, dict):
+            raise TypeError(f"Snapshot {snapshot_index} inválido.")
+
+        snapshot_date = snapshot.get("d")
+        if not isinstance(snapshot_date, str) or not re.fullmatch(
+            r"\d{4}-\d{2}-\d{2}", snapshot_date
+        ):
+            raise ValueError(f"Data inválida no snapshot {snapshot_index}.")
+        try:
+            date.fromisoformat(snapshot_date)
+        except ValueError as exc:
+            raise ValueError(f"Data inválida no snapshot {snapshot_index}.") from exc
+
+        items = snapshot.get("items")
+        if not isinstance(items, list) or not items:
+            raise ValueError(f"Snapshot {snapshot_index} sem posições.")
+        if len(items) > MAX_FIXED_INCOME_ITEMS:
+            raise ValueError(f"Snapshot {snapshot_index} excede o limite de posições.")
+
+        clean_items = []
+        for item_index, item in enumerate(items, start=1):
+            label = f"posição {item_index} do snapshot {snapshot_index}"
+            if not isinstance(item, dict):
+                raise TypeError(f"{label.capitalize()} inválida.")
+
+            text_fields = {
+                "b": (item.get("b"), 80),
+                "p": (item.get("p"), 120),
+                "e": (item.get("e"), 200),
+                "c": (item.get("c", "Renda Fixa"), 80),
+                "m": (item.get("m", ""), 10),
+                "r": (item.get("r", ""), 100),
+            }
+            for key, (value, max_length) in text_fields.items():
+                if (
+                    not isinstance(value, str)
+                    or (key not in {"m", "r"} and not value.strip())
+                    or len(value) > max_length
+                ):
+                    raise ValueError(f"Campo {key} inválido na {label}.")
+            if item["m"] and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", item["m"]):
+                raise ValueError(f"Vencimento inválido na {label}.")
+            if item["m"]:
+                try:
+                    date.fromisoformat(item["m"])
+                except ValueError as exc:
+                    raise ValueError(f"Vencimento inválido na {label}.") from exc
+
+            values = {}
+            for key in ("q", "price", "net", "gross"):
+                value = item.get(key)
+                try:
+                    is_finite = (
+                        math.isfinite(value)
+                        if isinstance(value, (int, float))
+                        else False
+                    )
+                except OverflowError:
+                    is_finite = False
+                if (
+                    isinstance(value, bool)
+                    or not isinstance(value, (int, float))
+                    or not is_finite
+                    or value < 0
+                    or (key == "q" and value == 0)
+                ):
+                    raise ValueError(f"Valor numérico inválido na {label}.")
+                values[key] = value
+
+            clean_items.append(
+                {
+                    "b": item["b"].strip(),
+                    "p": item["p"].strip(),
+                    "e": item["e"].strip(),
+                    "c": text_fields["c"][0].strip(),
+                    "m": item["m"],
+                    "r": item["r"].strip(),
+                    **values,
+                }
+            )
+        snapshots.append({"d": snapshot_date, "items": clean_items})
+
+    return snapshots
+
+
 class FinanceHandler(BaseHTTPRequestHandler):
     server_version = "FinanceAppServer/1.0"
 
@@ -661,6 +758,28 @@ class FinanceHandler(BaseHTTPRequestHandler):
                 return
 
             self._send_json({"ok": True, "configured": True, "data": investments})
+            return
+
+        if path in {"/api/fixed-income", "/api/fixed-income/"}:
+            try:
+                snapshots = validate_fixed_income_snapshots(
+                    json.loads(FIXED_INCOME_FILE.read_text(encoding="utf-8"))
+                )
+            except FileNotFoundError:
+                self._send_json({"ok": True, "configured": False, "data": []})
+                return
+            except (OSError, json.JSONDecodeError, TypeError, ValueError) as exc:
+                self.log_error("Could not load fixed-income data: %s", exc)
+                self._send_json(
+                    {
+                        "ok": False,
+                        "error": "Não foi possível carregar o histórico de renda fixa.",
+                    },
+                    status=500,
+                )
+                return
+
+            self._send_json({"ok": True, "configured": True, "data": snapshots})
             return
 
         if path in {"/api/data", "/api/data/"}:
@@ -701,6 +820,109 @@ class FinanceHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path)
+        if parsed.path in {"/api/fixed-income", "/api/fixed-income/"}:
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+            except ValueError:
+                self._send_json(
+                    {"ok": False, "error": "Tamanho da importação inválido."},
+                    status=400,
+                )
+                return
+            if length <= 0:
+                self._send_json(
+                    {"ok": False, "error": "A importação está vazia."}, status=400
+                )
+                return
+            if length > MAX_FIXED_INCOME_IMPORT_BYTES:
+                self._send_json(
+                    {"ok": False, "error": "A importação excede o limite de tamanho."},
+                    status=413,
+                )
+                return
+
+            body = self.rfile.read(length)
+            try:
+                incoming = validate_fixed_income_snapshots(
+                    json.loads(body.decode("utf-8"))
+                )
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                self._send_json({"ok": False, "error": "JSON inválido."}, status=400)
+                return
+            except (TypeError, ValueError) as exc:
+                self._send_json({"ok": False, "error": str(exc)}, status=400)
+                return
+
+            try:
+                existing_data = json.loads(
+                    FIXED_INCOME_FILE.read_text(encoding="utf-8")
+                )
+                existing = validate_fixed_income_snapshots(existing_data)
+            except FileNotFoundError:
+                existing = []
+            except (OSError, json.JSONDecodeError, TypeError, ValueError) as exc:
+                self.log_error(
+                    "Could not read fixed-income data before saving: %s", exc
+                )
+                self._send_json(
+                    {
+                        "ok": False,
+                        "error": "Não foi possível preservar o histórico de renda fixa existente.",
+                    },
+                    status=500,
+                )
+                return
+
+            snapshots_by_date = {snapshot["d"]: snapshot for snapshot in existing}
+            snapshots_by_date.update({snapshot["d"]: snapshot for snapshot in incoming})
+            merged = [
+                snapshots_by_date[snapshot_date]
+                for snapshot_date in sorted(snapshots_by_date)
+            ]
+
+            temporary_path = None
+            try:
+                with tempfile.NamedTemporaryFile(
+                    mode="w",
+                    encoding="utf-8",
+                    dir=ROOT,
+                    prefix=".fixed-income-",
+                    suffix=".tmp",
+                    delete=False,
+                ) as temporary_file:
+                    temporary_path = Path(temporary_file.name)
+                    json.dump(merged, temporary_file, ensure_ascii=False, indent=2)
+                    temporary_file.write("\n")
+                os.replace(temporary_path, FIXED_INCOME_FILE)
+            except OSError as exc:
+                self.log_error("Could not save fixed-income data: %s", exc)
+                if temporary_path is not None:
+                    try:
+                        temporary_path.unlink(missing_ok=True)
+                    except OSError as cleanup_exc:
+                        self.log_error(
+                            "Could not clean temporary fixed-income data: %s",
+                            cleanup_exc,
+                        )
+                self._send_json(
+                    {
+                        "ok": False,
+                        "error": "Não foi possível salvar o histórico de renda fixa.",
+                    },
+                    status=500,
+                )
+                return
+
+            self._send_json(
+                {
+                    "ok": True,
+                    "data": merged,
+                    "snapshots": len(merged),
+                    "imported": len(incoming),
+                }
+            )
+            return
+
         if parsed.path in {"/api/investments", "/api/investments/"}:
             try:
                 length = int(self.headers.get("Content-Length", "0"))

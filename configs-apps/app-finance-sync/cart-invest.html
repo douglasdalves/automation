@@ -13,16 +13,27 @@
 <h1>Carteira</h1>
 <div class="tools">
 <label class="fx">Dólar em R$ <input id="fx" inputmode="decimal"></label>
+<label class="fi-toggle"><input id="showFixedIncomeEstimates" type="checkbox"> Estimar CDB/RDB nas abas anuais</label>
 <label class="btn">Importar planilha<input class="sr" id="file" type="file" accept=".xlsx,.xls,.csv"></label>
+<label class="btn">Importar PDF BTG<input class="sr" id="pdfFile" type="file" accept="application/pdf,.pdf" multiple></label>
 </div>
 </header>
 <nav id="tabs" role="tablist" aria-label="Anos"></nav>
 <main id="view"></main>
+<section class="fixed-income" aria-labelledby="fixedTitle">
+<div class="fixed-heading">
+<div><h2 id="fixedTitle">Carteira do PDF</h2><p class="sub" id="fixedStatus">Importe um ou mais relatórios consolidados do BTG para montar o histórico mensal.</p></div>
+</div>
+<div id="fixedView"></div>
+</section>
 <p class="foot" id="foot"></p>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 const DATA=[];let SRC='servidor';
+let FIXED=[],fixedSelected='';
+let SHOW_FIXED_INCOME_ESTIMATES=true;
 const $=s=>document.querySelector(s);
 const nf=o=>new Intl.NumberFormat('pt-BR',o);
 const R=v=>nf({style:'currency',currency:'BRL'}).format(v);
@@ -32,27 +43,57 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const sum=(a,f)=>a.reduce((s,o)=>s+f(o),0);
 const cp=v=>v>=1000?(v/1000).toFixed(1).replace('.',',')+'k':String(Math.round(v));
 const MES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-const COL={'Ações':'#2F6FDE','Fundos imobiliários':'#E08A1E','ETF':'#7A5AF8','ETF Exterior':'#0E9AA7','Criptomoedas':'#D9467E','Tesouro direto':'#3F9B4B','BDR':'#9B6B3D','Stocks':'#C2452D','FIAGRO':'#8FA31E','Fundos de Investimento':'#6B7A8F'};
+const COL={'Ações':'#2F6FDE','Fundos imobiliários':'#E08A1E','ETF':'#7A5AF8','ETF Exterior':'#0E9AA7','Criptomoedas':'#D9467E','Tesouro direto':'#3F9B4B','BDR':'#9B6B3D','Stocks':'#C2452D','FIAGRO':'#8FA31E','Fundos de Investimento':'#6B7A8F','CDB (estimado)':'#3F9B4B','RDB (estimado)':'#0E9AA7'};
 const colr=c=>COL[c]||'#8A94A0';
 const nm=a=>{let s=String(a);if(s.length>16&&s.includes('-')){s=s.replace(/-/g,' ');s=s[0].toUpperCase()+s.slice(1);if(s.length>34)s=s.slice(0,33)+'…'}return s};
 const num=v=>{if(v==null||v==='')return 0;if(typeof v==='number')return v;let s=String(v).trim();if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');return parseFloat(s)||0};
 let RAW=DATA,fx=5.5,cur='';
 try{fx=parseFloat(localStorage.getItem('fx'))||5.5}catch(_){}
+try{const saved=localStorage.getItem('showFixedIncomeEstimates');SHOW_FIXED_INCOME_ESTIMATES=saved===null?localStorage.getItem('showPdfPositions')!=='0'&&localStorage.getItem('showTreasury')!=='0':saved!=='0'}catch(_){}
 const prep=a=>a.map(o=>{const v=o.q*o.p,usd=/nomad/i.test(o.b||''),k=usd?fx:1;return{...o,v,usd,r:v*k,fr:(o.f||0)*k,y:o.d.slice(0,4),m:+o.d.slice(5,7)-1}});
 const plural=(n,a,b)=>n+' '+(n===1?a:b);
 
+function estimatePurchaseDate(maturity){
+const match=String(maturity||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+if(!match)return null;
+const year=Number(match[1])-2,month=Number(match[2]),day=Number(match[3]);
+const lastDay=new Date(Date.UTC(year,month,0)).getUTCDate();
+return `${year}-${match[2]}-${String(Math.min(day,lastDay)).padStart(2,'0')}`
+}
+
+function estimatedFixedIncomeOperations(){
+const lots=new Map();
+for(const snapshot of [...FIXED].sort((a,b)=>a.d.localeCompare(b.d))){
+for(const item of snapshot.items){
+if(!/^(cdb|rdb)$/i.test(item.p)||!item.m||!Number.isFinite(item.gross)||item.gross<=0)continue;
+const key=JSON.stringify([item.b,item.p,item.e,item.m,item.q,item.r]);
+lots.set(key,{snapshot,item})
+}}
+return[...lots.values()].flatMap(({snapshot,item})=>{
+const d=estimatePurchaseDate(item.m);
+if(!d)return[];
+const category=`${item.p.toUpperCase()} (estimado)`;
+return[{d,c:category,a:`${item.p} — ${item.e} (vence ${item.m})`,t:'C',q:1,p:item.gross,b:item.b,f:0,estimated:true,reportedOn:snapshot.d,maturity:item.m}]
+})
+}
+
 function render(){
-const ops=prep(RAW),years=[...new Set(ops.map(o=>o.y))].sort();
+const estimated=SHOW_FIXED_INCOME_ESTIMATES?estimatedFixedIncomeOperations():[];
+const ops=prep([...RAW,...estimated]),opYears=[...new Set(ops.map(o=>o.y))].sort(),years=opYears;
 if(cur!=='Geral'&&!years.includes(cur))cur=years[years.length-1]||'Geral';
 $('#tabs').innerHTML=['Geral',...years].map(t=>`<button role="tab" aria-selected="${t===cur}" data-t="${t}">${t}</button>`).join('');
 $('#foot').textContent=`Fonte: ${SRC}, ${RAW.length} operações. Para atualizar, carregue uma planilha .xlsx ou .csv com as colunas Data operação, Categoria, Código Ativo, Operação C/V, Quantidade, Preço unitário, Corretora, Corretagem e Taxas. Operações da corretora Nomad são tratadas como dólar.`;
-if(!ops.length){$('#view').innerHTML='<p class="sub">Nenhuma operação encontrada. Carregue uma planilha para começar.</p>';return}
+if(!ops.length){
+$('#view').innerHTML='<p class="sub">Nenhuma operação encontrada. Carregue uma planilha ou um PDF com posições CDB/RDB.</p>';
+return}
 const all=cur==='Geral',set=all?ops:ops.filter(o=>o.y===cur);
 const B=set.filter(o=>o.t==='C'),S=set.filter(o=>o.t==='V');
-const buy=sum(B,o=>o.r),sell=sum(S,o=>o.r),fees=sum(set,o=>o.fr),usdB=sum(B.filter(o=>o.usd),o=>o.v);
-const head=`${all?'Desde '+years[0]:'Em '+cur} você aportou ${R(buy)} em ${plural(B.length,'compra','compras')}.`;
-const sub=[S.length?`Vendeu ${R(sell)} em ${plural(S.length,'operação','operações')}.`:'Nenhuma venda no período.',fees?`Corretagem e taxas somaram ${R(fees)}.`:'',usdB?`O total inclui ${U(usdB)} na Nomad, convertidos a ${R(fx)} por dólar.`:''].filter(Boolean).join(' ');
-const keys=all?years:MES.map((_,i)=>i),lab=all?k=>k:k=>MES[k]+'/'+cur,kf=all?o=>o.y:o=>o.m;
+const regularB=B.filter(o=>!o.estimated),pdfB=B.filter(o=>o.estimated);
+const buy=sum(B,o=>o.r),pdfEstimate=sum(pdfB,o=>o.r),sell=sum(S,o=>o.r),fees=sum(set,o=>o.fr),usdB=sum(B.filter(o=>o.usd),o=>o.v);
+const period=all?`Desde ${opYears[0]||years[0]}`:`Em ${cur}`;
+const head=`${period}: ${R(buy)} em ${plural(regularB.length,'compra da planilha','compras da planilha')}${pdfB.length?` + ${R(pdfEstimate)} em ${plural(pdfB.length,'posição CDB/RDB estimada','posições CDB/RDB estimadas')}`:''}.`;
+const sub=[pdfB.length?'Estimativa: cada CDB/RDB ativo do PDF usa o saldo bruto atual e a data de vencimento menos 2 anos; não é o valor nem a data de aplicação confirmados. O PDF não informa resgates/vendas.':'',S.length?`Vendeu ${R(sell)} em ${plural(S.length,'operação','operações')}.`:set.length?'Nenhuma venda no período.':'',fees?`Corretagem e taxas somaram ${R(fees)}.`:'',usdB?`O total inclui ${U(usdB)} na Nomad, convertidos a ${R(fx)} por dólar.`:''].filter(Boolean).join(' ');
+const keys=all?opYears:MES.map((_,i)=>i),lab=all?k=>k:k=>MES[k]+'/'+cur,kf=all?o=>o.y:o=>o.m;
 const cats=[...new Set(B.map(o=>o.c))].map(c=>({c,x:sum(B.filter(o=>o.c===c),o=>o.r)})).sort((a,b)=>b.x-a.x);
 const tt=keys.map(k=>sum(B.filter(o=>kf(o)===k),o=>o.r)),mx=Math.max(1,...tt);
 const cols=keys.map((k,i)=>{const bo=B.filter(o=>kf(o)===k),t=tt[i];
@@ -63,13 +104,14 @@ const cl=cats.map(({c,x})=>{const p=buy?x/buy*100:0;return `<li><span class="sw"
 const mp={};
 set.forEach(o=>{const m=mp[o.a]??={a:o.a,c:o.c,usd:o.usd,bq:0,bv:0,br:0,sr:0,q:0};if(o.t==='C'){m.bq+=o.q;m.bv+=o.v;m.br+=o.r;m.q+=o.q}else{m.sr+=o.r;m.q-=o.q}});
 const pos=Object.values(mp).sort((a,b)=>b.br-a.br||b.sr-a.sr).map(m=>`<tr><td title="${esc(m.a)} — ${esc(m.c)}"><span class="sw" style="background:${colr(m.c)}"></span>${esc(nm(m.a))}</td><td class="n">${m.br?R(m.br):'–'}</td><td class="n">${m.sr?R(m.sr):'–'}</td><td class="n">${Q(m.q)}</td><td class="n">${m.bq?(m.usd?U:R)(m.bv/m.bq):'–'}</td></tr>`).join('');
-const rows=t=>[...set].sort((a,b)=>b.d.localeCompare(a.d)).filter(o=>!t||(o.a+' '+o.c+' '+o.b).toLowerCase().includes(t)).map(o=>{const f=o.usd?U:R;return `<tr><td>${o.d.split('-').reverse().join('/')}</td><td class="${o.t==='V'?'sell':''}">${o.t==='V'?'Venda':'Compra'}</td><td title="${esc(o.a)} — ${esc(o.c)}"><span class="sw" style="background:${colr(o.c)}"></span>${esc(nm(o.a))}</td><td class="n">${Q(o.q)}</td><td class="n">${f(o.p)}</td><td class="n">${f(o.v)}</td><td class="hs">${esc(o.b)}</td></tr>`}).join('');
+const rows=t=>[...set].sort((a,b)=>b.d.localeCompare(a.d)).filter(o=>!t||(o.a+' '+o.c+' '+o.b).toLowerCase().includes(t)).map(o=>{const f=o.usd?U:R;return `<tr><td>${o.d.split('-').reverse().join('/')}</td><td class="${o.t==='V'?'sell':''}">${o.estimated?'Compra estimada':o.t==='V'?'Venda':'Compra'}</td><td title="${esc(o.a)} — ${esc(o.c)}"><span class="sw" style="background:${colr(o.c)}"></span>${esc(nm(o.a))}</td><td class="n">${Q(o.q)}</td><td class="n">${f(o.p)}</td><td class="n">${f(o.v)}</td><td class="hs">${esc(o.estimated?`${o.b} · PDF ${o.reportedOn.split('-').reverse().join('/')}`:o.b)}</td></tr>`}).join('');
 $('#view').innerHTML=`<h2 class="hero">${head}</h2><p class="sub">${sub}</p>
 <div class="grid"><section><h3>Aportes por ${all?'ano':'mês'}, em reais</h3><div class="plot">${cols}</div><div class="labs">${labs}</div></section>
 <section><h3>Por categoria</h3><ul class="cats">${cl}</ul></section></div>
 <h3>Por ativo</h3><div class="tw"><table><thead><tr><th>Ativo</th><th class="n">Compras</th><th class="n">Vendas</th><th class="n">Qtd. líquida</th><th class="n">Preço médio</th></tr></thead><tbody>${pos}</tbody></table></div>
-${all?'':`<h3>Operações</h3><input id="q" type="search" placeholder="Filtrar por ativo, categoria ou corretora" aria-label="Filtrar operações"><div class="tw"><table><thead><tr><th>Data</th><th>Operação</th><th>Ativo</th><th class="n">Qtd.</th><th class="n">Preço</th><th class="n">Total</th><th class="hs">Corretora</th></tr></thead><tbody id="tb">${rows('')}</tbody></table></div>`}`;
-if(!all)$('#q').oninput=e=>{$('#tb').innerHTML=rows(e.target.value.trim().toLowerCase())};
+${all?'':`<h3>Operações</h3><input id="q" type="search" placeholder="Filtrar por ativo, categoria ou corretora" aria-label="Filtrar operações"><div class="tw"><table><thead><tr><th>Data</th><th>Operação</th><th>Ativo</th><th class="n">Qtd.</th><th class="n">Preço</th><th class="n">Total</th><th class="hs">Corretora</th></tr></thead><tbody id="tb">${rows('')}</tbody></table></div>`}
+${pdfB.length?'<p class="sub estimate-note">As posições CDB/RDB acima foram lançadas como estimativas, com o saldo bruto do PDF e vencimento menos 2 anos.</p>':''}`;
+if(!all&&$('#q'))$('#q').oninput=e=>{$('#tb').innerHTML=rows(e.target.value.trim().toLowerCase())};
 }
 
 function isoDate(v){
@@ -77,6 +119,163 @@ if(v instanceof Date)return new Date(v.getTime()+432e5).toISOString().slice(0,10
 const s=String(v??'').trim();let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
 if(m)return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
 m=s.match(/^\d{4}-\d{2}-\d{2}/);return m?m[0]:null}
+
+function pdfDate(v){
+const m=String(v??'').match(/^(\d{2})\/(\d{2})\/(\d{2}|\d{4})$/);
+if(!m)return null;
+const year=m[3].length===2?'20'+m[3]:m[3];
+return `${year}-${m[2]}-${m[1]}`}
+
+function pdfNumber(v){
+const s=String(v??'').replace(/[^\d,.-]/g,'');
+if(!s)return NaN;
+const normalized=s.includes(',')?s.replace(/\./g,'').replace(',','.'):s;
+return Number(normalized)}
+
+function plainText(v){
+return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim()}
+
+async function readFixedIncomePdf(file){
+if(typeof pdfjsLib==='undefined')throw new Error('a biblioteca de leitura de PDF não carregou');
+if(file.size>20*1024*1024)throw new Error(`${file.name}: o PDF excede 20 MB`);
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const doc=await pdfjsLib.getDocument({data:await file.arrayBuffer(),isEvalSupported:false}).promise;
+let date='',bank='',items=[];
+const datePattern=/^\d{2}\/\d{2}\/(?:\d{2}|\d{4})$/;
+const numericPattern=/^\d[\d.,]*$/;
+const productPattern=/^(cdb|rdb|lci|lca|lc|deb(?:e|ê)nture|cri|cra|cpr|tesouro direto(?:\s*-\s*ntn[a-z-]*)?|-\s*ntn[a-z-]*|ntn-?b1?)$/i;
+const headingPattern=/^(produto|emissor|vencimento|taxa(?: de)?|aplicacao|quantidade|preco|saldo(?: liquido| bruto)?|atualizacao)(?:\s+(?:produto|emissor|vencimento|taxa|aplicacao|quantidade|preco|saldo|atualizacao))*$/i;
+const makeLines=pageItems=>{
+const groups=new Map();
+for(const item of pageItems){const y=Math.round(item.y),line=groups.get(y)||[];line.push(item);groups.set(y,line)}
+return[...groups.entries()].map(([y,parts])=>({y,items:parts.sort((a,b)=>a.x-b.x)})).sort((a,b)=>b.y-a.y)};
+if(doc.numPages>100){await doc.destroy();throw new Error(`${file.name}: o PDF excede o limite de 100 páginas`)}
+try{
+for(let pageNo=1;pageNo<=doc.numPages;pageNo++){
+const page=await doc.getPage(pageNo),content=await page.getTextContent();
+const pageItems=content.items.filter(item=>typeof item.str==='string'&&item.str.trim()).map(item=>({x:item.transform[4],y:item.transform[5],text:item.str.trim()}));
+const pageText=plainText(pageItems.map(item=>item.text).join(' '));
+if(pageText.includes('btg investimentos'))bank='BTG';
+if(pageText.includes('nubank'))bank='Nubank';
+if(!pageText.includes('carteira de investimentos'))continue;
+const update=pageText.match(/atualizacao:\s*(\d{2}\/\d{2}\/\d{4})/);
+if(update)date=pdfDate(update[1])||date;
+const lines=makeLines(pageItems);
+if(pageText.includes('renda fixa')){
+const rows=lines.map(line=>{
+const maturityItem=line.items.find(item=>item.x>=120&&item.x<190&&datePattern.test(item.text));
+if(!maturityItem)return null;
+const valueAt=(low,high)=>{
+const value=line.items.find(item=>item.x>=low&&item.x<high&&numericPattern.test(item.text));
+return value?pdfNumber(value.text):NaN};
+const quantity=valueAt(230,300),price=valueAt(300,380),net=valueAt(380,440),gross=valueAt(440,500);
+if(!Number.isFinite(quantity)||quantity<=0||!Number.isFinite(gross))return null;
+return{line,maturity:pdfDate(maturityItem.text),quantity,price,net,gross}
+}).filter(Boolean);
+for(let i=0;i<rows.length;i++){
+const row=rows[i],nextY=rows[i+1]?.line.y,lower=nextY==null?row.line.y-35:nextY+16;
+const context=lines.filter(line=>line.y<=row.line.y+20&&line.y>=lower);
+const productContext=context.filter(line=>Math.abs(line.y-row.line.y)<=20);
+const productParts=[...new Set(productContext.flatMap(line=>line.items.filter(item=>item.x<120&&productPattern.test(item.text)).map(item=>item.text)))];
+let product=productParts.find(part=>/^tesouro direto\s*-\s*ntn/i.test(part))||productParts.join(' ');
+product=product.replace(/\s+/g,' ').trim();
+product=product.replace(/^tesouro direto\s*-\s*/i,'Tesouro Direto - ').replace(/^tesouro direto$/i,'Tesouro Direto');
+const issuerParts=[...new Set(context.flatMap(line=>line.items.filter(item=>item.x<120&&!productPattern.test(item.text)&&!headingPattern.test(plainText(item.text))&&!/^total$/i.test(item.text)).map(item=>item.text)))];
+const issuer=issuerParts.join(' ').replace(/\s+/g,' ').trim();
+const rate=context.flatMap(line=>line.items.filter(item=>item.x>=180&&item.x<245&&Math.abs(line.y-row.line.y)<=12).map(item=>item.text)).join(' ').replace(/\s+/g,' ').trim();
+if(!bank||!product||!issuer||!row.maturity||!Number.isFinite(row.price)||!Number.isFinite(row.net))continue;
+items.push({b:bank,c:'Renda Fixa',p:product,e:issuer,m:row.maturity,r:rate,q:row.quantity,price:row.price,net:row.net,gross:row.gross})
+}
+}
+if(pageText.includes('renda variavel')){
+const categoryLines=lines.filter(line=>line.items.some(item=>item.x<120&&/^(ações|fundos imobiliários)$/i.test(item.text)));
+for(const line of lines){
+const symbol=line.items.find(item=>item.x<120&&/^[A-Z0-9]{4,10}$/.test(item.text));
+const updateItem=line.items.find(item=>item.x>=500&&datePattern.test(item.text));
+if(!symbol||!updateItem)continue;
+const valueAt=(low,high)=>{
+const value=line.items.find(item=>item.x>=low&&item.x<high&&numericPattern.test(item.text));
+return value?pdfNumber(value.text):NaN};
+const quantity=valueAt(200,300),price=valueAt(330,410),gross=valueAt(420,500);
+const nearestCategory=categoryLines.filter(category=>category.y>line.y).sort((a,b)=>a.y-b.y)[0];
+const category=nearestCategory?.items.find(item=>item.x<120&&/^(ações|fundos imobiliários)$/i.test(item.text))?.text;
+if(!bank||!category||!Number.isFinite(quantity)||quantity<=0||!Number.isFinite(price)||!Number.isFinite(gross))continue;
+items.push({b:bank,c:plainText(category)==='acoes'?'Renda Variável - Ações':'Fundos Imobiliários',p:category,e:symbol.text,m:'',r:'',q:quantity,price,net:gross,gross})
+}
+}
+if(pageText.includes('previdencia')&&pageText.includes('vgbl')){
+const row=lines.find(line=>line.items.some(item=>item.x<120&&/^\d{6,}$/.test(item.text))&&line.items.some(item=>item.x>=490&&numericPattern.test(item.text)));
+const code=row?.items.find(item=>item.x<120&&/^\d{6,}$/.test(item.text))?.text;
+const grossItem=row?.items.find(item=>item.x>=490&&numericPattern.test(item.text));
+const gross=pdfNumber(grossItem?.text);
+if(bank&&code&&Number.isFinite(gross)&&gross>0)items.push({b:bank,c:'Previdência',p:'VGBL',e:code,m:'',r:'',q:1,price:gross,net:gross,gross})
+}
+}
+}finally{await doc.destroy()}
+if(!date||!items.length)throw new Error(`${file.name}: não encontrei posições de investimento no formato esperado do relatório consolidado BTG`);
+return{d:date,items}
+}
+
+function renderFixedIncome(){
+const snapshots=[...FIXED].sort((a,b)=>a.d.localeCompare(b.d));
+const selected=snapshots.find(snapshot=>snapshot.d===fixedSelected)||snapshots[snapshots.length-1];
+if(!selected){
+$('#fixedView').innerHTML='<p class="sub">Nenhum histórico importado. Envie PDFs mensais; cada relatório adiciona ou atualiza o retrato da data indicada no documento.</p>';
+return}
+fixedSelected=selected.d;
+const months=new Map();
+snapshots.forEach(snapshot=>{
+const key=snapshot.d.slice(0,7),current=months.get(key);
+if(!current||current.d<snapshot.d)months.set(key,snapshot)});
+const history=[...months.values()].sort((a,b)=>a.d.localeCompare(b.d));
+const totals=history.map(snapshot=>sum(snapshot.items,item=>item.gross)),max=Math.max(1,...totals);
+const chart=history.map((snapshot,index)=>{
+const total=totals[index],date=new Date(`${snapshot.d}T12:00:00Z`);
+const label=new Intl.DateTimeFormat('pt-BR',{month:'short',year:'2-digit',timeZone:'UTC'}).format(date);
+return `<div class="fi-col" title="${snapshot.d.split('-').reverse().join('/')} — ${R(total)}"><span class="fi-bar" style="height:${total/max*100}%"></span><span class="fi-label">${esc(label)}</span></div>`}).join('');
+const gross=sum(selected.items,item=>item.gross),net=sum(selected.items,item=>item.net);
+const rows=[...selected.items].sort((a,b)=>b.gross-a.gross).map(item=>`<tr><td>${esc(item.c||'Renda Fixa')}</td><td>${esc(item.b)}</td><td>${esc(item.p)}</td><td title="${esc(item.e)}">${esc(item.e)}</td><td>${item.m?item.m.split('-').reverse().join('/'):'–'}</td><td>${esc(item.r||'–')}</td><td class="n">${R(item.net)}</td><td class="n">${R(item.gross)}</td></tr>`).join('');
+$('#fixedView').innerHTML=`<div class="fi-controls"><label for="fixedDate">Data do relatório</label><select id="fixedDate">${snapshots.map(snapshot=>`<option value="${snapshot.d}" ${snapshot.d===selected.d?'selected':''}>${snapshot.d.split('-').reverse().join('/')}</option>`).join('')}</select><span>${plural(snapshots.length,'relatório guardado','relatórios guardados')}</span></div>
+<div class="fi-summary"><strong>${R(gross)}</strong><span>saldo bruto em ${selected.d.split('-').reverse().join('/')}</span><span>Saldo líquido: ${R(net)} · ${plural(selected.items.length,'posição','posições')}</span></div>
+<h3>Evolução do saldo bruto por mês</h3><div class="fi-chart">${chart}</div>
+<h3>Posições em ${selected.d.split('-').reverse().join('/')}</h3><div class="tw"><table><thead><tr><th>Categoria</th><th>Instituição</th><th>Produto</th><th>Emissor/ativo</th><th>Vencimento</th><th>Taxa</th><th class="n">Saldo líquido</th><th class="n">Saldo bruto</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+$('#fixedDate').onchange=event=>{fixedSelected=event.target.value;renderFixedIncome()}
+}
+
+async function importFixedIncomeFiles(files){
+if(!files.length)return;
+if(files.length>60)throw new Error('Selecione no máximo 60 PDFs por importação');
+$('#fixedStatus').textContent=`Lendo ${files.length} ${plural(files.length,'PDF','PDFs')} no navegador...`;
+const parsed=[];
+for(const file of files)parsed.push(await readFixedIncomePdf(file));
+const byDate=new Map();
+parsed.forEach(snapshot=>byDate.set(snapshot.d,snapshot));
+const snapshots=[...byDate.values()];
+const response=await fetch('/api/fixed-income',{method:'POST',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify(snapshots)});
+const result=await response.json();
+if(!response.ok||!result.ok)throw new Error(result.error||`falha ao salvar no servidor (HTTP ${response.status})`);
+FIXED=result.data||FIXED;
+const latest=snapshots.reduce((current,snapshot)=>snapshot.d>current.d?snapshot:current);
+fixedSelected=latest.d;
+cur=latest.d.slice(0,4);
+renderFixedIncome();
+render();
+$('#fixedStatus').textContent=`${plural(snapshots.length,'relatório importado','relatórios importados')}. O PDF foi lido no navegador; somente as posições extraídas foram salvas no servidor.`
+}
+
+async function loadFixedIncome(){
+try{
+const response=await fetch('/api/fixed-income',{cache:'no-store'}),result=await response.json();
+if(!response.ok||!result.ok)throw new Error(result.error||`falha ao carregar o histórico (HTTP ${response.status})`);
+FIXED=result.data||[];
+if(!RAW.length&&cur==='Geral'&&FIXED.length)cur=FIXED.map(snapshot=>snapshot.d.slice(0,4)).sort().pop();
+renderFixedIncome();
+render()
+}catch(err){
+$('#fixedStatus').textContent='Não foi possível carregar o histórico de renda fixa: '+err.message;
+$('#fixedView').innerHTML=''
+}
+}
 
 async function readFile(f){
 if(typeof XLSX==='undefined')throw new Error('a biblioteca de leitura não carregou');
@@ -96,6 +295,8 @@ out.push({d,c:r[ix('categoria')]||'Outros',a:r[ix('código ativo')]||'?',t:Strin
 return out.sort((a,b)=>a.d.localeCompare(b.d))}
 
 $('#tabs').onclick=e=>{const b=e.target.closest('button');if(b){cur=b.dataset.t;render()}};
+$('#showFixedIncomeEstimates').checked=SHOW_FIXED_INCOME_ESTIMATES;
+$('#showFixedIncomeEstimates').onchange=e=>{SHOW_FIXED_INCOME_ESTIMATES=e.target.checked;try{localStorage.setItem('showFixedIncomeEstimates',SHOW_FIXED_INCOME_ESTIMATES?'1':'0')}catch(_){}render()};
 $('#fx').value=String(fx).replace('.',',');
 $('#fx').oninput=e=>{const v=parseFloat(e.target.value.replace(',','.'));if(v>0){fx=v;try{localStorage.setItem('fx',v)}catch(_){}render()}};
 $('#file').onchange=async e=>{const f=e.target.files[0];if(!f)return;
@@ -107,6 +308,12 @@ const result=await response.json();
 if(!response.ok||!result.ok)throw new Error(result.error||`falha ao salvar no servidor (HTTP ${response.status})`);
 RAW=ops;SRC='servidor';cur='';render();
 }catch(err){$('#foot').textContent='Não foi possível importar '+f.name+': '+err.message}
+e.target.value=''};
+$('#pdfFile').onchange=async e=>{
+const files=[...e.target.files];
+if(!files.length)return;
+try{await importFixedIncomeFiles(files)}
+catch(err){$('#fixedStatus').textContent='Não foi possível importar os PDFs: '+err.message}
 e.target.value=''};
 async function loadInvestments(){
 try{
@@ -120,6 +327,7 @@ $('#view').innerHTML='<p class="sub">Verifique a conexão com o servidor e tente
 }
 }
 loadInvestments();
+loadFixedIncome();
 </script>
 </body>
 </html>
