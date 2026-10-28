@@ -8,7 +8,7 @@
 </head>
 <body>
 <div class="wrap">
-
+8
   <header>
     <h1>Financial Dashboard</h1>
     <div class="header-actions">
@@ -105,6 +105,32 @@
         <p class="deck">Consulte quanto foi recebido em cada ganho extra por mês.</p>
         <div class="chart-box">
           <table id="ganhosExtrasTable"></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-title">Consolidado Anual</div>
+    <h2>Gastos e investimentos por categoria</h2>
+    <p class="deck">Total acumulado no ano selecionado. Compare as categorias para identificar os maiores gastos e acompanhar a redução mês a mês no gráfico de fluxo.</p>
+    <div class="grid-2">
+      <div>
+        <h2>Contas Fixas · Ano</h2>
+        <div class="chart-box">
+          <div id="annualFixedChart"></div>
+        </div>
+      </div>
+      <div>
+        <h2>Contas Extras · Ano</h2>
+        <div class="chart-box">
+          <div id="annualExtrasChart"></div>
+        </div>
+      </div>
+      <div>
+        <h2>Investimentos · Ano</h2>
+        <div class="chart-box">
+          <div id="annualInvestChart"></div>
         </div>
       </div>
     </div>
@@ -314,7 +340,7 @@ function refreshFromServer() {
 window.addEventListener('focus', () => refreshFromServer());
 
 function renderDashboard() {
-  ['fluxoChart', 'extrasChart', 'investChart', 'categoriaChart', 'carteiraChart', 'saldoChart'].forEach((id) => {
+  ['fluxoChart', 'extrasChart', 'investChart', 'categoriaChart', 'carteiraChart', 'saldoChart', 'annualFixedChart', 'annualExtrasChart', 'annualInvestChart'].forEach((id) => {
     document.getElementById(id).replaceChildren();
   });
 
@@ -511,18 +537,23 @@ function renderDashboard() {
   }
 
   function hBarChart(container, labels, values, color, balancedRows = false) {
+    if (!labels.length || !values.length) {
+      container.textContent = 'Nenhum item registrado no período.';
+      return;
+    }
+
     const W = 500;
-    const H = 280;
+    const H = Math.max(140, labels.length * 36 + 20);
     const padL = 130;
     const padR = 60;
     const padT = 10;
     const padB = 10;
     const plotW = W - padL - padR;
     const plotH = H - padT - padB;
-    const maxVal = Math.max(...values) * 1.1;
-    const slot = balancedRows ? 42 : plotH / labels.length;
-    const barH = balancedRows ? 23 : slot * 0.55;
-    const rowsOffset = balancedRows ? Math.max((plotH - (slot * labels.length)) / 2, 0) : 0;
+    const maxVal = Math.max(...values) * 1.1 || 1;
+    const slot = plotH / labels.length;
+    const barH = Math.min(balancedRows ? 23 : slot * 0.55, slot * 0.75);
+    const rowsOffset = 0;
     const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'xMidYMid meet' });
 
     labels.forEach((lab, index) => {
@@ -647,6 +678,23 @@ function renderDashboard() {
     });
   }
 
+  function aggregateAnnualItems(months, itemsKey, valueKey) {
+    const totals = new Map();
+    months.forEach((month) => {
+      const items = Array.isArray(month[itemsKey]) ? month[itemsKey] : [];
+      items.forEach((item) => {
+        const name = String(item.item || '').trim();
+        const value = Number(item[valueKey] || 0);
+        if (name && value !== 0) {
+          totals.set(name, (totals.get(name) || 0) + value);
+        }
+      });
+    });
+
+    return Array.from(totals, ([name, value]) => ({ name, value }))
+      .sort((first, second) => second.value - first.value);
+  }
+
   const sourceMonths = Array.isArray(data.months) ? data.months : [];
   const availableYears = [...new Set(sourceMonths.map(getYearFromMonth).filter(Boolean))].sort((a, b) => a - b);
   const currentYear = new Date().getFullYear();
@@ -691,6 +739,12 @@ function renderDashboard() {
     .join('');
 
   groupedBarChart(document.getElementById('fluxoChart'), selectedMonths.map((month) => month.label), selectedMonths.map((month) => month.receita + month.ganho_extra), selectedMonths.map((month) => month.despesas), TEAL, RUST);
+  const annualFixed = aggregateAnnualItems(selectedMonths, 'categorias', 'total');
+  hBarChart(document.getElementById('annualFixedChart'), annualFixed.map((item) => item.name), annualFixed.map((item) => item.value), GOLD);
+  const annualExtras = aggregateAnnualItems(selectedMonths, 'extras_itens', 'valor');
+  hBarChart(document.getElementById('annualExtrasChart'), annualExtras.map((item) => item.name), annualExtras.map((item) => item.value), RUST);
+  const annualInvestments = aggregateAnnualItems(selectedMonths, 'investimentos_itens', 'valor');
+  hBarChart(document.getElementById('annualInvestChart'), annualInvestments.map((item) => item.name), annualInvestments.map((item) => item.value), TEAL);
   lineChart(document.getElementById('saldoChart'), selectedMonths.map((month) => month.label), [
     { name: 'Saldo geral', data: selectedMonths.map((month) => Number(month.saldo || 0)), color: TEAL },
     { name: 'Saldo anterior', data: selectedMonths.map((month) => Number(month.saldo_anterior || 0)), color: MUTED, dash: true },
