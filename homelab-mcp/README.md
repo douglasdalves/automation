@@ -14,7 +14,7 @@ Crie o arquivo `../.env` na raiz de `automation`:
 
 ```env
 MCP_NAME=name
-MCP_HOST=host
+MCP_HOST=127.0.0.1
 MCP_PORT=port
 ENVIRONMENT=ambiente
 FINANCE_DASHBOARD_DATA_URL=http://127.0.0.1:8085/api/data
@@ -57,6 +57,12 @@ O endpoint MCP fica disponivel em:
 ```text
 http://localhost:5080/mcp
 ```
+
+Quando o bot e o MCP rodam no mesmo host, mantenha `MCP_HOST=127.0.0.1` e
+configure `MCP_URL=http://127.0.0.1:5080/mcp` no bot. Assim, o MCP aceita
+conexoes locais, sem escutar diretamente nas interfaces da rede. Se o bot
+rodar em outro host, configure um endereco de rede para o MCP e restrinja o
+acesso na firewall ao host do bot.
 
 ## Ferramentas
 

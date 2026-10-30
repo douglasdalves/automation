@@ -11,7 +11,7 @@ load_dotenv(project_root / ".env.token", override=True)
 
 class Config:
     MCP_NAME = os.getenv("MCP_NAME", "Health Check")
-    MCP_HOST = os.getenv("MCP_HOST", "0.0.0.0")
+    MCP_HOST = os.getenv("MCP_HOST", "127.0.0.1")
     MCP_PORT = int(os.getenv("MCP_PORT", "5080"))
     ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
     FINANCE_DASHBOARD_DATA_URL = os.getenv(
