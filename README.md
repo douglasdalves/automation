@@ -114,6 +114,9 @@ Configure os arquivos de ambiente usados pelo bot e pelo MCP antes de iniciar os
 - `AI_API_URL`, `AI_API_KEY` e `AI_MODEL`
 
 Os módulos de configuração estão em [homelab-telegram-bot/config.py](homelab-telegram-bot/config.py) e [homelab-mcp/app/config.py](homelab-mcp/app/config.py). Não publique tokens ou chaves em documentação ou no Git.
+Quando bot e MCP estiverem no mesmo host, use `MCP_HOST=127.0.0.1` e
+`MCP_URL=http://127.0.0.1:5080/mcp`. Para hosts separados, exponha o MCP
+somente na interface necessária e restrinja o acesso na firewall ao host do bot.
 
 <mark style="background-color: #e8f5e9; color: #1b5e20;">As ações privilegiadas dependem das permissões do host. Mantenha os serviços, containers e caminhos autorizados restritos às configurações necessárias.</mark>
 
