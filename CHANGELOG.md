@@ -31,6 +31,8 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 - Compose de dashboard financeiro em [dc-local/dc-finan-dashboard.yaml](dc-local/dc-finan-dashboard.yaml)
 
 ### Ajustado
+- Validação na inicialização das configurações obrigatórias do bot e dos valores inteiros do MCP, com mensagens de erro indicando a variável inválida
+- CI com matriz Python 3.8 e 3.11 para validar sintaxe, lint e tipos
 - MCP passa a escutar apenas em `127.0.0.1` por padrão, com orientações para acesso local ou restrito pela rede
 - Comando `/conta_fixa` passa a gravar o mês com a inicial maiúscula, como `Nov/26`
 - Carregamento de segredos do arquivo privado `.env.token` pelo servidor MCP

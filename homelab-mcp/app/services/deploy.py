@@ -6,15 +6,11 @@ import threading
 from pathlib import Path
 from typing import Any
 
-from dotenv import load_dotenv
-
+from app.config import Config
 from app.services.docker import manage_container
 
-env_path = Path(__file__).parent.parent.parent.parent / ".env"
-load_dotenv(env_path)
-
 _deploy_lock = threading.Lock()
-_COMMAND_TIMEOUT = int(os.getenv("DEPLOY_COMMAND_TIMEOUT", "300"))
+_COMMAND_TIMEOUT = Config.DEPLOY_COMMAND_TIMEOUT
 _MAX_OUTPUT_LENGTH = 2000
 _DEFAULT_SERVICES = ("homelab-telegram-bot", "homelab-mcp")
 _FINANCE_CONTAINERS = ("dc-finance-api", "dc-finance-dash")
