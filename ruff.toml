@@ -1,1 +1,5 @@
 target-version = "py38"
+
+[lint.per-file-ignores]
+# PEP 604 unions are unsupported by the declared Python 3.8 minimum.
+"homelab-mcp/app/config.py" = ["UP045"]

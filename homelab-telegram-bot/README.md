@@ -4,11 +4,15 @@ Bot Telegram para consultar a saude do homelab, executar deploy e reiniciar serv
 
 ## Requisitos
 
-- Python 3
+- Python 3.8+
 - Um bot criado no Telegram pelo BotFather
 - Homelab MCP ativo e acessivel
 
 ## Configuracao
+
+Na inicialização, o bot exige `TELEGRAM_BOT_TOKEN` e um
+`TELEGRAM_ALLOWED_USER_ID` inteiro positivo. Se algum valor estiver ausente ou
+inválido, a mensagem de erro identifica a variável a corrigir.
 
 Na raiz de `automation`, crie ou preencha `.env` com as configuracoes compartilhadas:
 

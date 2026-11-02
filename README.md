@@ -11,6 +11,7 @@
 | **Interface** | Bot do Telegram com comandos e suporte a linguagem natural por IA. |
 | **Camada de execução** | Servidor MCP via HTTP, integrado a serviços do sistema, Docker e scripts locais. |
 | **Ambiente principal** | Raspberry Pi / host local do homelab. |
+| **Python** | 3.8+; a CI verifica sintaxe, lint e tipos em Python 3.8 e 3.11. |
 | **Áreas cobertas** | Saúde do sistema, Docker, deploy, sincronização de configurações e finanças. |
 | **Controle de acesso** | ID permitido configurado em `TELEGRAM_ALLOWED_USER_ID`. |
 
@@ -114,6 +115,8 @@ Configure os arquivos de ambiente usados pelo bot e pelo MCP antes de iniciar os
 - `AI_API_URL`, `AI_API_KEY` e `AI_MODEL`
 
 Os módulos de configuração estão em [homelab-telegram-bot/config.py](homelab-telegram-bot/config.py) e [homelab-mcp/app/config.py](homelab-mcp/app/config.py). Não publique tokens ou chaves em documentação ou no Git.
+As configurações obrigatórias do bot e os valores inteiros do MCP são validados
+na inicialização; erros informam qual variável deve ser corrigida.
 Quando bot e MCP estiverem no mesmo host, use `MCP_HOST=127.0.0.1` e
 `MCP_URL=http://127.0.0.1:5080/mcp`. Para hosts separados, exponha o MCP
 somente na interface necessária e restrinja o acesso na firewall ao host do bot.

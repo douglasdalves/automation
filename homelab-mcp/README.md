@@ -4,11 +4,16 @@ Servidor MCP do homelab. Ele disponibiliza ferramentas de saude, Docker, deploy 
 
 ## Requisitos
 
-- Python 3
+- Python 3.8+
 - Acesso ao Docker, se as ferramentas Docker forem utilizadas
 - `sudo` sem prompt de senha para os comandos de deploy e restart
 
 ## Configuracao
+
+O MCP valida na inicialização as variáveis inteiras `MCP_PORT`,
+`DEPLOY_COMMAND_TIMEOUT` e `FINANCE_BACKUP_COMMAND_TIMEOUT`. A porta deve estar
+entre 1 e 65535; os tempos limite devem ser inteiros positivos. Um valor inválido
+gera uma mensagem indicando a variável que precisa ser corrigida.
 
 Crie o arquivo `../.env` na raiz de `automation`:
 

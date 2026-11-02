@@ -10,19 +10,25 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.8", "3.11"]
 
     steps:
     # 1. Baixa o código do seu repositório para o servidor do GitHub
     - name: Checkout do código
       uses: actions/checkout@v4
 
-    # 2. Configura o ambiente Python atualizado
+    # 2. Verifica sintaxe em todas as versões declaradas como suportadas
     - name: Configurar Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.11" # Versão comum e estável no Raspberry Pi
+        python-version: ${{ matrix.python-version }}
 
-    # 3. Instala e roda o Ruff (Linter extremamente rápido)
+    - name: Verificar sintaxe Python
+      run: python -m compileall -q homelab-mcp homelab-telegram-bot configs-apps/app-finance-sync
+
     - name: Rodar Linter (Ruff)
       run: |
         pip install ruff
@@ -32,5 +38,5 @@ jobs:
     # 4. Instala e roda o mypy (Verificador de tipos)
     - name: Run mypy
       run: |
-        pip install mypy
+        pip install mypy==1.14.1
         mypy . --ignore-missing-imports
