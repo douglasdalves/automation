@@ -100,4 +100,10 @@ journalctl -u homelab-telegram-bot -f
 
 ## Solucao de problemas
 
-Verifique se o MCP responde em `MCP_URL`, se o token esta em `.env.token` e se o servico tem permissao para executar os comandos `sudo systemctl` necessarios.
+Se um comando informar que não conseguiu conectar ao MCP, o backup não foi iniciado.
+Verifique se o serviço `homelab-mcp` está ativo (`sudo systemctl status homelab-mcp`)
+e se `MCP_URL` aponta para o host e a porta onde ele está escutando. Quando bot e MCP
+estão no mesmo host, use `http://127.0.0.1:5080/mcp`.
+
+Verifique também se o token está em `.env.token` e se o serviço tem permissão para
+executar os comandos `sudo systemctl` necessários.
