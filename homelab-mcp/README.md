@@ -88,6 +88,8 @@ O `/diagnostico` mostra a presença de configurações sem expor seus valores e 
 o último arquivo `finance-*.db.gz` no diretório `FINANCE_BACKUP_DIR`. Configure
 `FINANCE_BACKUP_DIR` com o mesmo valor de `BACKUP_DIR` em
 `/etc/finance-backup.conf`. Um backup com mais de 36 horas é sinalizado como antigo.
+O `/finance_bkp` mostra o remote e o caminho do arquivo enviado, e só confirma sucesso
+depois de verificar o arquivo usando a configuração do `rclone` carregada pelo script.
 O estado dos serviços é consultado sem reiniciá-los; containers parados são listados
 como aviso para que possam ser avaliados conforme o uso esperado.
 

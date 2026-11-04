@@ -61,6 +61,14 @@ if [ -f "$CONFIG_FILE" ]; then
   source "$CONFIG_FILE"
 fi
 
+if [ -n "${RCLONE_CONFIG:-}" ]; then
+  if [ ! -r "$RCLONE_CONFIG" ]; then
+    echo "Erro: arquivo de configuracao do rclone nao encontrado ou sem permissao: $RCLONE_CONFIG" >&2
+    exit 1
+  fi
+  export RCLONE_CONFIG
+fi
+
 CONTAINER_NAME="${CONTAINER_NAME:-dc-finance-api}"
 CONTAINER_DATABASE="${CONTAINER_DATABASE:-/data/finance.db}"
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/finance}"
@@ -79,6 +87,13 @@ for command in docker gzip rclone; do
     exit 1
   fi
 done
+
+RCLONE_CONFIG_FILE=$(rclone config file | tail -n 1)
+echo "Configuracao do rclone: $RCLONE_CONFIG_FILE"
+if ! rclone listremotes | grep -Fxq "${RCLONE_REMOTE}:"; then
+  echo "Erro: remote rclone nao configurado: $RCLONE_REMOTE" >&2
+  exit 1
+fi
 
 if ! docker inspect --format '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null | grep -qx true; then
   echo "Erro: container nao esta em execucao: $CONTAINER_NAME" >&2
@@ -117,7 +132,9 @@ fi
 
 gzip -9 "$LOCAL_SNAPSHOT"
 echo "Enviando backup para $REMOTE_TARGET..."
-rclone copyto "$ARCHIVE" "$REMOTE_TARGET/$(basename "$ARCHIVE")" --no-traverse
+REMOTE_FILE="$REMOTE_TARGET/$(basename "$ARCHIVE")"
+rclone copyto "$ARCHIVE" "$REMOTE_FILE" --no-traverse
+rclone lsjson --stat "$REMOTE_FILE" >/dev/null
 
 if [[ "$RETENTION_DAYS" =~ ^[0-9]+$ ]]; then
   rclone delete "$REMOTE_TARGET" --min-age "${RETENTION_DAYS}d" --include 'finance-*.db.gz' --no-traverse
@@ -125,4 +142,4 @@ else
   echo "Aviso: RETENTION_DAYS invalido; limpeza remota ignorada" >&2
 fi
 
-echo "Backup financeiro concluido: $(basename "$ARCHIVE")"
+echo "Backup financeiro confirmado no destino remoto: $REMOTE_FILE"

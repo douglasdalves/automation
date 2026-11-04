@@ -49,11 +49,17 @@ arquivo, compacta e envia para OneDrive ou Google Drive usando `rclone`.
 
 Antes de ativar o cron:
 
-1. Configure o remote no `rclone`.
+1. Configure o remote no `rclone`. O MCP executa o script como `root`, então ele
+   usa `/root/.config/rclone/rclone.conf` por padrão. Se o remote estiver em outro
+   arquivo, defina `RCLONE_CONFIG` em `/etc/finance-backup.conf` para o caminho
+   correto e garanta que o `root` possa lê-lo. No cron, o usuário que executa a
+   tarefa também precisa ter acesso ao arquivo configurado.
 
 2. Copie `finance.conf.example` para `/etc/finance-backup.conf` e ajuste `RCLONE_REMOTE`.
 3. Instale o script em `/usr/local/bin/finance-backup.sh` com permissao de execucao.
 4. Descomente a linha correspondente em `raspberry-scripts/cron.config`.
 
-O backup remoto usa os arquivos `.db.gz`; os arquivos `finance.db-wal` e `finance.db-shm`
-nao precisam ser copiados separadamente.
+O backup remoto usa os arquivos `.db.gz` em `<RCLONE_REMOTE>:homelab-backups/finance`
+(por padrão). O script informa qual arquivo de configuração do rclone está usando
+e só retorna sucesso após confirmar que o arquivo está visível nesse destino remoto.
+Os arquivos `finance.db-wal` e `finance.db-shm` nao precisam ser copiados separadamente.
