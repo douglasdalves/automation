@@ -31,6 +31,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 - Compose de dashboard financeiro em [dc-local/dc-finan-dashboard.yaml](dc-local/dc-finan-dashboard.yaml)
 
 ### Ajustado
+- Backup financeiro informa qual configuração do rclone usa e verifica o arquivo no destino remoto antes de retornar sucesso
 - Validação na inicialização das configurações obrigatórias do bot e dos valores inteiros do MCP, com mensagens de erro indicando a variável inválida
 - CI com matriz Python 3.8 e 3.11 para validar sintaxe, lint e tipos
 - MCP passa a escutar apenas em `127.0.0.1` por padrão, com orientações para acesso local ou restrito pela rede
@@ -60,6 +61,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 - Exclusão das pastas de testes e dos artefatos de cache do projeto, sem impacto na execução principal do homelab
 
 ### Corrigido
+- Comandos do bot mostram instruções quando não conseguem conectar ao MCP, em vez de exibir um erro de conexão vazio
 - Painel e respostas financeiras do bot mantêm o mês atual (ou o registro anterior) como referência mesmo com meses futuros cadastrados
 - Deploy do homelab atualiza a branch atual de `origin` mesmo quando o checkout não tem upstream configurado
 - Preservação de receita e saldo anterior ao cadastrar itens pelo dashboard de inserção

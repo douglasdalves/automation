@@ -4,6 +4,10 @@
 # Nome do remote configurado no rclone, por exemplo: "onedrive" ou "gdrive"
 RCLONE_REMOTE="googledrive"
 
+# Opcional: caminho do rclone.conf se o script executado como root nao deve usar
+# a configuracao padrao de /root/.config/rclone/rclone.conf.
+# RCLONE_CONFIG="/etc/rclone/rclone.conf"
+
 # Pasta dentro do remote onde os backups do financeiro serão enviados
 RCLONE_PATH="homelab-backups/finance"
 
