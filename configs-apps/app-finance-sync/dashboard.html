@@ -9,12 +9,12 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>Financial Dashboard</h1>
+    <h1>Painel financeiro</h1>
     <div class="header-actions">
       <label class="year-filter" for="yearFilter">Ano
         <select id="yearFilter" aria-label="Selecionar ano"></select>
       </label>
-      <a class="action-link" href="./dashboard-insert.html">Open Registration</a>
+      <a class="action-link" href="./dashboard-insert.html">Novo lançamento</a>
       <a class="action-link" href="./cart-invest.html">Carteira de Investimentos</a>
       <div class="period" id="dashboardPeriod"></div>
     </div>
@@ -28,8 +28,8 @@
     <p class="deck">Entradas totais do mês contra as despesas, mês a mês.</p>
     <div class="chart-box">
       <div class="legend">
-        <span><i style="background:#3E7C74"></i>Entradas</span>
-        <span><i style="background:#A8462F"></i>Despesas</span>
+        <span><i style="background:#16877D"></i>Entradas</span>
+        <span><i style="background:#D45F55"></i>Despesas</span>
       </div>
       <div id="fluxoChart"></div>
     </div>
@@ -47,7 +47,7 @@
       </div>
       <div>
         <h2>Contas Extras</h2>
-        <p class="deck">Gastos não previstos no mês, agrupados por item noperíodo.</p>
+        <p class="deck">Gastos não previstos no mês, agrupados por item no período.</p>
         <div class="chart-box">
           <div id="extrasChart"></div>
         </div>
@@ -113,7 +113,7 @@
     <div class="section-title">Consolidado Anual</div>
     <h2>Gastos e investimentos por categoria</h2>
     <p class="deck">Total acumulado no ano selecionado. Compare as categorias para identificar os maiores gastos e acompanhar a redução mês a mês no gráfico de fluxo.</p>
-    <div class="grid-2">
+    <div class="grid-3">
       <div>
         <h2>Contas Fixas · Ano</h2>
         <div class="chart-box">
@@ -141,9 +141,9 @@
     <p class="deck">Todos os valores registrados, mês a mês.</p>
     <div class="chart-box" style="margin-bottom:16px;">
       <div class="legend">
-        <span><i style="background:#3E7C74"></i>Saldo geral</span>
-        <span><i style="background:#7A7266"></i>Saldo anterior</span>
-        <span><i style="background:#C08A2E"></i>Investimentos</span>
+        <span><i style="background:#16877D"></i>Saldo geral</span>
+        <span><i style="background:#718096"></i>Saldo anterior</span>
+        <span><i style="background:#D99A2B"></i>Investimentos</span>
       </div>
       <div id="saldoChart" aria-label="Evolução mensal do saldo geral, do saldo anterior e dos investimentos"></div>
     </div>
@@ -313,7 +313,7 @@ function loadDashboardData() {
     .catch((error) => {
       console.error(error);
       document.getElementById('kpiRow').innerHTML = '<div class="kpi"><div class="label">Erro</div><div class="value down">Dados não carregados</div></div>';
-      document.getElementById('fluxoChart').innerHTML = '<p style="font-family:Arial,Helvetica,sans-serif;color:#A8462F;margin:0;">Não foi possível carregar os dados do dashboard.</p>';
+      document.getElementById('fluxoChart').innerHTML = '<p style="font-family:Arial,Helvetica,sans-serif;color:#D45F55;margin:0;">Não foi possível carregar os dados do dashboard.</p>';
     });
 }
 
@@ -343,12 +343,12 @@ function renderDashboard() {
     document.getElementById(id).replaceChildren();
   });
 
-  const INK = '#1E2A38';
-  const TEAL = '#3E7C74';
-  const GOLD = '#C08A2E';
-  const RUST = '#A8462F';
-  const MUTED = '#7A7266';
-  const LINE = '#D6CFC0';
+  const INK = '#172B3A';
+  const TEAL = '#16877D';
+  const GOLD = '#D99A2B';
+  const RUST = '#D45F55';
+  const MUTED = '#718096';
+  const LINE = '#E2E8F0';
   const NS = 'http://www.w3.org/2000/svg';
 
   function brl(value) {
