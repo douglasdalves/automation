@@ -44,6 +44,19 @@ header .period{
   padding:8px 12px;
 }
 .header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+body.demo-mode .header-actions .action-link{display:none;}
+.demo-banner{
+  margin:-8px 0 24px;
+  padding:16px 20px;
+  border:2px solid #D45F55;
+  border-radius:14px;
+  background:#FFF1EF;
+  color:#8F302A;
+  font-size:0.95rem;
+  font-weight:800;
+  letter-spacing:.02em;
+  text-align:center;
+}
 .year-filter{
   display:flex;
   align-items:center;

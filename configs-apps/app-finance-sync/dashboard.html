@@ -20,6 +20,10 @@
     </div>
   </header>
 
+  <div class="demo-banner" id="demoBanner" role="status" hidden>
+    DEMONSTRAÇÃO — DADOS FICTÍCIOS. Nenhum dado financeiro real é carregado neste modo.
+  </div>
+
   <div class="kpis" id="kpiRow"></div>
 
   <section>
@@ -153,7 +157,7 @@
   </section>
 
   <footer>
-    <p>Dados do dashboard são atualizados automaticamente a cada 5 minutos, ou ao voltar para a aba do navegador.</p>
+    <p id="footerMessage">Dados do dashboard são atualizados automaticamente a cada 5 minutos, ou ao voltar para a aba do navegador.</p>
   </footer>
 
 </div>
@@ -164,8 +168,60 @@
 const MONTH_NAMES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 const CURRENT_MONTH_LABEL = `${MONTH_NAMES[new Date().getMonth()]}/${String(new Date().getFullYear()).slice(-2)}`;
 const RESET_MONTH = CURRENT_MONTH_LABEL;
+const IS_DEMO_MODE = new URLSearchParams(window.location.search).get('demo') === '1';
 let data = { labels: [], months: [], categorias: [], investimentos_recentes: { mes: '', itens: [] } };
 let selectedDashboardYear = null;
+
+function buildDemoPayload() {
+  const demoYear = new Date().getFullYear();
+  const demoRows = [
+    [8200, 2200, 480, 1050, 420, 300, 1500],
+    [8200, 2200, 510, 980, 260, 0, 1800],
+    [8450, 2200, 470, 1120, 680, 450, 1600],
+    [8450, 2200, 520, 1080, 340, 0, 2000],
+    [8450, 2200, 490, 1150, 920, 600, 1700],
+    [8700, 2200, 530, 1030, 380, 250, 2200],
+    [8700, 2200, 500, 1180, 540, 0, 1900],
+    [8700, 2200, 550, 1090, 1250, 500, 1800],
+    [8950, 2200, 510, 1160, 430, 0, 2400],
+    [8950, 2200, 560, 1210, 760, 350, 2100],
+    [8950, 2200, 530, 1140, 490, 0, 2500],
+    [9200, 2200, 580, 1250, 980, 700, 2300],
+  ];
+  const months = demoRows.slice(0, new Date().getMonth() + 1).map((row, index) => {
+    const [receita, moradia, contasCasa, alimentacao, extras, ganhoExtra, investimentos] = row;
+    const label = `${MONTH_NAMES[index]}/${String(demoYear).slice(-2)}`;
+
+    return {
+      label,
+      receita,
+      ganho_extra: ganhoExtra,
+      ganho_extra_itens: ganhoExtra ? [{ item: 'Projeto fictício', valor: ganhoExtra }] : [],
+      contas_mensais: moradia + contasCasa + alimentacao,
+      extras,
+      extras_itens: extras ? [{ item: 'Lazer e compras', valor: extras }] : [],
+      categorias: [
+        { item: 'Moradia', total: moradia },
+        { item: 'Contas da casa', total: contasCasa },
+        { item: 'Alimentação', total: alimentacao },
+      ],
+      investimentos_itens: [
+        { item: 'Tesouro Selic', valor: Math.round(investimentos * 0.6) },
+        { item: 'ETF global', valor: investimentos - Math.round(investimentos * 0.6) },
+      ],
+    };
+  });
+
+  return {
+    labels: months.map((month) => month.label),
+    months,
+    categorias: months.flatMap((month) => month.categorias),
+    investimentos_recentes: {
+      mes: months[months.length - 1].label,
+      itens: months[months.length - 1].investimentos_itens,
+    },
+  };
+}
 
 function buildFreshBaseline() {
   return {
@@ -299,6 +355,15 @@ function ensureFreshStart(payload) {
 }
 
 function loadDashboardData() {
+  if (IS_DEMO_MODE) {
+    data = ensureFreshStart(buildDemoPayload());
+    document.body.classList.add('demo-mode');
+    document.getElementById('demoBanner').hidden = false;
+    document.getElementById('footerMessage').textContent = 'Modo demonstração: dados fictícios carregados localmente; nenhuma atualização ou gravação é feita no servidor.';
+    renderDashboard();
+    return;
+  }
+
   fetch('/api/data')
     .then((response) => {
       if (!response.ok) {
@@ -320,6 +385,10 @@ function loadDashboardData() {
 loadDashboardData();
 
 function refreshFromServer() {
+  if (IS_DEMO_MODE) {
+    return;
+  }
+
   fetch('/api/data')
     .then((response) => {
       if (!response.ok) {
@@ -336,7 +405,9 @@ function refreshFromServer() {
     });
 }
 
-window.addEventListener('focus', () => refreshFromServer());
+if (!IS_DEMO_MODE) {
+  window.addEventListener('focus', () => refreshFromServer());
+}
 
 function renderDashboard() {
   ['fluxoChart', 'extrasChart', 'investChart', 'categoriaChart', 'carteiraChart', 'saldoChart', 'annualFixedChart', 'annualExtrasChart', 'annualInvestChart'].forEach((id) => {
@@ -713,7 +784,7 @@ function renderDashboard() {
   };
 
   document.getElementById('dashboardPeriod').textContent = `Dados do Ano ${selectedDashboardYear}`;
-  document.title = `Painel Financeiro · ${selectedDashboardYear}`;
+  document.title = `${IS_DEMO_MODE ? 'Demonstração' : 'Painel Financeiro'} · ${selectedDashboardYear}`;
 
   const selectedMonths = sourceMonths.filter((month) => getYearFromMonth(month) === selectedDashboardYear);
   const currentMonthIndex = parseMonthIndex(CURRENT_MONTH_LABEL);

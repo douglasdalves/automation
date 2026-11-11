@@ -7,6 +7,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 ## [Unreleased]
 
 ### Adicionado
+- Modo de demonstração do dashboard financeiro com dados fictícios locais e sem acesso à API
 - Gráficos de consolidado anual por categoria para contas fixas, contas extras e investimentos no painel financeiro
 - Importação local de PDFs consolidados do BTG com posições de renda fixa BTG/Nubank e histórico mensal persistente na carteira
 - Inclusão opcional de CDB/RDB do PDF no gráfico e nas métricas anuais, com data estimada pelo vencimento menos dois anos
