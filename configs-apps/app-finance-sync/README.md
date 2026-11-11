@@ -13,6 +13,13 @@ Este diretório reúne o painel financeiro local, a interface de lançamentos e 
 - `investments.json`: operações importadas, salvo localmente e ignorado pelo Git
 - `fixed_income.json`: snapshots de posições importados dos PDFs, salvo localmente e ignorado pelo Git
 
+## Modo demonstração
+
+Para gravar ou testar o painel sem expor informações financeiras reais, acesse
+`http://<servidor>:8085/dashboard.html?demo=1`. Esse modo usa valores fictícios
+definidos no próprio dashboard, exibe um aviso de demonstração e não consulta nem
+grava dados pela API financeira. A URL normal do painel continua usando os dados reais.
+
 ## Persistência
 
 O servidor usa SQLite como fonte principal. No Compose, o banco fica no volume persistente `finance_data`.
