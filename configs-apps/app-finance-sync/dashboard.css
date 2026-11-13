@@ -181,6 +181,7 @@ p.deck{
 }
 svg{width:100%;height:auto;display:block;overflow:visible;}
 svg text{font-family:inherit;}
+#carteiraChart svg{width:60%;margin:0 auto;}
 
 .legend{
   display:flex;
