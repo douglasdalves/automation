@@ -20,141 +20,151 @@
     </div>
   </header>
 
+  <nav class="dashboard-tabs" aria-label="Seções do painel">
+    <button type="button" class="active" aria-controls="monthlyPanel" aria-pressed="true">Visão mensal</button>
+    <button type="button" aria-controls="annualPanel" aria-pressed="false">Consolidado anual</button>
+  </nav>
+
   <div class="demo-banner" id="demoBanner" role="status" hidden>
     DEMONSTRAÇÃO — DADOS FICTÍCIOS. Nenhum dado financeiro real é carregado neste modo.
   </div>
 
-  <div class="kpis" id="kpiRow"></div>
+  <div id="monthlyPanel">
+    <div class="kpis" id="kpiRow"></div>
 
-  <section>
-    <div class="section-title">Fluxo Mensal</div>
-    <h2>Receitas x Despesas</h2>
-    <p class="deck">Entradas totais do mês contra as despesas, mês a mês.</p>
-    <div class="chart-box">
-      <div class="legend">
-        <span><i style="background:#16877D"></i>Entradas</span>
-        <span><i style="background:#D45F55"></i>Despesas</span>
+    <section>
+      <div class="section-title">Fluxo Mensal</div>
+      <h2>Receitas x Despesas</h2>
+      <p class="deck">Entradas totais do mês contra as despesas, mês a mês.</p>
+      <div class="chart-box">
+        <div class="legend">
+          <span><i style="background:#16877D"></i>Entradas</span>
+          <span><i style="background:#D45F55"></i>Despesas</span>
+        </div>
+        <div id="fluxoChart"></div>
       </div>
-      <div id="fluxoChart"></div>
-    </div>
-  </section>
+    </section>
 
-  <section>
-    <div class="section-title">Evolução</div>
-    <div class="grid-2">
-      <div>
-        <h2>Contas Fixas</h2>
-        <p class="deck">Gastos fixos no mês, agrupados por item no período.</p>
-        <div class="chart-box">
-          <div id="categoriaChart"></div>
+    <section>
+      <div class="section-title">Evolução</div>
+      <div class="grid-2">
+        <div>
+          <h2>Contas Fixas</h2>
+          <p class="deck">Gastos fixos no mês, agrupados por item no período.</p>
+          <div class="chart-box">
+            <div id="categoriaChart"></div>
+          </div>
+        </div>
+        <div>
+          <h2>Contas Extras</h2>
+          <p class="deck">Gastos não previstos no mês, agrupados por item no período.</p>
+          <div class="chart-box">
+            <div id="extrasChart"></div>
+          </div>
         </div>
       </div>
-      <div>
-        <h2>Contas Extras</h2>
-        <p class="deck">Gastos não previstos no mês, agrupados por item no período.</p>
-        <div class="chart-box">
-          <div id="extrasChart"></div>
-        </div>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <section>
-    <div class="section-title">Composição</div>
-    <div class="grid-2">
-      <div>
-        <h2>Investimentos</h2>
-        <p class="deck">Total investido (cripto, ações, dólar, tesouro, reservas) no mês atual.</p>
-        <div class="chart-box">
-          <div id="investChart"></div>
+    <section>
+      <div class="section-title">Composição</div>
+      <div class="grid-2">
+        <div>
+          <h2>Investimentos</h2>
+          <p class="deck">Total investido (cripto, ações, dólar, tesouro, reservas) no mês atual.</p>
+          <div class="chart-box">
+            <div id="investChart"></div>
+          </div>
+        </div>
+        <div>
+          <h2 id="investTitle">Carteira de Investimentos</h2>
+          <p class="deck" id="investDeck">Distribuição do mês mais recente com dados.</p>
+          <div class="chart-box">
+            <div id="carteiraChart"></div>
+            <div class="legend" id="carteiraLegend" style="margin-top:14px;margin-bottom:0;"></div>
+          </div>
         </div>
       </div>
-      <div>
-        <h2 id="investTitle">Carteira de Investimentos</h2>
-        <p class="deck" id="investDeck">Distribuição do mês mais recente com dados.</p>
-        <div class="chart-box">
-          <div id="carteiraChart"></div>
-          <div class="legend" id="carteiraLegend" style="margin-top:14px;margin-bottom:0;"></div>
-        </div>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <section>
-    <div class="section-title">Detalhamento Mensal</div>
-    <div class="month-selector" id="detailMonthSelector" aria-label="Selecionar mês"></div>
-    <div class="grid-2">
-      <div>
-        <h2>Contas Fixas Mensais</h2>
-        <p class="deck">Consulte quanto foi pago em cada conta fixa por mês.</p>
-        <div class="chart-box">
-          <table id="contasFixasTable"></table>
+    <section>
+      <div class="section-title">Detalhamento Mensal</div>
+      <div class="month-selector" id="detailMonthSelector" aria-label="Selecionar mês"></div>
+      <div class="grid-2">
+        <div>
+          <h2>Contas Fixas Mensais</h2>
+          <p class="deck">Consulte quanto foi pago em cada conta fixa por mês.</p>
+          <div class="chart-box">
+            <table id="contasFixasTable"></table>
+          </div>
+          <hr>
+          <h2>Contas Extras Mensais</h2>
+          <p class="deck">Consulte quanto foi gasto em cada conta extra por mês.</p>
+          <div class="chart-box">
+            <table id="extrasTable"></table>
+          </div>
         </div>
-        <hr>
-        <h2>Contas Extras Mensais</h2>
-        <p class="deck">Consulte quanto foi gasto em cada conta extra por mês.</p>
-        <div class="chart-box">
-          <table id="extrasTable"></table>
+        <div>
+          <h2>Investimentos por item</h2>
+          <p class="deck">Consulte quanto foi investido em cada item por mês.</p>
+          <div class="chart-box">
+            <table id="investimentosTable"></table>
+          </div>
+          <hr>
+          <h2>Ganhos Extras Mensais</h2>
+          <p class="deck">Consulte quanto foi recebido em cada ganho extra por mês.</p>
+          <div class="chart-box">
+            <table id="ganhosExtrasTable"></table>
+          </div>
         </div>
       </div>
-      <div>
-        <h2>Investimentos por item</h2>
-        <p class="deck">Consulte quanto foi investido em cada item por mês.</p>
-        <div class="chart-box">
-          <table id="investimentosTable"></table>
-        </div>
-        <hr>
-        <h2>Ganhos Extras Mensais</h2>
-        <p class="deck">Consulte quanto foi recebido em cada ganho extra por mês.</p>
-        <div class="chart-box">
-          <table id="ganhosExtrasTable"></table>
-        </div>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <section>
-    <div class="section-title">Consolidado Anual</div>
-    <h2>Gastos e investimentos por categoria</h2>
-    <p class="deck">Total acumulado no ano selecionado. Compare as categorias para identificar os maiores gastos e acompanhar a redução mês a mês no gráfico de fluxo.</p>
-    <div class="grid-3">
-      <div>
-        <h2>Contas Fixas · Ano</h2>
-        <div class="chart-box">
-          <div id="annualFixedChart"></div>
+    <section>
+      <div class="section-title">Detalhamento</div>
+      <h2>Resumo Mensal</h2>
+      <p class="deck">Todos os valores registrados, mês a mês.</p>
+      <div class="chart-box" style="margin-bottom:16px;">
+        <div class="legend">
+          <span><i style="background:#16877D"></i>Saldo geral</span>
+          <span><i style="background:#718096"></i>Saldo anterior</span>
+          <span><i style="background:#D99A2B"></i>Investimentos</span>
         </div>
+        <div id="saldoChart" aria-label="Evolução mensal do saldo geral, do saldo anterior e dos investimentos"></div>
       </div>
-      <div>
-        <h2>Contas Extras · Ano</h2>
-        <div class="chart-box">
-          <div id="annualExtrasChart"></div>
-        </div>
+      <div class="chart-box" style="overflow-x:auto;">
+        <table id="resumoTable"></table>
       </div>
-      <div>
-        <h2>Investimentos · Ano</h2>
-        <div class="chart-box">
-          <div id="annualInvestChart"></div>
-        </div>
-      </div>
-    </div>
-  </section>
+    </section>
+  </div>
 
-  <section>
-    <div class="section-title">Detalhamento</div>
-    <h2>Resumo Mensal</h2>
-    <p class="deck">Todos os valores registrados, mês a mês.</p>
-    <div class="chart-box" style="margin-bottom:16px;">
-      <div class="legend">
-        <span><i style="background:#16877D"></i>Saldo geral</span>
-        <span><i style="background:#718096"></i>Saldo anterior</span>
-        <span><i style="background:#D99A2B"></i>Investimentos</span>
+  <div id="annualPanel" hidden>
+    <section>
+      <div class="section-title">Consolidado Anual</div>
+      <h2>Visão geral de <span id="annualYear"></span></h2>
+      <p class="deck">Totais acumulados no ano selecionado e comparação dos gastos e investimentos por categoria.</p>
+      <div class="kpis" id="annualKpiRow"></div>
+      <div class="grid-2 annual-grid">
+        <div>
+          <h2>Contas Fixas · Ano</h2>
+          <div class="chart-box">
+            <div id="annualFixedChart"></div>
+          </div>
+        </div>
+        <div>
+          <h2>Contas Extras · Ano</h2>
+          <div class="chart-box">
+            <div id="annualExtrasChart"></div>
+          </div>
+        </div>
+        <div>
+          <h2>Investimentos · Ano</h2>
+          <div class="chart-box">
+            <div id="annualInvestChart"></div>
+          </div>
+        </div>
       </div>
-      <div id="saldoChart" aria-label="Evolução mensal do saldo geral, do saldo anterior e dos investimentos"></div>
-    </div>
-    <div class="chart-box" style="overflow-x:auto;">
-      <table id="resumoTable"></table>
-    </div>
-  </section>
+    </section>
+  </div>
 
   <footer>
     <p id="footerMessage">Dados do dashboard são atualizados automaticamente a cada 5 minutos, ou ao voltar para a aba do navegador.</p>
@@ -171,6 +181,17 @@ const RESET_MONTH = CURRENT_MONTH_LABEL;
 const IS_DEMO_MODE = new URLSearchParams(window.location.search).get('demo') === '1';
 let data = { labels: [], months: [], categorias: [], investimentos_recentes: { mes: '', itens: [] } };
 let selectedDashboardYear = null;
+
+document.querySelectorAll('.dashboard-tabs button').forEach((button) => {
+  button.addEventListener('click', () => {
+    document.querySelectorAll('.dashboard-tabs button').forEach((tab) => {
+      const isActive = tab === button;
+      tab.classList.toggle('active', isActive);
+      tab.setAttribute('aria-pressed', String(isActive));
+      document.getElementById(tab.getAttribute('aria-controls')).hidden = !isActive;
+    });
+  });
+});
 
 function buildDemoPayload() {
   const demoYear = new Date().getFullYear();
@@ -805,6 +826,22 @@ function renderDashboard() {
   ];
 
   document.getElementById('kpiRow').innerHTML = kpis
+    .map((kpi) => `<div class="kpi"><div class="label">${kpi.label}</div><div class="value ${kpi.cls}">${kpi.value}</div></div>`)
+    .join('');
+
+  const annualTotals = selectedMonths.reduce((totals, month) => ({
+    entries: totals.entries + Number(month.receita || 0) + Number(month.ganho_extra || 0),
+    expenses: totals.expenses + Number(month.despesas || 0),
+    investments: totals.investments + Number(month.investimentos || 0),
+  }), { entries: 0, expenses: 0, investments: 0 });
+  const annualKpis = [
+    { label: 'Entradas no ano', value: brl(annualTotals.entries), cls: 'up' },
+    { label: 'Despesas no ano', value: brl(annualTotals.expenses), cls: 'down' },
+    { label: 'Investimentos no ano', value: brl(annualTotals.investments), cls: '' },
+    { label: 'Saldo geral atual', value: brl(Number(currentMonth.saldo || 0)), cls: '' },
+  ];
+  document.getElementById('annualYear').textContent = selectedDashboardYear;
+  document.getElementById('annualKpiRow').innerHTML = annualKpis
     .map((kpi) => `<div class="kpi"><div class="label">${kpi.label}</div><div class="value ${kpi.cls}">${kpi.value}</div></div>`)
     .join('');
 
