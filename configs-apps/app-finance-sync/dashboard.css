@@ -45,6 +45,39 @@ header .period{
 }
 .header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 body.demo-mode .header-actions .action-link{display:none;}
+.dashboard-tabs{
+  display:flex;
+  gap:6px;
+  padding:5px;
+  margin-bottom:28px;
+  width:fit-content;
+  background:#E7EDF3;
+  border:1px solid var(--line);
+  border-radius:12px;
+}
+.dashboard-tabs button{
+  min-height:40px;
+  padding:0 18px;
+  border:0;
+  border-radius:8px;
+  background:transparent;
+  color:var(--muted);
+  cursor:pointer;
+  font:inherit;
+  font-size:0.84rem;
+  font-weight:700;
+  transition:background .18s ease,color .18s ease,box-shadow .18s ease;
+}
+.dashboard-tabs button:hover{color:var(--ink);}
+.dashboard-tabs button.active{
+  background:var(--surface);
+  color:var(--ink);
+  box-shadow:0 2px 6px rgba(23,43,58,.1);
+}
+.dashboard-tabs button:focus-visible{
+  outline:3px solid rgba(22,135,125,.3);
+  outline-offset:2px;
+}
 .demo-banner{
   margin:-8px 0 24px;
   padding:16px 20px;
@@ -179,6 +212,8 @@ p.deck{
   grid-template-columns:repeat(3,minmax(0,1fr));
   gap:20px;
 }
+.annual-grid{row-gap:24px;}
+.annual-grid .chart-box{padding:24px;}
 svg{width:100%;height:auto;display:block;overflow:visible;}
 svg text{font-family:inherit;}
 #carteiraChart svg{width:60%;margin:0 auto;}
@@ -290,6 +325,8 @@ footer p{margin:0;}
   header{padding:20px;border-radius:16px;}
   .header-actions{width:100%;}
   .header-actions .period{margin-left:auto;}
+  .dashboard-tabs{width:100%;margin-bottom:24px;}
+  .dashboard-tabs button{flex:1;padding:0 10px;}
   .kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:28px;}
   .kpi{padding:16px;border-radius:14px;}
   .grid-2,.grid-3{grid-template-columns:minmax(0,1fr);gap:18px;}
