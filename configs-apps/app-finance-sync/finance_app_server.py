@@ -23,6 +23,8 @@ MAX_INVESTMENT_RECORDS = 100_000
 MAX_FIXED_INCOME_IMPORT_BYTES = 10 * 1024 * 1024
 MAX_FIXED_INCOME_SNAPSHOTS = 1_000
 MAX_FIXED_INCOME_ITEMS = 10_000
+MAX_HOUSING_IMPORT_BYTES = 1 * 1024 * 1024
+MAX_HOUSING_RECORDS = 5_000
 PORT = 8001
 
 MONTH_ABBREVIATIONS = (
@@ -118,6 +120,18 @@ def initialize_database() -> None:
             )
             """
         )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS housing_costs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                year INTEGER NOT NULL CHECK (year BETWEEN 1900 AND 2100),
+                month INTEGER NOT NULL CHECK (month BETWEEN 1 AND 12),
+                item TEXT NOT NULL,
+                amount REAL NOT NULL CHECK (amount >= 0),
+                UNIQUE (year, month, item)
+            )
+            """
+        )
         has_data = connection.execute("SELECT 1 FROM months LIMIT 1").fetchone()
         if has_data:
             return
@@ -129,6 +143,99 @@ def initialize_database() -> None:
                 for month in migrated["months"]
             ],
         )
+
+
+def validate_housing_records(payload: object) -> list:
+    if not isinstance(payload, list) or not payload:
+        raise ValueError("A importação deve conter registros de moradia.")
+    if len(payload) > MAX_HOUSING_RECORDS:
+        raise ValueError("A importação excede o limite de registros.")
+
+    records = []
+    seen = set()
+    for index, item in enumerate(payload, start=1):
+        if not isinstance(item, dict):
+            raise TypeError(f"Registro {index} inválido.")
+
+        year = item.get("year")
+        month = item.get("month")
+        if (
+            isinstance(year, bool)
+            or not isinstance(year, int)
+            or year < 1900
+            or year > 2100
+        ):
+            raise ValueError(f"Ano inválido no registro {index}.")
+        if (
+            isinstance(month, bool)
+            or not isinstance(month, int)
+            or not 1 <= month <= 12
+        ):
+            raise ValueError(f"Mês inválido no registro {index}.")
+
+        name = item.get("item")
+        if not isinstance(name, str) or not name.strip() or len(name) > 120:
+            raise ValueError(f"Conta inválida no registro {index}.")
+
+        amount = item.get("amount")
+        try:
+            is_finite = (
+                math.isfinite(amount) if isinstance(amount, (int, float)) else False
+            )
+        except OverflowError:
+            is_finite = False
+        if (
+            isinstance(amount, bool)
+            or not isinstance(amount, (int, float))
+            or not is_finite
+            or amount < 0
+        ):
+            raise ValueError(f"Valor inválido no registro {index}.")
+
+        name = name.strip()
+        key = (year, month, name.casefold())
+        if key in seen:
+            raise ValueError(f"Conta duplicada no registro {index}.")
+        seen.add(key)
+        records.append(
+            {"year": year, "month": month, "item": name, "amount": float(amount)}
+        )
+
+    return records
+
+
+def load_housing_records() -> list:
+    initialize_database()
+    with connect_database() as connection:
+        rows = connection.execute(
+            """
+            SELECT year, month, item, amount
+            FROM housing_costs
+            ORDER BY year, month, item COLLATE NOCASE
+            """
+        ).fetchall()
+    return [
+        {"year": year, "month": month, "item": item, "amount": amount}
+        for year, month, item, amount in rows
+    ]
+
+
+def save_housing_records(records: list) -> int:
+    initialize_database()
+    with connect_database() as connection:
+        connection.executemany(
+            """
+            INSERT INTO housing_costs (year, month, item, amount)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT (year, month, item)
+            DO UPDATE SET amount = excluded.amount
+            """,
+            [
+                (record["year"], record["month"], record["item"], record["amount"])
+                for record in records
+            ],
+        )
+    return len(records)
 
 
 def write_database_payload(payload: dict) -> dict:
@@ -786,6 +893,10 @@ class FinanceHandler(BaseHTTPRequestHandler):
             self._send_json(load_data())
             return
 
+        if path in {"/api/housing", "/api/housing/"}:
+            self._send_json({"ok": True, "data": load_housing_records()})
+            return
+
         if path in {"/api/reset", "/api/reset/"}:
             self._send_json(save_data(build_fresh_baseline()))
             return
@@ -820,6 +931,53 @@ class FinanceHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path)
+        if parsed.path in {"/api/housing", "/api/housing/"}:
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+            except ValueError:
+                self._send_json(
+                    {"ok": False, "error": "Tamanho da importação inválido."},
+                    status=400,
+                )
+                return
+            if length <= 0:
+                self._send_json(
+                    {"ok": False, "error": "A importação está vazia."}, status=400
+                )
+                return
+            if length > MAX_HOUSING_IMPORT_BYTES:
+                self._send_json(
+                    {"ok": False, "error": "A importação excede o limite de tamanho."},
+                    status=413,
+                )
+                return
+
+            body = self.rfile.read(length)
+            try:
+                records = validate_housing_records(json.loads(body.decode("utf-8")))
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                self._send_json({"ok": False, "error": "JSON inválido."}, status=400)
+                return
+            except (TypeError, ValueError) as exc:
+                self._send_json({"ok": False, "error": str(exc)}, status=400)
+                return
+
+            try:
+                count = save_housing_records(records)
+            except sqlite3.Error as exc:
+                self.log_error("Could not save housing data: %s", exc)
+                self._send_json(
+                    {
+                        "ok": False,
+                        "error": "Não foi possível salvar os dados de moradia.",
+                    },
+                    status=500,
+                )
+                return
+
+            self._send_json({"ok": True, "count": count})
+            return
+
         if parsed.path in {"/api/fixed-income", "/api/fixed-income/"}:
             try:
                 length = int(self.headers.get("Content-Length", "0"))
