@@ -23,6 +23,7 @@
   <nav class="dashboard-tabs" aria-label="Seções do painel">
     <button type="button" class="active" aria-controls="monthlyPanel" aria-pressed="true">Visão mensal</button>
     <button type="button" aria-controls="annualPanel" aria-pressed="false">Consolidado anual</button>
+    <button type="button" aria-controls="housingPanel" aria-pressed="false">Moradia</button>
   </nav>
 
   <div class="demo-banner" id="demoBanner" role="status" hidden>
@@ -166,6 +167,45 @@
     </section>
   </div>
 
+  <div id="housingPanel" hidden>
+    <section>
+      <div class="section-title">Custos da casa</div>
+      <div class="housing-heading">
+        <div>
+          <h2>Contas de moradia · <span id="housingYearTitle"></span></h2>
+          <p class="deck">Histórico separado do fluxo financeiro. Importe a planilha de contas de luz para começar.</p>
+        </div>
+        <div class="housing-controls">
+          <label class="year-filter" for="housingYearFilter">Ano
+            <select id="housingYearFilter" aria-label="Selecionar ano de moradia"></select>
+          </label>
+          <label class="action-link housing-import">Importar contas de luz
+            <input id="housingFile" type="file" accept=".xlsx,.xls">
+          </label>
+        </div>
+      </div>
+      <p class="housing-status" id="housingStatus" role="status" aria-live="polite"></p>
+      <p class="deck">Meses sem valor na planilha não são tratados como R$ 0; os totais e a média consideram apenas os meses informados.</p>
+      <div class="kpis" id="housingKpiRow"></div>
+      <div class="grid-2">
+        <div>
+          <h2>Despesas por mês</h2>
+          <div class="chart-box"><div id="housingMonthlyChart"></div></div>
+        </div>
+        <div>
+          <h2>Total anual por ano</h2>
+          <div class="chart-box"><div id="housingAnnualChart"></div></div>
+        </div>
+      </div>
+      <section>
+        <h2>Detalhamento das contas</h2>
+        <div class="chart-box" style="overflow-x:auto;">
+          <table id="housingDetailsTable"></table>
+        </div>
+      </section>
+    </section>
+  </div>
+
   <footer>
     <p id="footerMessage">Dados do dashboard são atualizados automaticamente a cada 5 minutos, ou ao voltar para a aba do navegador.</p>
   </footer>
@@ -174,22 +214,33 @@
 
 <div class="tooltip" id="tooltip"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 const MONTH_NAMES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 const CURRENT_MONTH_LABEL = `${MONTH_NAMES[new Date().getMonth()]}/${String(new Date().getFullYear()).slice(-2)}`;
 const RESET_MONTH = CURRENT_MONTH_LABEL;
 const IS_DEMO_MODE = new URLSearchParams(window.location.search).get('demo') === '1';
+const HOUSING_MONTHS = ['janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 let data = { labels: [], months: [], categorias: [], investimentos_recentes: { mes: '', itens: [] } };
 let selectedDashboardYear = null;
+let dashboardDataLoaded = false;
+let housingData = [];
+let housingLoading = !IS_DEMO_MODE;
+let housingStatusMessage = IS_DEMO_MODE
+  ? 'Indisponível no modo de demonstração para não consultar dados reais.'
+  : 'Carregando dados de moradia...';
+let selectedHousingYear = null;
 
 document.querySelectorAll('.dashboard-tabs button').forEach((button) => {
   button.addEventListener('click', () => {
+    const isHousingPanel = button.getAttribute('aria-controls') === 'housingPanel';
     document.querySelectorAll('.dashboard-tabs button').forEach((tab) => {
       const isActive = tab === button;
       tab.classList.toggle('active', isActive);
       tab.setAttribute('aria-pressed', String(isActive));
       document.getElementById(tab.getAttribute('aria-controls')).hidden = !isActive;
     });
+    document.body.classList.toggle('housing-mode', isHousingPanel);
   });
 });
 
@@ -375,9 +426,153 @@ function ensureFreshStart(payload) {
   };
 }
 
+function parseElectricityWorkbook(rows) {
+  if (!Array.isArray(rows) || !Array.isArray(rows[0])) {
+    throw new Error('A planilha não contém uma tabela válida.');
+  }
+
+  const monthNumbers = new Map(HOUSING_MONTHS.map((month, index) => [month, index + 1]));
+  const records = [];
+  for (let column = 0; column < rows[0].length; column += 1) {
+    const year = Number(rows[0][column]);
+    if (!Number.isInteger(year) || year < 1900 || year > 2100) {
+      continue;
+    }
+
+    for (let rowIndex = 1; rowIndex < rows.length; rowIndex += 1) {
+      const row = rows[rowIndex];
+      const monthName = String(row[column] || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim()
+        .toLowerCase();
+      const month = monthNumbers.get(monthName);
+      const rawAmount = row[column + 1];
+      if (
+        !month
+        || rawAmount === null
+        || rawAmount === undefined
+        || (typeof rawAmount === 'string' && !rawAmount.trim())
+      ) {
+        continue;
+      }
+
+      let amount = rawAmount;
+      if (typeof amount === 'string') {
+        amount = amount.replace(/[R$\s\u00a0]/g, '');
+        if (amount.includes(',')) {
+          amount = amount.replace(/\./g, '').replace(',', '.');
+        }
+        amount = Number(amount);
+      }
+      if (typeof amount !== 'number' || !Number.isFinite(amount) || amount < 0) {
+        throw new Error(`Valor inválido na planilha para ${monthName}/${year}.`);
+      }
+
+      records.push({ year, month, item: 'Energia elétrica', amount });
+    }
+  }
+
+  if (!records.length) {
+    throw new Error('Nenhum valor mensal de conta de luz foi encontrado.');
+  }
+  return records;
+}
+
+async function fetchHousingRecords() {
+  const response = await fetch('/api/housing', { cache: 'no-store' });
+  const payload = await response.json();
+  if (!response.ok || payload.ok !== true || !Array.isArray(payload.data)) {
+    throw new Error(payload.error || 'Não foi possível carregar os dados de moradia.');
+  }
+  return payload.data;
+}
+
+async function loadHousingData() {
+  if (IS_DEMO_MODE) {
+    return;
+  }
+
+  housingLoading = true;
+  try {
+    housingData = await fetchHousingRecords();
+    housingStatusMessage = housingData.length
+      ? `${housingData.length} registros de moradia carregados.`
+      : 'Nenhum dado de moradia foi importado ainda.';
+  } catch (error) {
+    console.error(error);
+    housingData = [];
+    housingStatusMessage = error.message || 'Não foi possível carregar os dados de moradia.';
+  } finally {
+    housingLoading = false;
+    if (dashboardDataLoaded) {
+      renderDashboard();
+    } else {
+      document.getElementById('housingStatus').textContent = housingStatusMessage;
+    }
+  }
+}
+
+document.getElementById('housingFile').addEventListener('change', async (event) => {
+  const file = event.target.files[0];
+  if (!file) {
+    return;
+  }
+
+  try {
+    if (IS_DEMO_MODE) {
+      throw new Error('A importação está desativada no modo de demonstração.');
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      throw new Error('A planilha excede o limite de 10 MB.');
+    }
+    if (typeof XLSX === 'undefined') {
+      throw new Error('A biblioteca de leitura de planilhas não carregou.');
+    }
+
+    const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet, {
+      header: 1,
+      raw: true,
+      defval: null,
+    });
+    const records = parseElectricityWorkbook(rows);
+    const response = await fetch('/api/housing', {
+      method: 'POST',
+      cache: 'no-store',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(records),
+    });
+    const payload = await response.json();
+    if (!response.ok || payload.ok !== true) {
+      throw new Error(payload.error || 'Não foi possível salvar a importação.');
+    }
+
+    housingData = await fetchHousingRecords();
+    housingStatusMessage = `Importação concluída: ${payload.count} registros adicionados ou atualizados.`;
+    if (dashboardDataLoaded) {
+      renderDashboard();
+    } else {
+      document.getElementById('housingStatus').textContent = housingStatusMessage;
+    }
+  } catch (error) {
+    console.error(error);
+    housingStatusMessage = error.message || 'Não foi possível importar a planilha.';
+    if (dashboardDataLoaded) {
+      renderDashboard();
+    } else {
+      document.getElementById('housingStatus').textContent = housingStatusMessage;
+    }
+  } finally {
+    event.target.value = '';
+  }
+});
+
 function loadDashboardData() {
   if (IS_DEMO_MODE) {
     data = ensureFreshStart(buildDemoPayload());
+    dashboardDataLoaded = true;
     document.body.classList.add('demo-mode');
     document.getElementById('demoBanner').hidden = false;
     document.getElementById('footerMessage').textContent = 'Modo demonstração: dados fictícios carregados localmente; nenhuma atualização ou gravação é feita no servidor.';
@@ -394,6 +589,7 @@ function loadDashboardData() {
     })
     .then((payload) => {
       data = ensureFreshStart(sanitizePayload(payload));
+      dashboardDataLoaded = true;
       renderDashboard();
     })
     .catch((error) => {
@@ -404,6 +600,7 @@ function loadDashboardData() {
 }
 
 loadDashboardData();
+loadHousingData();
 
 function refreshFromServer() {
   if (IS_DEMO_MODE) {
@@ -419,6 +616,7 @@ function refreshFromServer() {
     })
     .then((payload) => {
       data = ensureFreshStart(sanitizePayload(payload));
+      dashboardDataLoaded = true;
       renderDashboard();
     })
     .catch((error) => {
@@ -428,10 +626,11 @@ function refreshFromServer() {
 
 if (!IS_DEMO_MODE) {
   window.addEventListener('focus', () => refreshFromServer());
+  window.addEventListener('focus', () => loadHousingData());
 }
 
 function renderDashboard() {
-  ['fluxoChart', 'extrasChart', 'investChart', 'categoriaChart', 'carteiraChart', 'saldoChart', 'annualFixedChart', 'annualExtrasChart', 'annualInvestChart'].forEach((id) => {
+  ['fluxoChart', 'extrasChart', 'investChart', 'categoriaChart', 'carteiraChart', 'saldoChart', 'annualFixedChart', 'annualExtrasChart', 'annualInvestChart', 'housingMonthlyChart', 'housingAnnualChart'].forEach((id) => {
     document.getElementById(id).replaceChildren();
   });
 
@@ -668,6 +867,102 @@ function renderDashboard() {
     container.appendChild(svg);
   }
 
+  function housingChart(container, labels, values, chartType) {
+    if (!labels.length || !values.length) {
+      container.textContent = 'Nenhum dado disponível para o período.';
+      return;
+    }
+
+    const W = 1040;
+    const H = 320;
+    const padL = 70;
+    const padR = 20;
+    const padT = 20;
+    const padB = 40;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+    const maxValue = Math.max(...values, 1) * 1.1;
+    const formatAxisValue = (value) => `R$ ${Math.round(value).toLocaleString('pt-BR')}`;
+    const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'xMidYMid meet' });
+
+    for (let index = 0; index <= 4; index += 1) {
+      const value = (maxValue * index) / 4;
+      const y = padT + plotH - (value / maxValue) * plotH;
+      svg.appendChild(el('line', {
+        x1: padL,
+        x2: W - padR,
+        y1: y,
+        y2: y,
+        stroke: LINE,
+        'stroke-width': 1,
+      }));
+      const tick = el('text', {
+        x: padL - 8,
+        y: y + 3,
+        'text-anchor': 'end',
+        'font-size': 10,
+        fill: MUTED,
+      });
+      tick.textContent = formatAxisValue(value);
+      svg.appendChild(tick);
+    }
+
+    const pointX = (index) => labels.length > 1
+      ? padL + (index * plotW) / (labels.length - 1)
+      : padL + plotW / 2;
+    if (chartType === 'line') {
+      const points = values.map((value, index) => [
+        pointX(index),
+        padT + plotH - (value / maxValue) * plotH,
+      ]);
+      const path = el('path', {
+        d: points.map((point, index) => `${index === 0 ? 'M' : 'L'}${point[0]},${point[1]}`).join(' '),
+        fill: 'none',
+        stroke: RUST,
+        'stroke-width': 2,
+      });
+      svg.appendChild(path);
+      points.forEach((point, index) => {
+        const circle = el('circle', { cx: point[0], cy: point[1], r: 4, fill: RUST });
+        circle.addEventListener('mousemove', (event) => showTip(event, `${labels[index]} · ${brl(values[index])}`));
+        circle.addEventListener('mouseleave', hideTip);
+        svg.appendChild(circle);
+      });
+    } else {
+      const slot = plotW / labels.length;
+      const barW = slot * 0.58;
+      values.forEach((value, index) => {
+        const height = (value / maxValue) * plotH;
+        const x = padL + index * slot + (slot - barW) / 2;
+        const rect = el('rect', {
+          x,
+          y: padT + plotH - height,
+          width: barW,
+          height: Math.max(height, 0.5),
+          fill: GOLD,
+          rx: 2,
+        });
+        rect.addEventListener('mousemove', (event) => showTip(event, `${labels[index]} · ${brl(value)}`));
+        rect.addEventListener('mouseleave', hideTip);
+        svg.appendChild(rect);
+      });
+    }
+
+    labels.forEach((label, index) => {
+      const text = el('text', {
+        x: chartType === 'line' ? pointX(index) : padL + ((index + 0.5) * plotW) / labels.length,
+        y: H - 14,
+        'text-anchor': 'middle',
+        'font-size': 11,
+        fill: MUTED,
+      });
+      text.textContent = label;
+      svg.appendChild(text);
+    });
+
+    container.appendChild(svg);
+  }
+
   function donutChart(container, legendContainer, items, palette) {
     const total = items.reduce((sum, item) => sum + item.valor, 0);
     const W = 280;
@@ -786,6 +1081,138 @@ function renderDashboard() {
       .sort((first, second) => second.value - first.value);
   }
 
+  function renderHousingPanel() {
+    const status = document.getElementById('housingStatus');
+    const yearFilter = document.getElementById('housingYearFilter');
+    const yearTitle = document.getElementById('housingYearTitle');
+    const kpiRow = document.getElementById('housingKpiRow');
+    const detailsTable = document.getElementById('housingDetailsTable');
+    const years = [...new Set(housingData.map((record) => Number(record.year)))]
+      .filter((year) => Number.isInteger(year))
+      .sort((first, second) => first - second);
+
+    status.textContent = housingLoading ? 'Carregando dados de moradia...' : housingStatusMessage;
+    yearFilter.disabled = years.length === 0;
+    yearFilter.innerHTML = years.map((year) => (
+      `<option value="${year}">${year}</option>`
+    )).join('');
+    if (!years.length) {
+      selectedHousingYear = null;
+      yearTitle.textContent = 'sem dados';
+      kpiRow.replaceChildren();
+      housingChart(document.getElementById('housingMonthlyChart'), [], [], 'line');
+      housingChart(document.getElementById('housingAnnualChart'), [], [], 'bar');
+      const emptyRow = document.createElement('tr');
+      const emptyCell = document.createElement('td');
+      emptyCell.colSpan = 3;
+      emptyCell.textContent = housingLoading
+        ? 'Carregando dados...'
+        : 'Importe a planilha de contas de luz para começar.';
+      emptyRow.appendChild(emptyCell);
+      const emptyBody = document.createElement('tbody');
+      emptyBody.appendChild(emptyRow);
+      detailsTable.replaceChildren(emptyBody);
+      return;
+    }
+
+    if (!years.includes(selectedHousingYear)) {
+      selectedHousingYear = years[years.length - 1];
+    }
+    yearFilter.value = String(selectedHousingYear);
+    yearTitle.textContent = selectedHousingYear;
+    yearFilter.onchange = () => {
+      selectedHousingYear = Number(yearFilter.value);
+      renderDashboard();
+    };
+
+    const monthlyTotals = new Map();
+    housingData
+      .filter((record) => Number(record.year) === selectedHousingYear)
+      .forEach((record) => {
+        const month = Number(record.month);
+        monthlyTotals.set(month, (monthlyTotals.get(month) || 0) + Number(record.amount));
+      });
+    const monthlyRows = [...monthlyTotals.entries()].sort((first, second) => first[0] - second[0]);
+    const annualTotals = new Map();
+    housingData.forEach((record) => {
+      const year = Number(record.year);
+      annualTotals.set(year, (annualTotals.get(year) || 0) + Number(record.amount));
+    });
+    const annualRows = [...annualTotals.entries()].sort((first, second) => first[0] - second[0]);
+    const total = monthlyRows.reduce((sum, [, amount]) => sum + amount, 0);
+    const average = monthlyRows.length ? total / monthlyRows.length : 0;
+    const highestMonth = monthlyRows.reduce(
+      (highest, row) => row[1] > highest[1] ? row : highest,
+      monthlyRows[0],
+    );
+
+    const kpis = [
+      { label: `Total informado em ${selectedHousingYear}`, value: brl(total) },
+      { label: `Média · ${monthlyRows.length} meses informados`, value: brl(average) },
+      {
+        label: highestMonth ? `Maior conta · ${MONTH_NAMES[highestMonth[0] - 1]}` : 'Maior conta',
+        value: brl(highestMonth ? highestMonth[1] : 0),
+      },
+    ];
+    kpiRow.replaceChildren(...kpis.map((item) => {
+      const card = document.createElement('div');
+      card.className = 'kpi';
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.textContent = item.label;
+      const value = document.createElement('div');
+      value.className = 'value down';
+      value.textContent = item.value;
+      card.append(label, value);
+      return card;
+    }));
+
+    housingChart(
+      document.getElementById('housingMonthlyChart'),
+      monthlyRows.map(([month]) => MONTH_NAMES[month - 1]),
+      monthlyRows.map(([, amount]) => amount),
+      'line',
+    );
+    housingChart(
+      document.getElementById('housingAnnualChart'),
+      annualRows.map(([year]) => String(year)),
+      annualRows.map(([, amount]) => amount),
+      'bar',
+    );
+
+    const header = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    ['Mês', 'Conta', 'Valor'].forEach((label, index) => {
+      const cell = document.createElement('th');
+      cell.textContent = label;
+      if (index === 2) {
+        cell.className = 'num';
+      }
+      headerRow.appendChild(cell);
+    });
+    header.appendChild(headerRow);
+    const body = document.createElement('tbody');
+    const details = housingData
+      .filter((record) => Number(record.year) === selectedHousingYear)
+      .sort((first, second) => (
+        Number(first.month) - Number(second.month)
+        || String(first.item).localeCompare(String(second.item), 'pt-BR')
+      ));
+    details.forEach((record) => {
+      const row = document.createElement('tr');
+      const monthCell = document.createElement('td');
+      monthCell.textContent = `${MONTH_NAMES[Number(record.month) - 1]}/${selectedHousingYear}`;
+      const itemCell = document.createElement('td');
+      itemCell.textContent = record.item;
+      const amountCell = document.createElement('td');
+      amountCell.className = 'num';
+      amountCell.textContent = brl(Number(record.amount));
+      row.append(monthCell, itemCell, amountCell);
+      body.appendChild(row);
+    });
+    detailsTable.replaceChildren(header, body);
+  }
+
   const sourceMonths = Array.isArray(data.months) ? data.months : [];
   const availableYears = [...new Set(sourceMonths.map(getYearFromMonth).filter(Boolean))].sort((a, b) => a - b);
   const currentYear = new Date().getFullYear();
@@ -899,6 +1326,7 @@ function renderDashboard() {
   ).join('');
 
   document.getElementById('resumoTable').innerHTML = thead + rows;
+  renderHousingPanel();
 }
 </script>
 

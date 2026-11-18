@@ -45,6 +45,8 @@ header .period{
 }
 .header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 body.demo-mode .header-actions .action-link{display:none;}
+body.housing-mode .header-actions > .year-filter,
+body.housing-mode .header-actions > .period{display:none;}
 .dashboard-tabs{
   display:flex;
   gap:6px;
@@ -124,6 +126,33 @@ body.demo-mode .header-actions .action-link{display:none;}
   color:#fff;
   transform:translateY(-1px);
 }
+.housing-heading{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:20px;
+}
+.housing-controls{display:flex;align-items:center;gap:10px;}
+.housing-import{position:relative;overflow:hidden;white-space:nowrap;}
+.housing-import input{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  opacity:0;
+  cursor:pointer;
+}
+.housing-import:focus-within{
+  outline:3px solid rgba(22,135,125,.3);
+  outline-offset:2px;
+}
+.housing-status{
+  min-height:1.3rem;
+  margin:0 0 10px;
+  color:var(--muted);
+  font-size:0.8rem;
+}
+body.demo-mode .housing-import{display:none;}
 .action-link:focus-visible,
 .year-filter select:focus-visible,
 .month-selector button:focus-visible{
@@ -217,6 +246,7 @@ p.deck{
 svg{width:100%;height:auto;display:block;overflow:visible;}
 svg text{font-family:inherit;}
 #carteiraChart svg{width:60%;margin:0 auto;}
+#housingDetailsTable{min-width:420px;}
 
 .legend{
   display:flex;
@@ -324,6 +354,8 @@ footer p{margin:0;}
   .wrap{padding:18px 16px 40px;}
   header{padding:20px;border-radius:16px;}
   .header-actions{width:100%;}
+  .housing-heading{flex-direction:column;gap:10px;}
+  .housing-controls{width:100%;flex-wrap:wrap;}
   .header-actions .period{margin-left:auto;}
   .dashboard-tabs{width:100%;margin-bottom:24px;}
   .dashboard-tabs button{flex:1;padding:0 10px;}
@@ -338,6 +370,8 @@ footer p{margin:0;}
   .wrap{padding-right:12px;padding-left:12px;}
   header{padding:17px;}
   .header-actions{align-items:stretch;}
+  .housing-controls{align-items:stretch;flex-direction:column;}
+  .housing-controls .housing-import{justify-content:center;}
   .year-filter{justify-content:space-between;}
   .year-filter select{flex:1;}
   .action-link{flex:1 1 100%;}

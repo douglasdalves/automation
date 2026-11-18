@@ -7,6 +7,7 @@ Este diretório reúne o painel financeiro local, a interface de lançamentos e 
 - `dashboard.html`: painel estático em HTML/SVG
 - `dashboard-insert.html`: interface para inserir dados sem planilhas
 - `cart-invest.html`: carteira de investimentos, acessível pelo painel principal
+- `housing_costs`: dados de moradia guardados em tabela separada no mesmo SQLite
 - `dashboard.css`, `dashboard-insert.css` e `cart-invest.css`: estilos separados para cada interface
 - `finance.db`: banco SQLite local, ignorado pelo Git
 - `finance.db-wal` e `finance.db-shm`: arquivos auxiliares do modo WAL, também ignorados pelo Git
@@ -24,9 +25,16 @@ grava dados pela API financeira. A URL normal do painel continua usando os dados
 
 O servidor usa SQLite como fonte principal. No Compose, o banco fica no volume persistente `finance_data`.
 O `dashboard-insert.html` grava os lançamentos pela API e o `dashboard.html` consulta os mesmos dados.
+Na aba Moradia do dashboard, importe a planilha de contas de luz `.xlsx`; os valores mensais são
+salvos na tabela `housing_costs`, separados dos lançamentos, despesas e saldos financeiros. A
+importação pode ser repetida: atualiza os mesmos meses e não apaga outras contas. Meses vazios e
+linhas de total ou média da planilha não são importados. O arquivo da planilha é lido no navegador;
+somente os valores mensais extraídos são enviados para a API.
 O `cart-invest.html` importa planilhas `.xlsx` ou `.csv` pela API, que salva os dados em
 `investments.json` no servidor. A carteira lê esse arquivo pela API com cache desativado;
-o arquivo não é servido diretamente pelo Nginx e não deve ser versionado.
+o arquivo não é servido diretamente pelo Nginx e não deve ser versionado. O Nginx também não
+serve arquivos `.xlsx`, `.xls` ou `.pdf` colocados na pasta do dashboard; esses arquivos são
+selecionados localmente pelo navegador durante a importação.
 
 Na seção Carteira do PDF, importe um ou mais relatórios consolidados do BTG (PDF). O relatório
 deve conter as posições de renda fixa, renda variável e previdência apresentadas no consolidado.
