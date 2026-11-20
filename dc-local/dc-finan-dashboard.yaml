@@ -15,7 +15,7 @@ services:
       - "8001"
     volumes:
       - type: bind
-        source: /home/dalves/automation/configs-apps/app-finance-sync
+        source: /home/dalves/homelab-finance
         target: /app
       - type: volume
         source: finance_data
@@ -51,11 +51,11 @@ services:
         protocol: tcp
     volumes:
       - type: bind
-        source: /home/dalves/automation/configs-apps/app-finance-sync
+        source: /home/dalves/homelab-finance/web
         target: /usr/share/nginx/html
         read_only: true
       - type: bind
-        source: /home/dalves/automation/configs-apps/app-finance-sync/nginx.conf
+        source: /home/dalves/homelab-finance/deploy/nginx/nginx.conf
         target: /tmp/nginx.conf
         read_only: true
     depends_on:
