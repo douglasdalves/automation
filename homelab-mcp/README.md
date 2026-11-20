@@ -1,6 +1,6 @@
 # Homelab MCP
 
-Servidor MCP do homelab. Ele disponibiliza ferramentas de saude, Docker, deploy e reinicio de servicos por HTTP.
+Servidor MCP do homelab. Ele disponibiliza ferramentas de saude, Docker, deploy e reinicio de servicos por HTTP. O dashboard financeiro é mantido no repositório [homelab-finance](https://github.com/douglasdalves/homelab-finance); este projeto mantém as ferramentas MCP que integram com a API financeira e as rotinas de backup.
 
 ## Requisitos
 

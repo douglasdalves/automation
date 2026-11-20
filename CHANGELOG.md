@@ -30,7 +30,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 - Ferramentas MCP para listar e iniciar compose locais
 - Validação de nomes de arquivos YAML para evitar uso indevido de caminhos
 - Comando Telegram `/options` para listar rapidamente todas as ações disponíveis no bot
-- Painel financeiro local com conversão da planilha Excel para JSON em [configs-apps/app-finance-sync](configs-apps/app-finance-sync)
+- Painel financeiro local com conversão da planilha Excel para JSON
 - Compose de dashboard financeiro em [dc-local/dc-finan-dashboard.yaml](dc-local/dc-finan-dashboard.yaml)
 
 ### Ajustado
@@ -63,6 +63,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 
 ### Removido
 - Campo `reserva` do fluxo ativo e exportações JSON/CSV do dashboard de inserção
+- Código do dashboard financeiro removido deste repositório e transferido para [homelab-finance](https://github.com/douglasdalves/homelab-finance); a integração pelo bot/MCP e as rotinas de backup permanecem aqui
 - Exclusão das pastas de testes e dos artefatos de cache do projeto, sem impacto na execução principal do homelab
 
 ### Corrigido
