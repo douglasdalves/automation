@@ -5,17 +5,18 @@ services:
     container_name: dc-finance-api
     working_dir: /app
     command:
-      - python3
-      - finance_app_server.py
+      - sh
+      - -c
+      - python3 -m pip install --no-cache-dir -r requirements.txt && exec python3 finance_app_server.py
     hostname: dc-finance-api
     restart: unless-stopped
     environment:
-      FINANCE_DB_PATH: /data/finance.db
+      FINANCE_DB_PATH: /app/finance.db
     expose:
       - "8001"
     volumes:
       - type: bind
-        source: /home/dalves/automation/configs-apps/app-finance-sync
+        source: /home/dalves/homelab-finance
         target: /app
       - type: volume
         source: finance_data
@@ -51,11 +52,11 @@ services:
         protocol: tcp
     volumes:
       - type: bind
-        source: /home/dalves/automation/configs-apps/app-finance-sync
+        source: /home/dalves/homelab-finance/web
         target: /usr/share/nginx/html
         read_only: true
       - type: bind
-        source: /home/dalves/automation/configs-apps/app-finance-sync/nginx.conf
+        source: /home/dalves/homelab-finance/deploy/nginx/nginx.conf
         target: /tmp/nginx.conf
         read_only: true
     depends_on:
