@@ -102,9 +102,14 @@ O workflow não roda em pull requests e só aceita execução na branch `main`. 
 | --- | --- |
 | [homelab-telegram-bot](homelab-telegram-bot) | Recebe solicitações, valida acesso, executa comandos e integra a IA e o cliente MCP. |
 | [homelab-mcp](homelab-mcp) | Expõe ferramentas MCP para consultar e operar os serviços do homelab. |
-| [configs-apps](configs-apps) | Mantém configurações compartilhadas, sincronização e aplicação financeira. |
+| [configs-apps](configs-apps) | Mantém configurações compartilhadas e sincronização de arquivos. |
 | [dc-local](dc-local) | Guarda arquivos Docker Compose usados para subir serviços locais. |
 | [raspberry-scripts](raspberry-scripts) | Reúne rotinas de manutenção, alertas, backups e tarefas agendadas. |
+
+O dashboard financeiro é mantido separadamente em
+[homelab-finance](https://github.com/douglasdalves/homelab-finance). Este
+repositório mantém a integração financeira pelo bot e pelo MCP, além das
+rotinas de backup do homelab.
 
 ## Configuração e acesso
 
@@ -128,3 +133,4 @@ somente na interface necessária e restrinja o acesso na firewall ao host do bot
 - [Servidor MCP](homelab-mcp/README.md)
 - [Bot do Telegram](homelab-telegram-bot/README.md)
 - [Sincronização de configurações](configs-apps/app-config-sync/README.md)
+- [Dashboard financeiro](https://github.com/douglasdalves/homelab-finance)
