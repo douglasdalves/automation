@@ -70,7 +70,7 @@ if [ -n "${RCLONE_CONFIG:-}" ]; then
 fi
 
 CONTAINER_NAME="${CONTAINER_NAME:-dc-finance-api}"
-CONTAINER_DATABASE="${CONTAINER_DATABASE:-/data/finance.db}"
+CONTAINER_DATABASE="${CONTAINER_DATABASE:-/app/finance.db}"
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/finance}"
 RCLONE_REMOTE="${RCLONE_REMOTE:-}"
 RCLONE_PATH="${RCLONE_PATH:-homelab-backups/finance}"
