@@ -34,6 +34,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 - Compose de dashboard financeiro em [dc-local/dc-finan-dashboard.yaml](dc-local/dc-finan-dashboard.yaml)
 
 ### Ajustado
+- CI fixa Ubuntu 22.04 para manter disponivel o Python 3.8 nos runners hospedados
 - Painel financeiro reorganizado em abas mensal e anual, com totais do ano e gráficos mais amplos
 - Visual do dashboard financeiro atualizado com cartões e layout responsivo para telas em retrato e paisagem
 - Backup financeiro informa qual configuração do rclone usa e verifica o arquivo no destino remoto antes de retornar sucesso
