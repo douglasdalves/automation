@@ -64,7 +64,7 @@ O bot está em [homelab-telegram-bot](homelab-telegram-bot). O servidor MCP em [
 
 - **`/deploy`:** atualiza a branch atual de `origin` com `git pull --ff-only`, aplica a configuração do serviço de sincronização, atualiza o systemd e reinicia os serviços permitidos (por padrão, bot e MCP).
 - **`/deploy_sync`:** inicia `app-config-sync.service` para copiar os arquivos definidos, sem atualizar o repositório nem reiniciar todos os serviços.
-- **`/deploy_finance`:** atualiza o repositório e reinicia os containers financeiros configurados.
+- **`/deploy_finance`:** atualiza o repositório definido em `FINANCE_REPOSITORY_DIR` e reinicia os containers financeiros configurados. Por padrão, usa `/home/dalves/homelab-finance`, separado do repositório do bot e do MCP.
 
 Deploy e sincronização usam um bloqueio para impedir operações simultâneas. As configurações de sincronização ficam em [configs-apps/app-config-sync](configs-apps/app-config-sync).
 

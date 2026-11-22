@@ -245,11 +245,14 @@ def sync_app_configs() -> dict[str, Any]:
 
 
 def deploy_finance() -> dict[str, Any]:
-    repository_dir = Path(os.getenv("DEPLOY_REPOSITORY_DIR", ".")).expanduser()
+    repository_dir = Path(
+        os.getenv("FINANCE_REPOSITORY_DIR", "/home/dalves/homelab-finance")
+    ).expanduser()
 
     if not repository_dir.is_dir():
         return {
             "success": False,
+            "step": "git_pull",
             "error": f"Repository directory not found: {repository_dir}",
         }
 
