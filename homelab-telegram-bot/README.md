@@ -59,6 +59,7 @@ python bot.py
 - `/deploy_sync`: copia os arquivos definidos no `app-config-sync`, sem atualizar o repositorio ou reiniciar servicos.
 - `/deploy_finance`: atualiza o repositorio e reinicia `dc-finance-api` e `dc-finance-dash`.
 - `/finance_bkp`: executa o mesmo script de backup financeiro usado pelo cron e informa o destino remoto confirmado.
+- Perguntas em linguagem natural, por exemplo “quanto gastei com luz nos meses anteriores?” ou “liste investimentos em Tesouro de Jan/26 a Jun/26”, consultam lançamentos históricos por nome via MCP.
 - `/conta_fixa <nome> <valor> [mês/ano]`: pede confirmação e define o valor mensal de uma conta fixa. Sem mês, usa o atual; para outra competência, informe-a no formato `Mmm/aa`. Exemplo: `/conta_fixa luz 120,50 Nov/26`.
 - `/restart_service`: mostra botoes para escolher qual servico reiniciar.
 - `/restart_docker`: lista os containers Docker ativos e mostra botoes para escolher qual reiniciar.
@@ -81,6 +82,7 @@ AI_MODEL=openai/gpt-oss-120b
 ```
 
 O provedor precisa aceitar `POST /chat/completions` e tool calling. O MCP continua rodando localmente; somente o processamento da linguagem e a chave ficam no provedor externo.
+Quando a IA consulta ferramentas financeiras, os dados retornados pelo MCP são enviados ao provedor configurado para gerar a resposta. Considere isso ao usar um provedor externo como Grok.
 
 ## systemd
 

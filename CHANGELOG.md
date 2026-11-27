@@ -7,6 +7,7 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 ## [Unreleased]
 
 ### Adicionado
+- Busca de lançamentos históricos de contas e investimentos por nome nas consultas em linguagem natural do Telegram
 - Aba Moradia no dashboard, com importação da planilha de energia e dados isolados do fluxo financeiro
 - Bloqueio de acesso estático pelo Nginx a arquivos de planilha e PDF na pasta do dashboard
 - Modo de demonstração do dashboard financeiro com dados fictícios locais e sem acesso à API
