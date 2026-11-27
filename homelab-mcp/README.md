@@ -81,6 +81,7 @@ acesso na firewall ao host do bot.
 - `get_current_finance_summary`: consulta na API do dashboard o resumo do mês atual.
 - `get_current_finance_investments`: consulta na API do dashboard os investimentos do mês atual.
 - `get_current_finance_accounts`: consulta na API do dashboard as contas fixas e extras do mês atual.
+- `search_finance_history_items`: busca lançamentos de contas fixas, extras ou investimentos por correspondência parcial do nome nos meses anteriores. Aceita filtros opcionais `start_month` e `end_month` no formato `Mmm/aa`.
 - `set_current_finance_fixed_account`: define/substitui o valor de uma conta fixa no mês indicado (atual se omitido); exige `FINANCE_WRITE_TOKEN`.
 - `start_finance_backup`: executa, como root e sem argumentos, o script definido em `FINANCE_BACKUP_SCRIPT`.
 - `restart_homelab_service`: reinicia um servico listado em `DEPLOY_SERVICES`.
@@ -121,6 +122,7 @@ O `/deploy_finance` atualiza o repositorio financeiro definido em `FINANCE_REPOS
 O `/finance` consulta `get_current_finance_summary` pelo MCP e exibe os valores mensais publicados pelo dashboard. Configure `FINANCE_DASHBOARD_DATA_URL` com a URL acessível pelo servidor MCP; no Compose local padrão, use `http://127.0.0.1:8085/api/data`.
 O `/finance_invest` consulta `get_current_finance_investments` pelo MCP e exibe os itens e o total de investimentos do mês atual.
 O `/finance_contas` consulta `get_current_finance_accounts` pelo MCP e detalha cada conta fixa e conta extra com seu valor.
+Mensagens em linguagem natural, como “quanto gastei com luz nos meses anteriores?” ou “liste meus investimentos em Tesouro de Jan/26 a Jun/26”, podem usar `search_finance_history_items`; a busca cobre apenas meses anteriores ao atual e compara o termo sem diferenciar maiúsculas de minúsculas.
 O `/conta_fixa <nome> <valor> [mês/ano]` pede confirmação e então define o valor mensal do item usando `set_current_finance_fixed_account`. Se o mês for omitido, usa o atual; para contas recebidas antecipadamente, informe por exemplo `Nov/26`. A ferramenta de escrita exige o mesmo `FINANCE_WRITE_TOKEN` configurado no bot e no MCP; a IA não recebe essa ferramenta em linguagem natural.
 
 ## systemd

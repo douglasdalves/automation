@@ -5,6 +5,7 @@ from app.services.finance import (
     get_current_month_accounts,
     get_current_month_investments,
     get_current_month_summary,
+    search_finance_history,
     set_month_fixed_account,
 )
 from app.services.finance_backup import run_finance_backup
@@ -25,6 +26,21 @@ def register_finance_tools(mcp):
     def get_current_finance_accounts() -> dict:
         """Consulta no dashboard as contas fixas e extras do mês atual."""
         return get_current_month_accounts()
+
+    @mcp.tool()
+    def search_finance_history_items(
+        search_term: str,
+        item_type: str = "all",
+        start_month: str = "",
+        end_month: str = "",
+    ) -> dict:
+        """Busca parcial por nome nos meses anteriores. item_type: all, account ou investment; período: Mmm/aa."""
+        return search_finance_history(
+            search_term,
+            item_type,
+            start_month,
+            end_month,
+        )
 
     @mcp.tool()
     def set_current_finance_fixed_account(

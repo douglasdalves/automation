@@ -49,6 +49,27 @@ def _month_index(label: str) -> int:
     return year * 12 + month
 
 
+def _parse_month_filter(label: str, parameter: str) -> int | None:
+    if not label:
+        return None
+
+    match = re.fullmatch(r"([a-z]{3})/(\d{2}|\d{4})", label.strip(), re.IGNORECASE)
+    if not match or match.group(1).lower() not in _MONTHS:
+        raise ValueError(
+            f"{parameter} inválido. Use o formato Mmm/aa, por exemplo Nov/26."
+        )
+
+    month_name, year_text = match.groups()
+    year = int(year_text)
+    if len(year_text) == 2:
+        year += 2000
+    if year < 2000 or year > 2099:
+        raise ValueError(f"O ano em {parameter} deve estar entre 2000 e 2099.")
+
+    month = _MONTHS.index(month_name.lower()) + 1
+    return year * 12 + month
+
+
 def _select_current_or_previous_month(
     months: list, current_index: int
 ) -> tuple[dict | None, bool]:
@@ -250,6 +271,117 @@ def get_current_month_accounts() -> dict:
         "fixed_items": fixed,
         "extras_total": sum(item["valor"] for item in extras),
         "extra_items": extras,
+    }
+
+
+def search_finance_history(
+    search_term: str,
+    item_type: str = "all",
+    start_month: str = "",
+    end_month: str = "",
+) -> dict:
+    """Search account or investment items across the dashboard's past months."""
+    search_term = " ".join(str(search_term or "").split())
+    item_type = str(item_type or "all").strip().lower()
+    if not search_term or len(search_term) > 100:
+        return {
+            "success": False,
+            "error": "O termo de busca deve ter entre 1 e 100 caracteres.",
+        }
+    if item_type not in {"all", "account", "investment"}:
+        return {
+            "success": False,
+            "error": "Tipo inválido. Use all, account ou investment.",
+        }
+
+    try:
+        start_index = _parse_month_filter(start_month, "Mês inicial")
+        end_index = _parse_month_filter(end_month, "Mês final")
+    except ValueError as exc:
+        return {"success": False, "error": str(exc)}
+    if start_index is not None and end_index is not None and start_index > end_index:
+        return {
+            "success": False,
+            "error": "O mês inicial não pode ser posterior ao mês final.",
+        }
+
+    if not Config.FINANCE_DASHBOARD_DATA_URL:
+        return {
+            "success": False,
+            "error": "FINANCE_DASHBOARD_DATA_URL não está configurada no arquivo .env.",
+        }
+
+    try:
+        response = httpx.get(Config.FINANCE_DASHBOARD_DATA_URL, timeout=10.0)
+        response.raise_for_status()
+        payload = response.json()
+    except (httpx.HTTPError, ValueError) as exc:
+        return {
+            "success": False,
+            "error": f"Não foi possível consultar o painel financeiro: {exc}",
+        }
+
+    months = payload.get("months", []) if isinstance(payload, dict) else []
+    if not isinstance(months, list) or not months:
+        return {
+            "success": False,
+            "error": "O painel financeiro não possui meses cadastrados.",
+        }
+
+    today = datetime.now().astimezone().date()
+    current_index = today.year * 12 + today.month
+    term = search_term.casefold()
+    month_records = []
+    for month in months:
+        if not isinstance(month, dict):
+            continue
+        month_index = _month_index(month.get("label", ""))
+        if month_index <= 0 or month_index >= current_index:
+            continue
+        if start_index is not None and month_index < start_index:
+            continue
+        if end_index is not None and month_index > end_index:
+            continue
+        month_records.append((month_index, month))
+
+    matches = []
+    item_groups = (
+        ("account", "conta_fixa", "categorias", "total"),
+        ("account", "conta_extra", "extras_itens", "valor"),
+        ("investment", "investimento", "investimentos_itens", "valor"),
+    )
+    for month_index, month in sorted(
+        month_records, key=lambda record: record[0], reverse=True
+    ):
+        for group_type, category, key, value_key in item_groups:
+            if item_type != "all" and item_type != group_type:
+                continue
+            items = month.get(key, [])
+            if not isinstance(items, list):
+                continue
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                name = str(item.get("item") or "")
+                if term not in name.casefold():
+                    continue
+                matches.append(
+                    {
+                        "month": str(month.get("label", "")),
+                        "category": category,
+                        "item": name,
+                        "amount": float(item.get(value_key) or 0),
+                    }
+                )
+
+    return {
+        "success": True,
+        "search_term": search_term,
+        "item_type": item_type,
+        "start_month": start_month or None,
+        "end_month": end_month or None,
+        "matched_count": len(matches),
+        "matches": matches,
     }
 
 
